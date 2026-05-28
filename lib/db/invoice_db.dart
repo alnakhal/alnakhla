@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast.dart';
 import 'sembast_database_factory.dart';
+import 'db_path_provider.dart';
 
 class InvoiceDatabase {
   static final InvoiceDatabase instance = InvoiceDatabase._init();
@@ -19,16 +17,8 @@ class InvoiceDatabase {
   }
 
   Future<Database> _openDatabase(String dbName) async {
-    final dbPath = await _databasePath(dbName);
+    final dbPath = await getDatabasePath(dbName);
     return await getDatabaseFactory().openDatabase(dbPath);
-  }
-
-  Future<String> _databasePath(String dbName) async {
-    if (kIsWeb) {
-      return dbName;
-    }
-    final dir = await getApplicationDocumentsDirectory();
-    return join(dir.path, dbName);
   }
 
   Future<int> insertInvoice(Map<String, dynamic> invoice, List<Map<String, dynamic>> items) async {

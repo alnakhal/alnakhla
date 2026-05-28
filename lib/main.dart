@@ -1,6 +1,5 @@
 ﻿import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -8,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:share_plus/share_plus.dart';
+import 'utils/share_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -1674,7 +1673,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
   final _productNameController = TextEditingController();
   final _productPriceController = TextEditingController();
   final _productQuantityController = TextEditingController(text: '1');
+  final _productNoteController = TextEditingController();
   final _discountController = TextEditingController(text: '0');
+  final _invoiceNotesController = TextEditingController();
   final List<OrderItem> _invoiceItems = [];
   Uint8List? _invoiceLogoBytes;
   String? _storePhone;
@@ -1711,8 +1712,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         'customerName': _customerNameController.text.trim(),
         'customerPhone': _customerPhoneController.text.trim(),
         'customerAddress': _customerAddressController.text.trim(),
+        'invoiceNotes': _invoiceNotesController.text.trim(),
         'discount': _discountController.text.trim(),
-        'items': _invoiceItems.map((it) => {'name': it.name, 'price': it.price, 'quantity': it.quantity}).toList(),
+        'items': _invoiceItems.map((it) => {'name': it.name, 'price': it.price, 'quantity': it.quantity, 'note': it.note}).toList(),
         'invoiceLogoBase64': _invoiceLogoBytes != null ? base64Encode(_invoiceLogoBytes!) : null,
         'updatedAt': DateTime.now().toIso8601String(),
       };
@@ -1735,6 +1737,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         _customerNameController.text = map['customerName'] ?? '';
         _customerPhoneController.text = map['customerPhone'] ?? '';
         _customerAddressController.text = map['customerAddress'] ?? '';
+        _invoiceNotesController.text = map['invoiceNotes'] ?? '';
         _discountController.text = map['discount']?.toString() ?? '0';
         _invoiceItems.clear();
         for (var it in items) {
@@ -1742,7 +1745,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
             final m = it as Map<String, dynamic>;
             final price = (m['price'] is num) ? (m['price'] as num).toDouble() : double.tryParse(m['price']?.toString() ?? '') ?? 0;
             final qty = (m['quantity'] is num) ? (m['quantity'] as num).toInt() : int.tryParse(m['quantity']?.toString() ?? '') ?? 0;
-            _invoiceItems.add(OrderItem(name: m['name'] ?? '', price: price, quantity: qty));
+            _invoiceItems.add(OrderItem(name: m['name'] ?? '', price: price, quantity: qty, note: m['note']?.toString() ?? ''));
           } catch (_) {}
         }
         final logoB64 = map['invoiceLogoBase64'] as String?;
@@ -1818,7 +1821,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
     }
 
     setState(() {
-      _invoiceItems.add(OrderItem(name: name, price: price, quantity: quantity));
+      _invoiceItems.add(OrderItem(name: name, price: price, quantity: quantity, note: _productNoteController.text.trim()));
       _productNameController.clear();
       _productPriceController.clear();
       _productQuantityController.text = '1';
@@ -1831,10 +1834,11 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
     final nameController = TextEditingController(text: item.name);
     final priceController = TextEditingController(text: item.price.toStringAsFixed(0));
     final qtyController = TextEditingController(text: item.quantity.toString());
+    final noteController = TextEditingController(text: item.note ?? '');
 
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('تعديل عنصر الفاتورة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1855,10 +1859,15 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'الكمية'),
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: noteController,
+              decoration: const InputDecoration(labelText: 'ملاحظات البند'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('إلغاء')),
           FilledButton(
             onPressed: () {
               final newName = nameController.text.trim();
@@ -1871,9 +1880,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                 return;
               }
               setState(() {
-                _invoiceItems[index] = OrderItem(name: newName, price: newPrice, quantity: newQuantity);
+                _invoiceItems[index] = OrderItem(name: newName, price: newPrice, quantity: newQuantity, note: noteController.text.trim());
               });
-              Navigator.of(context).pop();
+              Navigator.of(ctx).pop();
             },
             child: const Text('حفظ'),
           ),
@@ -1895,8 +1904,10 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
       _customerNameController.clear();
       _customerPhoneController.clear();
       _customerAddressController.clear();
+      _invoiceNotesController.clear();
       _productNameController.clear();
       _productPriceController.clear();
+      _productNoteController.clear();
       _productQuantityController.text = '1';
       _discountController.text = '0';
     });
@@ -1928,6 +1939,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
       createdAt: DateTime.now(),
       items: List<OrderItem>.from(_invoiceItems),
       discount: _discount,
+      notes: _invoiceNotesController.text.trim().isNotEmpty ? _invoiceNotesController.text.trim() : null,
       logoBytes: _invoiceLogoBytes,
       invoiceNumber: invoiceNumber,
     );
@@ -1944,6 +1956,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         'discount': invoice.discount,
         'total': (invoice.total - invoice.discount).clamp(0, double.infinity).toInt(),
         'items': invoice.items.map((item) => item.toJson()).toList(),
+        'notes': invoice.notes,
         'invoice_number': invoiceNumber,
         if (user != null) 'user_id': user.id,
       };
@@ -1973,6 +1986,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         createdAt: invoice.createdAt,
         items: invoice.items,
         discount: invoice.discount,
+        notes: invoice.notes,
         logoBytes: invoice.logoBytes,
         id: savedId,
         invoiceNumber: invoice.invoiceNumber,
@@ -2031,6 +2045,15 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                       controller: _customerAddressController,
                       decoration: const InputDecoration(labelText: 'عنوان الزبون'),
                       maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _invoiceNotesController,
+                      decoration: const InputDecoration(
+                        labelText: 'ملاحظات الفاتورة',
+                        hintText: 'اكتب ملاحظات تظهر في الفاتورة بالحمراء',
+                      ),
+                      maxLines: 3,
                     ),
                     const SizedBox(height: 16),
                     Text('تاريخ الفاتورة: $_invoiceDate', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -2102,12 +2125,28 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('أضف'),
-                          onPressed: _addInvoiceItem,
-                          style: FilledButton.styleFrom(minimumSize: const Size(48, 36)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _productNoteController,
+                      decoration: const InputDecoration(
+                        hintText: 'ملاحظات للبند',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: Colors.grey, width: 1)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('أضف'),
+                            onPressed: _addInvoiceItem,
+                            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                          ),
                         ),
                       ],
                     ),
@@ -2152,7 +2191,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                         ),
                                         onChanged: (v) {
                                           setState(() {
-                                            _invoiceItems[index] = OrderItem(name: v, price: item.price, quantity: item.quantity);
+                                            _invoiceItems[index] = OrderItem(name: v, price: item.price, quantity: item.quantity, note: item.note);
                                           });
                                         },
                                       ),
@@ -2167,7 +2206,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                         onChanged: (v) {
                                           final p = _parseDouble(v) ?? item.price;
                                           setState(() {
-                                            _invoiceItems[index] = OrderItem(name: item.name, price: p, quantity: item.quantity);
+                                            _invoiceItems[index] = OrderItem(name: item.name, price: p, quantity: item.quantity, note: item.note);
                                           });
                                         },
                                       ),
@@ -2182,7 +2221,7 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                         onChanged: (v) {
                                           final q = _parseInt(v) ?? item.quantity;
                                           setState(() {
-                                            _invoiceItems[index] = OrderItem(name: item.name, price: item.price, quantity: q);
+                                            _invoiceItems[index] = OrderItem(name: item.name, price: item.price, quantity: q, note: item.note);
                                           });
                                         },
                                       ),
@@ -4066,10 +4105,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         return;
       }
       final pngBytes = byteData.buffer.asUint8List();
-      final tempDir = Directory.systemTemp;
-      final file = File('${tempDir.path}/طلب_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(pngBytes);
-      await Share.shareXFiles([XFile(file.path)], text: 'طلب جديد - العميل: ${_customerNameController.text.trim()}');
+      await shareImageBytes(pngBytes, filename: 'طلب_${DateTime.now().millisecondsSinceEpoch}.png', text: 'طلب جديد - العميل: ${_customerNameController.text.trim()}');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم مشاركة الطلب كصورة')));
     } catch (e) {
@@ -4652,6 +4688,7 @@ class Invoice {
     required this.storePhone,
     required this.createdAt,
     required this.items,
+    this.notes,
     this.logoBytes,
     this.discount = 0,
     this.id,
@@ -4664,6 +4701,7 @@ class Invoice {
   final String storePhone;
   final DateTime createdAt;
   final List<OrderItem> items;
+  final String? notes;
   final Uint8List? logoBytes;
   final double discount;
   final int? id;
@@ -4723,14 +4761,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       }
       final Uint8List pngBytes = byteData.buffer.asUint8List();
 
-      final tempDir = Directory.systemTemp;
-      final invoiceFile = File('${tempDir.path}/فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png');
-      await invoiceFile.writeAsBytes(pngBytes);
-
-      await Share.shareXFiles(
-        [XFile(invoiceFile.path)],
-        text: 'فاتورة محاسبية - العميل: ${widget.invoice.customerName}',
-      );
+      await shareImageBytes(pngBytes, filename: 'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png', text: 'فاتورة محاسبية - العميل: ${widget.invoice.customerName}');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -4815,6 +4846,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                 ],
                               ),
                             ],
+                            if (widget.invoice.notes != null && widget.invoice.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              const Text('ملاحظات الفاتورة:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                              Text(widget.invoice.notes!, style: const TextStyle(color: Colors.red)),
+                            ],
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -4879,7 +4915,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.all(8),
-                                    child: Text(item.name),
+                                    child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item.name),
+                                if (item.note != null && item.note!.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(item.note!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                ],
+                              ],
+                            ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.all(8),
@@ -5234,6 +5279,7 @@ class OrderItem {
     required this.name,
     required this.price,
     required this.quantity,
+    this.note,
   });
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
@@ -5242,6 +5288,7 @@ class OrderItem {
         name: (map['name'] as String?) ?? '',
         price: ((map['price'] as num?) ?? 0).toDouble(),
         quantity: ((map['quantity'] as num?) ?? 0).toInt(),
+        note: (map['note'] as String?) ?? '',
       );
     } catch (e) {
       debugPrint('Error creating OrderItem: $e, map: $map');
@@ -5252,6 +5299,7 @@ class OrderItem {
   final String name;
   final double price;
   final int quantity;
+  final String? note;
 
   double get total => price * quantity;
 
@@ -5260,5 +5308,6 @@ class OrderItem {
         'price': price.toInt(),
         'quantity': quantity,
         'total': total.toInt(),
+        if (note != null && note!.isNotEmpty) 'note': note,
       };
 }

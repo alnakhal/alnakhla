@@ -22,6 +22,7 @@ Map<String, dynamic> _normalizeInvoiceItem(Map<String, dynamic> item) {
     'unit_price': _parseNumber(item['unit_price']),
     'tax': _parseNumber(item['tax']),
     'total': _parseNumber(item['total']),
+    'note': item['note']?.toString(),
   };
 }
 

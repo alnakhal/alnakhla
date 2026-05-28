@@ -17,6 +17,7 @@ class InvoiceCreatePage extends StatefulWidget {
 class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
   final _formKey = GlobalKey<FormState>();
   final _customerNameController = TextEditingController();
+  final _invoiceNotesController = TextEditingController();
   final _discountController = TextEditingController(text: '0');
   DateTime _date = DateTime.now();
   DateTime? _dueDate;
@@ -41,6 +42,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
   @override
   void dispose() {
     _customerNameController.dispose();
+    _invoiceNotesController.dispose();
     _discountController.dispose();
     super.dispose();
   }
@@ -72,6 +74,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
       'unit_price': _parseToDouble(item['unit_price']),
       'tax': _parseToDouble(item['tax']),
       'total': _parseToDouble(item['total']),
+      'note': item['note']?.toString(),
     };
   }
 
@@ -129,6 +132,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
     final qtyC = TextEditingController(text: item != null ? item.quantity.toString() : '1');
     final priceC = TextEditingController(text: item != null ? item.unitPrice.toString() : '0');
     final taxC = TextEditingController(text: item != null ? item.tax.toString() : '0');
+    final noteC = TextEditingController(text: item?.note ?? '');
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -140,6 +144,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
             TextField(controller: qtyC, decoration: const InputDecoration(labelText: 'الكمية'), keyboardType: TextInputType.number),
             TextField(controller: priceC, decoration: const InputDecoration(labelText: 'سعر الوحدة'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
             TextField(controller: taxC, decoration: const InputDecoration(labelText: 'الضرائب'), keyboardType: TextInputType.numberWithOptions(decimal: true)),
+            TextField(controller: noteC, decoration: const InputDecoration(labelText: 'ملاحظات البند')),
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () => _selectProduct(descC, priceC),
@@ -158,7 +163,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
               final tax = _parseToDouble(taxC.text);
               if (desc.isEmpty) return;
               setState(() {
-                final newItem = InvoiceItemModel(description: desc, quantity: qty, unitPrice: price, tax: tax);
+                final newItem = InvoiceItemModel(description: desc, quantity: qty, unitPrice: price, tax: tax, note: noteC.text.trim());
                 if (index != null && index >= 0 && index < _items.length) {
                   _items[index] = newItem;
                 } else {
@@ -193,7 +198,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
       'discount': discount.toDouble(),
       'total': total.toDouble(),
       'status': 'draft',
-      'notes': null,
+      'notes': _invoiceNotesController.text.trim().isNotEmpty ? _invoiceNotesController.text.trim() : null,
     };
     final items = _items.map((e) => _normalizeInvoiceItemMap(e.toMap())).toList();
     try {
@@ -233,6 +238,12 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
                 validator: (v) => v == null || v.trim().isEmpty ? 'يرجى إدخال اسم العميل' : null,
               ),
               const SizedBox(height: 12),
+              TextFormField(
+                controller: _invoiceNotesController,
+                decoration: const InputDecoration(labelText: 'ملاحظات الفاتورة', hintText: 'اكتب ملاحظات عامة تظهر في الفاتورة'),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: Text('تاريخ الفاتورة: ${dateFmt.format(_date)}')),
@@ -265,6 +276,7 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
                         child: DataTable(
                           columns: const [
                             DataColumn(label: Text('الوصف')),
+                            DataColumn(label: Text('ملاحظات')),
                             DataColumn(label: Text('الكمية')),
                             DataColumn(label: Text('سعر الوحدة')),
                             DataColumn(label: Text('الضريبة')),
@@ -275,11 +287,12 @@ class _InvoiceCreatePageState extends State<InvoiceCreatePage> {
                             final it = _items[i];
                             return DataRow(cells: [
                               DataCell(SizedBox(width: 180, child: Text(it.description, overflow: TextOverflow.ellipsis))),
+                              DataCell(SizedBox(width: 140, child: Text(it.note ?? '-', overflow: TextOverflow.ellipsis))),
                               DataCell(Text(it.quantity.toStringAsFixed(2))),
                               DataCell(Text(it.unitPrice.toStringAsFixed(2))),
                               DataCell(Text(it.tax.toStringAsFixed(2))),
                               DataCell(Text(it.total.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold))),
-                                              DataCell(Row(
+                              DataCell(Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
