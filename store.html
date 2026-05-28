@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>متجر التاجر</title>
+  <style>
+    body { font-family: sans-serif; padding: 18px; direction: rtl; }
+    .store { max-width: 960px; margin: 0 auto; }
+    .header { display:flex; justify-content: space-between; align-items:center; gap: 16px; }
+    .products { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 12px; margin-top: 16px; }
+    .card { border:1px solid #eee; padding:12px; border-radius:8px; }
+    .btn { background:#6c5ce7; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+    .muted { color:#666; }
+    .form-row { margin-bottom:8px; }
+    input, select, textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; }
+    .small { font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="store">
+    <div class="header">
+      <div>
+        <h2 id="store-name">متجر</h2>
+        <div id="store-desc" class="muted small">معلومات المتجر</div>
+      </div>
+      <div id="store-contact" class="muted small"></div>
+    </div>
+
+    <hr>
+
+    <h3>المنتجات</h3>
+    <div id="products" class="products"></div>
+
+    <hr>
+
+    <h3>حجز / إنشاء طلب</h3>
+    <div>
+      <div id="booking-status" class="muted"></div>
+      <div class="form-row">
+        <label>اسم العميل</label>
+        <input id="customer_name" type="text" placeholder="الاسم"> 
+      </div>
+      <div class="form-row">
+        <label>هاتف العميل</label>
+        <input id="customer_phone" type="text" placeholder="رقم الهاتف"> 
+      </div>
+      <div class="form-row">
+        <label>اختر منتج</label>
+        <select id="product_select"></select>
+      </div>
+      <div class="form-row">
+        <label>الكمية</label>
+        <input id="quantity" type="number" value="1" min="1">
+      </div>
+      <div class="form-row">
+        <button id="bookBtn" class="btn">حجز الآن</button>
+      </div>
+    </div>
+
+    <p class="muted small">ملاحظة: صفحة ثابتة تستخدم مفاتيح Supabase العامة لقراءة/كتابة جدول `orders`.
+    تأكد من إعداد قواعد الوصول في Supabase بحيث يسمح الإدخال العام إلى جدول الطلبات أو استخدم وسيط (server) آمن.</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
+  <script>
+    // أدخل هنا رابط المشروع ومفتاح ANON (نفس القيم في التطبيق)
+    const SUPABASE_URL = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
+
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    async function fetchStore() {
+      const slug = getQueryParam('slug');
+      const userId = getQueryParam('user_id');
+      try {
+        if (slug) {
+          const { data, error } = await supabase.from('stores').select('*').eq('slug', slug).limit(1).maybeSingle();
+          if (error) throw error;
+          if (data) return data;
+        }
+        if (userId) {
+          const { data, error } = await supabase.from('stores').select('*').eq('user_id', userId).limit(1).maybeSingle();
+          if (error) throw error;
+          if (data) return data;
+        }
+        return null;
+      } catch (e) {
+        console.error('fetchStore', e);
+        return null;
+      }
+    }
+
+    async function fetchProducts(storeUserId) {
+      try {
+        const { data, error } = await supabase.from('products').select('*').eq('user_id', storeUserId).order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error('fetchProducts', e);
+        return [];
+      }
+    }
+
+    function renderStore(store) {
+      document.getElementById('store-name').textContent = store.name || 'متجر';
+      document.getElementById('store-desc').textContent = store.description || '';
+      document.getElementById('store-contact').textContent = store.phone || '';
+    }
+
+    function renderProducts(products) {
+      const container = document.getElementById('products');
+      const select = document.getElementById('product_select');
+      container.innerHTML = '';
+      select.innerHTML = '';
+      products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<strong>${p.name}</strong><div class="muted">${p.description || ''}</div><div style="margin-top:8px">السعر: ${p.price}</div>`;
+        container.appendChild(card);
+
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify({ id: p.id, name: p.name, price: p.price });
+        opt.textContent = `${p.name} — ${p.price}`;
+        select.appendChild(opt);
+      });
+    }
+
+    async function initPage() {
+      document.getElementById('booking-status').textContent = '';
+      const store = await fetchStore();
+      if (!store) {
+        document.getElementById('store-name').textContent = 'المتجر غير موجود';
+        return;
+      }
+      renderStore(store);
+      const products = await fetchProducts(store.user_id || store.userId || store.owner_id);
+      renderProducts(products);
+    }
+
+    async function createBooking() {
+      const store = await fetchStore();
+      if (!store) {
+        alert('المتجر غير موجود');
+        return;
+      }
+      const prod = document.getElementById('product_select').value;
+      if (!prod) return alert('اختر منتجاً');
+      const parsed = JSON.parse(prod);
+      const qty = Math.max(1, parseInt(document.getElementById('quantity').value || '1', 10));
+      const customerName = document.getElementById('customer_name').value.trim();
+      const customerPhone = document.getElementById('customer_phone').value.trim();
+      const items = [{ name: parsed.name, price: parsed.price, quantity: qty }];
+      const total = (parsed.price || 0) * qty;
+
+      try {
+        document.getElementById('bookBtn').disabled = true;
+        document.getElementById('booking-status').textContent = 'جاري إرسال الحجز...';
+        const { data, error } = await supabase.from('orders').insert({
+          user_id: store.user_id || store.userId || store.owner_id,
+          items: items,
+          quantity: qty,
+          total: total,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+        document.getElementById('booking-status').textContent = 'تم إرسال الحجز بنجاح';
+        document.getElementById('customer_name').value = '';
+        document.getElementById('customer_phone').value = '';
+      } catch (e) {
+        console.error('createBooking', e);
+        document.getElementById('booking-status').textContent = 'حدث خطأ أثناء إرسال الحجز';
+        alert('فشل إرسال الحجز: ' + e.message);
+      } finally {
+        document.getElementById('bookBtn').disabled = false;
+      }
+    }
+
+    document.getElementById('bookBtn').addEventListener('click', createBooking);
+    window.addEventListener('load', initPage);
+  </script>
+ </body>
+ </html>
