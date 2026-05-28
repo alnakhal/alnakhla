@@ -40,7 +40,9 @@ dependencies:
   shared_preferences: ^2.2.0
   share_plus: ^7.0.0
   uuid: ^4.5.3
-  sqflite: ^2.0.0
+  sembast: ^3.8.7
+  sembast_web: any
+  path_provider: ^2.0.17
   path: any
   intl: ^0.17.0
 
