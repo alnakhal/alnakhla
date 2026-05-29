@@ -18,7 +18,11 @@ class _InvoicesPageState extends State<InvoicesPage> {
     super.initState();
     _loadInvoices();
     // pull remote invoices and refresh
-    pullInvoicesFromSupabase().then((_) => setState(() => _loadInvoices()));
+    pullInvoicesFromSupabase().then((_) {
+      if (mounted) {
+        setState(() => _loadInvoices());
+      }
+    });
   }
 
   void _loadInvoices() {
@@ -56,8 +60,8 @@ class _InvoicesPageState extends State<InvoicesPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addSampleInvoice,
-        child: const Icon(Icons.add),
         tooltip: 'أضف فاتورة',
+        child: const Icon(Icons.add),
       ),
     );
   }
