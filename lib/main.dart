@@ -12,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/invoices_page.dart';
+import 'models/store.dart';
+import 'models/product.dart';
+import 'services/product_service.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
@@ -194,22 +197,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // ensure store and slug exist, create if necessary
     String? slug;
     try {
-      final res = await supabase.from('stores').select('slug,user_id').eq('user_id', user.id).maybeSingle();
-      Map<String, dynamic>? map;
-      if (res is Map<String, dynamic>) {
-        map = res;
-      } else {
-        try {
-          map = (res as dynamic).data as Map<String, dynamic>?;
-        } catch (_) {
-          map = null;
-        }
-      }
-      if (map != null) slug = map['slug']?.toString();
+      final store = await ensureStoreForUser(user.id);
+      if (store != null) slug = store.slug;
     } catch (e) {
-      debugPrint('fetch store link failed: $e');
+      debugPrint('ensure store failed: $e');
     }
 
     final displayLink = slug != null ? 'store.html?slug=$slug' : 'store.html?user_id=${user.id}';
@@ -732,22 +726,25 @@ class _HomeTabState extends State<HomeTab> {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return;
-      final res = await supabase.from('stores').select('slug,user_id').eq('user_id', user.id).maybeSingle();
-      if (res != null) {
-        // res may be a Map or have .data depending on client response
-        Map<String, dynamic>? map;
-        if (res is Map<String, dynamic>) {
-          map = res;
+      // ensure store exists and has a slug (creates if necessary)
+      try {
+        final store = await ensureStoreForUser(user.id);
+        if (store != null) {
+          setState(() {
+            _slug = store.slug;
+            _storeUserId = store.userId;
+          });
         } else {
-          try {
-            map = (res as dynamic).data as Map<String, dynamic>?;
-          } catch (_) {
-            map = null;
-          }
+          setState(() {
+            _storeUserId = user.id;
+          });
         }
-        if (map != null) {
-          // capture values outside the closure so the analyzer knows they
-          // are non-null when used inside setState
+      } catch (e) {
+        // fallback: try to read existing record
+        final res = await supabase.from('stores').select('slug,user_id').eq('user_id', user.id).maybeSingle();
+        if (res != null) {
+          Map<String, dynamic>? map;
+          map = res;
           final slugVal = map['slug']?.toString();
           final storeUserIdVal = map['user_id']?.toString() ?? user.id;
           setState(() {
@@ -759,10 +756,6 @@ class _HomeTabState extends State<HomeTab> {
             _storeUserId = user.id;
           });
         }
-      } else {
-        setState(() {
-          _storeUserId = user.id;
-        });
       }
     } catch (e) {
       debugPrint('load store link error: $e');
@@ -1124,7 +1117,11 @@ class _ProductsTabState extends State<ProductsTab> {
             icon: const Icon(Icons.add),
             label: const Text('إضافة منتج جديد'),
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddProductPage())).then((_) => _refreshProducts());
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddProductPage())).then((_) {
+                if (mounted) {
+                  _refreshProducts();
+                }
+              });
             },
           ),
           const SizedBox(height: 20),
@@ -1287,7 +1284,11 @@ class _ProductsTabState extends State<ProductsTab> {
                                       case 'edit':
                                         Navigator.of(context)
                                             .push(MaterialPageRoute(builder: (_) => EditProductPage(product: product)))
-                                            .then((_) => _refreshProducts());
+                                            .then((_) {
+                                              if (mounted) {
+                                                _refreshProducts();
+                                              }
+                                            });
                                         break;
                                       case 'delete':
                                         _deleteProduct(product);
@@ -1304,7 +1305,11 @@ class _ProductsTabState extends State<ProductsTab> {
                                   ],
                                 ),
                                 onTap: () {
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) => _refreshProducts());
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) {
+                                    if (mounted) {
+                                      _refreshProducts();
+                                    }
+                                  });
                                 },
                               ),
                             );
@@ -1338,18 +1343,11 @@ class _ProductPreviewListState extends State<ProductPreviewList> {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return [];
-      final dynamic res = await supabase.from('products').select().eq('user_id', user.id).order('created_at', ascending: false);
-      List<dynamic> list;
-      try {
-        list = res as List<dynamic>;
-      } catch (_) {
-        try {
-          list = (res as dynamic).data as List<dynamic>;
-        } catch (_) {
-          return [];
-        }
-      }
-      return list.map((item) => Product.fromMap(item as Map<String, dynamic>)).toList();
+      // prefer loading by the user's store id so products carry `store_id`
+      final storeId = await getOrCreateStoreForUser(user.id);
+      if (storeId == null) return [];
+      final products = await fetchProductsByStoreId(storeId);
+      return products;
     } catch (_) {
       return [];
     }
@@ -1519,6 +1517,8 @@ class _AddProductPageState extends State<AddProductPage> {
       imageUrl = await _uploadImage(_pickedImage!);
     }
 
+    final storeId = await getOrCreateStoreForUser(user.id);
+
     final insertData = {
       'name': _nameController.text.trim(),
       'description': description,
@@ -1529,7 +1529,8 @@ class _AddProductPageState extends State<AddProductPage> {
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
-      if (imageUrl != null) 'image_url': imageUrl,
+      'image_url': imageUrl,
+      if (storeId != null) 'store_id': storeId,
       'created_at': DateTime.now().toIso8601String(),
       'user_id': user.id,
     };
@@ -2489,7 +2490,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                           const Text('سعر البيع:'),
-                        Text('${product.price.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                        Text(product.price.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -2498,7 +2499,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                           const Text('تكلفة المنتج:'),
-                          Text('${product.cost.toStringAsFixed(0)}'),
+                          Text(product.cost.toStringAsFixed(0)),
                         ],
                       ),
                     if (product.singlePrice > 0) ...[
@@ -2507,7 +2508,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                           const Text('سعر المفرد:'),
-                          Text('${product.singlePrice.toStringAsFixed(0)}'),
+                          Text(product.singlePrice.toStringAsFixed(0)),
                         ],
                       ),
                     ],
@@ -2521,7 +2522,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('سعر الجملة:'),
-                          Text('${product.wholesalePrice.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(product.wholesalePrice.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -2589,6 +2590,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               label: const Text('تعديل المعلومات'),
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => EditProductPage(product: product))).then((result) {
+                  if (!mounted) return;
                   if (result == true) {
                     Navigator.of(context).pop(true);
                   }
@@ -2770,7 +2772,7 @@ class _EditProductPageState extends State<EditProductPage> {
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
-      if (imageUrl != null) 'image_url': imageUrl,
+      'image_url': ?imageUrl,
     };
 
     try {
@@ -3035,7 +3037,11 @@ class _StorePageState extends State<StorePage> {
             FilledButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) => _refreshProducts());
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) {
+                  if (mounted) {
+                    _refreshProducts();
+                  }
+                });
               },
               child: const Text('عرض التفاصيل'),
             ),
@@ -3124,7 +3130,13 @@ class _StorePageState extends State<StorePage> {
                                 Text('الكمية: ${product.remainingQty}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                 const SizedBox(height: 12),
                                 FilledButton(
-                                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) => _refreshProducts()),
+                                  onPressed: () {
+                                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailsPage(product: product))).then((_) {
+                                      if (mounted) {
+                                        _refreshProducts();
+                                      }
+                                    });
+                                  },
                                   child: const Text('عرض المنتج'),
                                 ),
                               ],
@@ -3342,7 +3354,11 @@ class _OrdersTabState extends State<OrdersTab> {
               icon: const Icon(Icons.add_shopping_cart),
               label: const Text('إنشاء طلب جديد'),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateOrderPage())).then((_) => _refreshOrders());
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateOrderPage())).then((_) {
+                  if (mounted) {
+                    _refreshOrders();
+                  }
+                });
               },
             ),
             const SizedBox(height: 20),
@@ -3474,7 +3490,7 @@ class _OrdersTabState extends State<OrdersTab> {
                                             children: [
                                               const Text('إجمالي المبيعات اليوم', style: TextStyle(color: Colors.black54)),
                                               const SizedBox(height: 8),
-                                              Text('${dailySales.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                                              Text(dailySales.toStringAsFixed(0), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                                             ],
                                           ),
                                         ),
@@ -3528,7 +3544,11 @@ class _OrdersTabState extends State<OrdersTab> {
                                 onTap: () {
                                   Navigator.of(context)
                                       .push(MaterialPageRoute(builder: (_) => OrderDetailsPage(order: order)))
-                                      .then((_) => _refreshOrders());
+                                      .then((_) {
+                                        if (mounted) {
+                                          _refreshOrders();
+                                        }
+                                      });
                                 },
                               ),
                             );
@@ -3744,7 +3764,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Expanded(
                       child: ListView.separated(
                         itemCount: _currentOrder.items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = _currentOrder.items[index];
                           return ListTile(
@@ -3846,7 +3866,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     const SizedBox(height: 16),
                     const Text('إجمالي الطلب', style: TextStyle(color: Colors.grey)),
                     const SizedBox(height: 6),
-                    Text('${_currentOrder.total.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepPurple)),
+                    Text(_currentOrder.total.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepPurple)),
                   ],
                 ),
               ),
@@ -3960,7 +3980,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                         onTap: _showOrderItemsDialog,
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
-                                          child: Text('${item.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13)),
+                                          child: Text(item.price.toStringAsFixed(0), style: const TextStyle(fontSize: 13)),
                                         ),
                                       ),
                                     ),
@@ -3980,13 +4000,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                         onTap: _showOrderItemsDialog,
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
-                                          child: Text('${item.total.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.deepPurple)),
+                                          child: Text(item.total.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.deepPurple)),
                                         ),
                                       ),
                                     ),
                                   ],
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -4097,7 +4117,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('خطأ: فشل إنشاء الصورة')));
         return;
       }
-      final ui.Image image = await (renderObject as RenderRepaintBoundary).toImage(pixelRatio: 3.0);
+      final ui.Image image = await (renderObject).toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
         if (!mounted) return;
@@ -4167,7 +4187,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final requested = qtyMap[product.id] ?? 0;
       if (requested > 0 && requested > product.remainingQty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الكمية المطلوبة من "${product.name}" (${requested}) تتجاوز المتوفر (${product.remainingQty})')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الكمية المطلوبة من "${product.name}" ($requested) تتجاوز المتوفر (${product.remainingQty})')));
         return;
       }
     }
@@ -4473,7 +4493,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('مجموع منتجات المتجر'),
-                              Text('${productsTotal.toStringAsFixed(0)}'),
+                              Text(productsTotal.toStringAsFixed(0)),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -4481,7 +4501,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('مجموع المنتجات اليدوية'),
-                              Text('${_manualTotal.toStringAsFixed(0)}'),
+                              Text(_manualTotal.toStringAsFixed(0)),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -4542,49 +4562,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 }
 
-class Product {
-  Product({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.cost,
-    required this.wholesalePrice,
-    required this.minWholesaleQuantity,
-    required this.singlePrice,
-    required this.hasWholesale,
-    required this.remainingQty,
-    this.imageUrl,
-  });
-
-  factory Product.fromMap(Map<String, dynamic> map) {
-    return Product(
-      id: map['id'] as int,
-      name: map['name'] as String,
-      description: map['description'] as String? ?? '',
-      price: (map['price'] as num).toDouble(),
-      cost: (map['cost'] as num?)?.toDouble() ?? 0,
-      wholesalePrice: (map['wholesale_price'] as num?)?.toDouble() ?? 0,
-      minWholesaleQuantity: (map['min_wholesale_quantity'] as num?)?.toInt() ?? 0,
-      singlePrice: (map['single_price'] as num?)?.toDouble() ?? 0,
-      hasWholesale: map['has_wholesale'] as bool? ?? false,
-      remainingQty: (map['remaining_qty'] as num?)?.toInt() ?? 0,
-      imageUrl: map['image_url'] as String?,
-    );
-  }
-
-  final int id;
-  final String name;
-  final String description;
-  final double price;
-  final double cost;
-  final double wholesalePrice;
-  final int minWholesaleQuantity;
-  final double singlePrice;
-  final bool hasWholesale;
-  final int remainingQty;
-  final String? imageUrl;
-}
+// `Product` model moved to lib/models/product.dart
 
 class Order {
   Order({
@@ -5194,7 +5172,7 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
                       ),
                     );
                   },
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemCount: filtered.length,
                 ),
               ),
