@@ -17,7 +17,7 @@ import 'services/product_service.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
-const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya-main';
+const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya/';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
