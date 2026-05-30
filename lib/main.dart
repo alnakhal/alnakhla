@@ -17,7 +17,7 @@ import 'services/product_service.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
-const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya/';
+const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -205,7 +205,11 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('ensure store failed: $e');
     }
 
-    final displayLink = slug != null ? '$storeShareBaseUrl/store.html?slug=$slug' : '$storeShareBaseUrl/store.html?user_id=${user.id}';
+    // Use a clean path-style URL that points to the storefront catalog for the
+    // given store slug. Fall back to a query by user_id when slug is missing.
+    final displayLink = slug != null
+      ? '$storeShareBaseUrl/store/$slug'
+      : '$storeShareBaseUrl/store?user_id=${user.id}';
 
     if (!mounted) return;
     await showDialog<void>(
@@ -574,8 +578,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
       // عرض رابط المتجر الذي تم إنشاؤه (slug) إن وُجد
       if (createdSlug != null) {
-        final storeLinkSlug = '$storeShareBaseUrl/store.html?slug=$createdSlug';
-        final storeLinkUser = '$storeShareBaseUrl/store.html?user_id=${response.user!.id}';
+        final storeLinkSlug = '$storeShareBaseUrl/store/$createdSlug';
+        final storeLinkUser = '$storeShareBaseUrl/store?user_id=${response.user!.id}';
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -766,10 +770,10 @@ class _HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     final displayLink = _slug != null
-        ? '$storeShareBaseUrl/store.html?slug=$_slug'
-        : _storeUserId != null
-            ? '$storeShareBaseUrl/store.html?user_id=$_storeUserId'
-            : null;
+      ? '$storeShareBaseUrl/store/$_slug'
+      : _storeUserId != null
+        ? '$storeShareBaseUrl/store?user_id=$_storeUserId'
+        : null;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2406,7 +2410,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   Future<void> _copyProductLink() async {
-    final productLink = '$storeShareBaseUrl/store.html?product_id=${widget.product.id}';
+    String productLink;
+    try {
+      final storeId = widget.product.storeId;
+      if (storeId != null && storeId.isNotEmpty) {
+        final dynamic storeRes = await supabase.from('stores').select('slug').eq('id', storeId).maybeSingle();
+        final slug = (storeRes is Map<String, dynamic>) ? storeRes['slug']?.toString() : null;
+        if (slug != null && slug.isNotEmpty) {
+          productLink = '$storeShareBaseUrl/store/$slug/product/${widget.product.id}';
+        } else {
+          productLink = '$storeShareBaseUrl/store/product/${widget.product.id}';
+        }
+      } else {
+        productLink = '$storeShareBaseUrl/store/product/${widget.product.id}';
+      }
+    } catch (e) {
+      productLink = '$storeShareBaseUrl/store/product/${widget.product.id}';
+    }
+
     await Clipboard.setData(ClipboardData(text: productLink));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رابط المنتج')));
