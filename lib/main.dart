@@ -150,7 +150,7 @@ String get _initialRoute {
   final uri = Uri.base;
   final path = (uri.path == '/' || uri.path.isEmpty) ? uri.fragment : uri.path;
   if (path.isEmpty || path == '/') {
-    return '/';
+    return '/customer-orders';
   }
   return path.startsWith('/') ? path : '/$path';
 }
