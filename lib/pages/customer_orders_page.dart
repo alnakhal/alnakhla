@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/product.dart';
 import '../services/product_service.dart';
+
+const String whatsappTargetNumber = '07867360219';
 
 class CustomerOrdersPage extends StatefulWidget {
   final String? storeSlug;
@@ -155,29 +156,18 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     );
   }
 
-  Future<void> _sendOrderWhatsApp() async {
+  Future<void> _sendOrderWhatsApp({
+    required String customerName,
+    required String customerPhone,
+    required String orderNote,
+  }) async {
     final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
     if (selectedProducts.isEmpty) {
       await _showMessage('يرجى اختيار منتج واحد على الأقل قبل إرسال الطلب');
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final rawPhone = prefs.getString('store_phone')?.trim() ?? '';
-    if (rawPhone.isEmpty) {
-      await _showMessage('يرجى تسجيل رقم متجرك في الإعدادات أولاً حتى يتم إرسال الطلب عبر واتساب');
-      return;
-    }
-
-    final whatsappNumber = _normalizePhone(rawPhone);
-    if (whatsappNumber.isEmpty) {
-      await _showMessage('الرقم في الإعدادات غير صالح. استخدم أرقام فقط مع رمز الدولة.');
-      return;
-    }
-
-    final customerName = _customerNameController.text.trim();
-    final customerPhone = _customerPhoneController.text.trim();
-    final orderNote = _orderNoteController.text.trim();
+    final whatsappNumber = _normalizePhone(whatsappTargetNumber);
     final total = selectedProducts.fold<double>(0, (sum, product) {
       final qty = _selectedQuantities[product.id] ?? 0;
       return sum + qty * product.price;
@@ -215,10 +205,138 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     }
   }
 
+  void _showOrderSummaryDialog() {
+    final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+    if (selectedProducts.isEmpty) {
+      _showMessage('يرجى اختيار منتجات قبل إتمام الطلب');
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('تفاصيل الطلب', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                ...selectedProducts.map((product) {
+                  final qty = _selectedQuantities[product.id] ?? 0;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text('${product.name} x$qty', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Text((product.price * qty).toStringAsFixed(0)),
+                      ],
+                    ),
+                  );
+                }),
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('المجموع', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(_selectedTotal.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'سيتم تحويل الطلب إلى واتساب رقم 07867360219 بطريقة منظمة.',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _customerNameController,
+                  decoration: const InputDecoration(labelText: 'الاسم'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _customerPhoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'رقم الجوال'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _orderNoteController,
+                  decoration: const InputDecoration(labelText: 'ملاحظات الطلب (اختياري)'),
+                  minLines: 2,
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  icon: const Icon(Icons.send),
+                  label: const Text('إرسال الطلب عبر واتساب'),
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    await _sendOrderWhatsApp(
+                      customerName: _customerNameController.text.trim(),
+                      customerPhone: _customerPhoneController.text.trim(),
+                      orderNote: _orderNoteController.text.trim(),
+                    );
+                    if (mounted) navigator.pop();
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('طلبات المتجر')),
+      appBar: AppBar(
+        title: const Text('متجر الطلبات'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _selectedCount > 0 ? _showOrderSummaryDialog : null,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.shopping_cart),
+                  if (_selectedCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          _selectedCount.toString(),
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Product>>(
         future: _productsFuture,
         builder: (context, snapshot) {
@@ -261,6 +379,23 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: Theme.of(context).colorScheme.primary.withAlpha(24),
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: const [
+                        Text('واجهة متجر احترافية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 8),
+                        Text('اختر المنتجات واضغط إتمام الطلب لمراجعة ملخص الطلب ثم إرساله عبر واتساب مباشرة.', style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -277,6 +412,44 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: Theme.of(context).colorScheme.secondary.withAlpha(24),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('السلة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('$_selectedCount منتج'),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(_selectedTotal.toStringAsFixed(0)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.shopping_cart_checkout),
+                          label: const Text('عرض السلة وإتمام الطلب'),
+                          onPressed: _selectedCount > 0 ? _showOrderSummaryDialog : null,
+                        ),
+                        if (_selectedCount == 0) ...[
+                          const SizedBox(height: 12),
+                          const Text('أضف منتجات إلى السلة ليظهر ملخص الطلب هنا.', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                        ]
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Expanded(
                   child: filtered.isEmpty
                       ? Center(
@@ -285,15 +458,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                             style: const TextStyle(fontSize: 16),
                           ),
                         )
-                      : ListView.builder(
+                      : ListView.separated(
                           itemCount: filtered.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final product = filtered[index];
                             final quantity = _selectedQuantities[product.id] ?? 0;
                             final available = product.remainingQty;
                             return Card(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              margin: const EdgeInsets.only(bottom: 12),
                               child: InkWell(
                                 onTap: () => _showProductDetails(product),
                                 borderRadius: BorderRadius.circular(16),
@@ -323,17 +496,31 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(product.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                            const SizedBox(height: 6),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(product.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                                ),
+                                                Text('${product.price.toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
                                             Text(
                                               product.description.isEmpty ? 'بدون وصف' : product.description,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            const SizedBox(height: 8),
-                                            Text('السعر: ${product.price.toStringAsFixed(0)}'),
-                                            Text('المخزون: $available قطعة'),
-                                            if (product.hasWholesale) Text('الجملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع'),
+                                            const SizedBox(height: 10),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                Chip(label: Text('المخزون: $available')),
+                                                if (product.hasWholesale)
+                                                  Chip(label: Text('جملة ${product.wholesalePrice.toStringAsFixed(0)}')),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -375,70 +562,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                             );
                           },
                         ),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text('تفاصيل الطلب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _customerNameController,
-                          decoration: const InputDecoration(labelText: 'اسم العميل'),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _customerPhoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(labelText: 'رقم العميل'),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _orderNoteController,
-                          decoration: const InputDecoration(labelText: 'ملاحظات الطلب (اختياري)'),
-                          minLines: 2,
-                          maxLines: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('عدد المنتجات المحددة', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text('$_selectedCount'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(_selectedTotal.toStringAsFixed(0)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.chat),
-                          label: const Text('إرسال الطلب عبر واتساب'),
-                          onPressed: _selectedCount > 0 ? _sendOrderWhatsApp : null,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
