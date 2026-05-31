@@ -11,6 +11,7 @@ import 'utils/share_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'pages/customer_orders_page.dart';
 import 'pages/invoices_page.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
@@ -4063,6 +4064,14 @@ class MoreTab extends StatelessWidget {
             const SizedBox(height: 12),
             const Text('في هذا القسم يمكنك الإطلاع على حالة المتجر، إدارة المنتجات، والطلبات بسهولة.'),
             const SizedBox(height: 24),
+            FilledButton.icon(
+              icon: const Icon(Icons.shopping_bag),
+              label: const Text('طلبات الزبائن'),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomerOrdersPage()));
+              },
+            ),
+            const SizedBox(height: 12),
             FilledButton.icon(
               icon: const Icon(Icons.receipt_long),
               label: const Text('الفواتير'),
