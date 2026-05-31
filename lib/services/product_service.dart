@@ -110,6 +110,29 @@ Future<List<Product>> fetchProductsByStoreId(String storeId) async {
   }
 }
 
+Future<String?> getStoreIdForUser(String userId) async {
+  try {
+    final dynamic storeRes = await _client.from('stores').select('id').eq('user_id', userId).maybeSingle();
+    if (storeRes is Map<String, dynamic>) {
+      return storeRes['id']?.toString();
+    }
+  } catch (e) {
+    debugPrint('getStoreIdForUser error: $e');
+  }
+  return null;
+}
+
+Future<List<Product>> fetchProductsByUserId(String userId) async {
+  try {
+    final storeId = await getStoreIdForUser(userId);
+    if (storeId == null) return [];
+    return await fetchProductsByStoreId(storeId);
+  } catch (e) {
+    debugPrint('fetchProductsByUserId error: $e');
+    return [];
+  }
+}
+
 Future<List<Product>> fetchProductsBySlug(String slug) async {
   try {
     final dynamic storeRes = await _client.from('stores').select().eq('slug', slug).maybeSingle();

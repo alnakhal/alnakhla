@@ -129,21 +129,44 @@ class MyApp extends StatelessWidget {
         iconTheme: const IconThemeData(color: Color(0xFF4B39EF)),
       ),
       initialRoute: _initialRoute,
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/customer-orders': (context) => const CustomerOrdersPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == null || settings.name == '/') {
-          return MaterialPageRoute(builder: (_) => const HomeScreen());
-        }
-        if (settings.name == '/customer-orders') {
-          return MaterialPageRoute(builder: (_) => const CustomerOrdersPage());
-        }
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
-      },
+      onGenerateRoute: _onGenerateRoute,
     );
   }
+}
+
+Route<dynamic> _onGenerateRoute(RouteSettings settings) {
+  final name = settings.name ?? '/';
+  final uri = Uri.parse(name);
+  final path = uri.path;
+  final slug = uri.queryParameters['slug'];
+  final userId = uri.queryParameters['user_id'];
+
+  if (path == '/' || path.isEmpty) {
+    if (slug != null || userId != null) {
+      return MaterialPageRoute(
+        builder: (_) => CustomerOrdersPage(storeSlug: slug, storeUserId: userId),
+      );
+    }
+    return MaterialPageRoute(builder: (_) => const HomeScreen());
+  }
+
+  if (path == '/customer-orders' || path == '/store') {
+    return MaterialPageRoute(
+      builder: (_) => CustomerOrdersPage(storeSlug: slug, storeUserId: userId),
+    );
+  }
+
+  if (path.startsWith('/store/')) {
+    final storeSlug = path.substring('/store/'.length);
+    return MaterialPageRoute(builder: (_) => CustomerOrdersPage(storeSlug: storeSlug));
+  }
+
+  if (path.startsWith('/customer-orders/')) {
+    final storeSlug = path.substring('/customer-orders/'.length);
+    return MaterialPageRoute(builder: (_) => CustomerOrdersPage(storeSlug: storeSlug));
+  }
+
+  return MaterialPageRoute(builder: (_) => const HomeScreen());
 }
 
 String get _initialRoute {

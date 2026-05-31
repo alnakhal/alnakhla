@@ -7,7 +7,10 @@ import '../models/product.dart';
 import '../services/product_service.dart';
 
 class CustomerOrdersPage extends StatefulWidget {
-  const CustomerOrdersPage({super.key});
+  final String? storeSlug;
+  final String? storeUserId;
+
+  const CustomerOrdersPage({super.key, this.storeSlug, this.storeUserId});
 
   @override
   State<CustomerOrdersPage> createState() => _CustomerOrdersPageState();
@@ -40,11 +43,22 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   }
 
   Future<List<Product>> _loadProducts() async {
+    if (widget.storeSlug != null && widget.storeSlug!.trim().isNotEmpty) {
+      return fetchProductsBySlug(widget.storeSlug!.trim());
+    }
+    if (widget.storeUserId != null && widget.storeUserId!.trim().isNotEmpty) {
+      return fetchProductsByUserId(widget.storeUserId!.trim());
+    }
+
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return [];
-    final storeId = await getOrCreateStoreForUser(user.id);
-    if (storeId == null) return [];
-    return fetchProductsByStoreId(storeId);
+    if (user != null) {
+      final storeId = await getOrCreateStoreForUser(user.id);
+      if (storeId != null) {
+        return fetchProductsByStoreId(storeId);
+      }
+    }
+
+    return [];
   }
 
   int get _selectedCount => _selectedQuantities.values.fold(0, (sum, qty) => sum + qty);
@@ -115,7 +129,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('السعر:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('${product.price.toStringAsFixed(0)}'),
+                    Text(product.price.toStringAsFixed(0)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -204,7 +218,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Customer Orders')),
+      appBar: AppBar(title: const Text('طلبات المتجر')),
       body: FutureBuilder<List<Product>>(
         future: _productsFuture,
         builder: (context, snapshot) {
@@ -217,13 +231,17 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           final products = snapshot.data ?? [];
           _lastProducts = products;
           if (products.isEmpty) {
+            final authUser = Supabase.instance.client.auth.currentUser;
+            final noStoreLink = widget.storeSlug == null && widget.storeUserId == null && authUser == null;
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  supabase.auth.currentUser == null
-                      ? 'يرجى تسجيل الدخول لعرض منتجات المتجر.'
-                      : 'لا يوجد منتجات في المتجر حالياً.',
+                  noStoreLink
+                      ? 'استخدم رابط المتجر المخصص لعرض المنتجات، أو سجّل دخول صاحب المتجر.'
+                      : authUser == null
+                          ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
+                          : 'لا يوجد منتجات في المتجر حالياً.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),
@@ -414,7 +432,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                         ),
                         const SizedBox(height: 16),
                         FilledButton.icon(
-                          icon: const Icon(Icons.whatsapp),
+                          icon: const Icon(Icons.chat),
                           label: const Text('إرسال الطلب عبر واتساب'),
                           onPressed: _selectedCount > 0 ? _sendOrderWhatsApp : null,
                         ),
