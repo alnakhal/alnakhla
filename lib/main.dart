@@ -128,9 +128,31 @@ class MyApp extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Color(0xFF4B39EF)),
       ),
-      home: const HomeScreen(),
+      initialRoute: _initialRoute,
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/customer-orders': (context) => const CustomerOrdersPage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == null || settings.name == '/') {
+          return MaterialPageRoute(builder: (_) => const HomeScreen());
+        }
+        if (settings.name == '/customer-orders') {
+          return MaterialPageRoute(builder: (_) => const CustomerOrdersPage());
+        }
+        return MaterialPageRoute(builder: (_) => const HomeScreen());
+      },
     );
   }
+}
+
+String get _initialRoute {
+  final uri = Uri.base;
+  final path = (uri.path == '/' || uri.path.isEmpty) ? uri.fragment : uri.path;
+  if (path.isEmpty || path == '/') {
+    return '/';
+  }
+  return path.startsWith('/') ? path : '/$path';
 }
 
 
