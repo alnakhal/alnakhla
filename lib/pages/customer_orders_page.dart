@@ -58,7 +58,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       }
     }
 
-    return [];
+    return fetchAllProducts();
   }
 
   int get _selectedCount => _selectedQuantities.values.fold(0, (sum, qty) => sum + qty);

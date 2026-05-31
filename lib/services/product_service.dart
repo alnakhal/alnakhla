@@ -65,7 +65,7 @@ Future<Store?> ensureStoreForUser(String userId) async {
       final q = await _client.from('stores').select('id').eq('slug', candidate).maybeSingle();
       if (q == null) break;
       i++;
-      candidate = '${baseSlug}-$i';
+      candidate = '$baseSlug-$i';
       if (i > 50) break; // safety
     }
 
@@ -106,6 +106,26 @@ Future<List<Product>> fetchProductsByStoreId(String storeId) async {
     return list.map((e) => Product.fromMap(Map<String, dynamic>.from(e as Map<String, dynamic>))).toList();
   } catch (e) {
     debugPrint('fetchProductsByStoreId error: $e');
+    return [];
+  }
+}
+
+Future<List<Product>> fetchAllProducts() async {
+  try {
+    final dynamic res = await _client.from('products').select().order('created_at', ascending: false);
+    List<dynamic> list;
+    try {
+      list = res as List<dynamic>;
+    } catch (_) {
+      try {
+        list = (res as dynamic).data as List<dynamic>;
+      } catch (_) {
+        return [];
+      }
+    }
+    return list.map((e) => Product.fromMap(Map<String, dynamic>.from(e as Map<String, dynamic>))).toList();
+  } catch (e) {
+    debugPrint('fetchAllProducts error: $e');
     return [];
   }
 }
