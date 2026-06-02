@@ -771,14 +771,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Colors.black54),
+                      const Icon(Icons.verified, color: Colors.green),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _searchController.text.isEmpty
-                              ? 'استخدم حقل البحث والفرز هنا للعثور على المنتج المناسب بسرعة.'
+                              ? 'المستورد الرئيسي لكاسات النخلة ومنتجات الحجامة'
                               : 'نتائج البحث عن: ${_searchController.text}',
-                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                          style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
