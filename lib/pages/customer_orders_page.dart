@@ -379,6 +379,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
         await _showMessage('يرجى إدخال رقم الجوال لإتمام الطلب');
         return;
       }
+      if (customerAddress.isEmpty) {
+        await _showMessage('يرجى إدخال العنوان لإتمام الطلب');
+        return;
+      }
 
       final whatsappNumber = _normalizePhone(whatsappTargetNumber);
       final total = selectedProducts.fold<double>(0, (sum, product) {
@@ -574,12 +578,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     TextField(
                       controller: _customerPhoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'رقم الجوال'),
+                      decoration: const InputDecoration(labelText: 'رقم الجوال (مطلوب)'),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _customerAddressController,
-                      decoration: const InputDecoration(labelText: 'العنوان (اختياري)'),
+                      decoration: const InputDecoration(labelText: 'العنوان (مطلوب)'),
                       minLines: 1,
                       maxLines: 3,
                     ),
@@ -598,15 +602,27 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                           ? null
                           : () async {
                               final sheetContext = context;
-                              final confirmed = await _confirmSendOrder(sheetContext);
-                              if (!confirmed || !sheetContext.mounted) return;
+                                      // validate required fields
+                                      final phoneVal = _customerPhoneController.text.trim();
+                                      final addressVal = _customerAddressController.text.trim();
+                                      if (phoneVal.isEmpty) {
+                                        await _showMessage('الرجاء إدخال رقم الجوال');
+                                        return;
+                                      }
+                                      if (addressVal.isEmpty) {
+                                        await _showMessage('الرجاء إدخال العنوان');
+                                        return;
+                                      }
 
-                              await _sendOrderWhatsApp(
-                                customerName: _customerNameController.text.trim(),
-                                customerPhone: _customerPhoneController.text.trim(),
-                                customerAddress: _customerAddressController.text.trim(),
-                                orderNote: _orderNoteController.text.trim(),
-                              );
+                                      final confirmed = await _confirmSendOrder(sheetContext);
+                                      if (!confirmed || !sheetContext.mounted) return;
+
+                                      await _sendOrderWhatsApp(
+                                        customerName: _customerNameController.text.trim(),
+                                        customerPhone: phoneVal,
+                                        customerAddress: addressVal,
+                                        orderNote: _orderNoteController.text.trim(),
+                                      );
                               if (!sheetContext.mounted) return;
                               Navigator.of(sheetContext).pop();
                             },
