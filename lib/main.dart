@@ -128,7 +128,7 @@ class MyApp extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Color(0xFF4B39EF)),
       ),
-      initialRoute: _initialRoute,
+      initialRoute: '/customer-orders',
       onGenerateRoute: _onGenerateRoute,
     );
   }

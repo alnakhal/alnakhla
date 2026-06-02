@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/product.dart';
 import '../services/product_service.dart';
 
-const String whatsappTargetNumber = '07867360219';
+const String whatsappTargetNumber = '+9647746582364';
 
 class CustomerOrdersPage extends StatefulWidget {
   final String? storeSlug;
@@ -24,6 +28,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   final TextEditingController _orderNoteController = TextEditingController();
   late final Future<List<Product>> _productsFuture;
   final Map<int, int> _selectedQuantities = {};
+  final Map<int, TextEditingController> _quantityControllers = {};
+  bool _isSendingOrder = false;
+  String _sortOption = 'الأحدث';
+  final List<String> _sortOptions = ['الأحدث', 'السعر الأقل', 'السعر الأعلى'];
+  bool _showWelcomeBanner = false;
+  bool _showWelcomeDescription = true;
+  Timer? _welcomeTimer;
+
 
   @override
   void initState() {
@@ -32,14 +44,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
+    _loadWelcomeState();
   }
 
   @override
   void dispose() {
+    _welcomeTimer?.cancel();
+    _welcomeTimer?.cancel();
     _searchController.dispose();
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _orderNoteController.dispose();
+    for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    _quantityControllers.clear();
     super.dispose();
   }
 
@@ -87,6 +106,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   List<Product> _lastProducts = [];
 
+  List<Product> _sortProducts(List<Product> products) {
+    final sorted = List<Product>.from(products);
+    if (_sortOption == 'السعر الأقل') {
+      sorted.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortOption == 'السعر الأعلى') {
+      sorted.sort((a, b) => b.price.compareTo(a.price));
+    }
+    return sorted;
+  }
+
   String _normalizePhone(String raw) {
     final digits = raw.replaceAll(RegExp(r'[^0-9+]'), '');
     if (digits.startsWith('+')) {
@@ -95,9 +124,180 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     return digits;
   }
 
+  void _updateCartQuantity(int productId, int delta) {
+    setState(() {
+      final current = _selectedQuantities[productId] ?? 0;
+      final updated = current + delta;
+      if (updated <= 0) {
+        _selectedQuantities.remove(productId);
+      } else {
+        _selectedQuantities[productId] = updated;
+      }
+    });
+  }
+
+  void _removeFromCart(int productId) {
+    setState(() {
+      _selectedQuantities.remove(productId);
+    });
+  }
+
+  void _clearCart() {
+    setState(() {
+      _selectedQuantities.clear();
+    });
+  }
+
+  Future<bool> _confirmClearCart(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('تأكيد مسح السلة'),
+              content: const Text('هل تريد مسح جميع المنتجات من السلة؟'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('نعم، مسح'),
+                ),
+              ],
+            );
+          },
+        ) ==
+        true;
+  }
+
   Future<void> _showMessage(String message) async {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _loadWelcomeState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seen = prefs.getBool('orders_page_welcome_seen') ?? false;
+    if (!seen && mounted) {
+      setState(() {
+        _showWelcomeBanner = true;
+        _showWelcomeDescription = true;
+      });
+      _welcomeTimer = Timer(const Duration(seconds: 5), () {
+        _dismissWelcomeBanner(persist: true);
+      });
+    }
+  }
+
+  Future<void> _dismissWelcomeBanner({bool persist = true}) async {
+    _welcomeTimer?.cancel();
+    if (persist) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('orders_page_welcome_seen', true);
+    }
+    if (!mounted) return;
+    setState(() {
+      _showWelcomeBanner = false;
+      _showWelcomeDescription = false;
+    });
+  }
+
+  void _openSearchAndSortSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('بحث وفرز المنتجات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  labelText: 'ابحث في المنتجات',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _sortOption,
+                items: _sortOptions.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _sortOption = value;
+                    });
+                  }
+                },
+                decoration: const InputDecoration(
+                  labelText: 'ترتيب النتائج',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('تطبيق البحث'),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmSendOrder(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('تأكيد إرسال الطلب'),
+              content: const Text('هل أنت متأكد من إرسال الطلب عبر واتساب الآن؟'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('نعم، إرسال'),
+                ),
+              ],
+            );
+          },
+        ) ==
+        true;
   }
 
   void _showProductDetails(Product product) {
@@ -161,47 +361,66 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     required String customerPhone,
     required String orderNote,
   }) async {
-    final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
-    if (selectedProducts.isEmpty) {
-      await _showMessage('يرجى اختيار منتج واحد على الأقل قبل إرسال الطلب');
-      return;
-    }
-
-    final whatsappNumber = _normalizePhone(whatsappTargetNumber);
-    final total = selectedProducts.fold<double>(0, (sum, product) {
-      final qty = _selectedQuantities[product.id] ?? 0;
-      return sum + qty * product.price;
+    if (_isSendingOrder) return;
+    setState(() {
+      _isSendingOrder = true;
     });
+    try {
+      final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+      if (selectedProducts.isEmpty) {
+        await _showMessage('يرجى اختيار منتج واحد على الأقل قبل إرسال الطلب');
+        return;
+      }
 
-    final text = StringBuffer();
-    text.writeln('طلب جديد من صفحة طلبات الزبائن');
-    if (customerName.isNotEmpty) {
-      text.writeln('اسم العميل: $customerName');
-    }
-    if (customerPhone.isNotEmpty) {
-      text.writeln('جوال العميل: $customerPhone');
-    }
-    text.writeln('---');
-    for (final product in selectedProducts) {
-      final qty = _selectedQuantities[product.id] ?? 0;
-      text.writeln('${product.name} x$qty = ${(product.price * qty).toStringAsFixed(0)}');
-    }
-    text.writeln('---');
-    text.writeln('المجموع: ${total.toStringAsFixed(0)}');
-    if (orderNote.isNotEmpty) {
-      text.writeln('ملاحظات: $orderNote');
-    }
+      if (customerPhone.isEmpty) {
+        await _showMessage('يرجى إدخال رقم الجوال لإتمام الطلب');
+        return;
+      }
 
-    final url = Uri.parse('https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}');
-    final canOpen = await canLaunchUrl(url);
-    if (!canOpen) {
-      await _showMessage('لا يمكن فتح واتساب على هذا الجهاز');
-      return;
-    }
+      final whatsappNumber = _normalizePhone(whatsappTargetNumber);
+      final total = selectedProducts.fold<double>(0, (sum, product) {
+        final qty = _selectedQuantities[product.id] ?? 0;
+        return sum + qty * product.price;
+      });
 
-    final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
-    if (!launched) {
-      await _showMessage('فشل فتح واتساب. حاول مرة أخرى.');
+      final text = StringBuffer();
+      text.writeln('طلب جديد من صفحة طلبات الزبائن');
+      if (customerName.isNotEmpty) {
+        text.writeln('اسم العميل: $customerName');
+      } else {
+        text.writeln('نوع العميل: زائر');
+      }
+      if (customerPhone.isNotEmpty) {
+        text.writeln('جوال العميل: $customerPhone');
+      }
+      text.writeln('---');
+      for (final product in selectedProducts) {
+        final qty = _selectedQuantities[product.id] ?? 0;
+        text.writeln('${product.name} x$qty = ${(product.price * qty).toStringAsFixed(0)}');
+      }
+      text.writeln('---');
+      text.writeln('المجموع: ${total.toStringAsFixed(0)}');
+      if (orderNote.isNotEmpty) {
+        text.writeln('ملاحظات: $orderNote');
+      }
+
+      final url = Uri.parse('https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}');
+      final canOpen = await canLaunchUrl(url);
+      if (!canOpen) {
+        await _showMessage('لا يمكن فتح واتساب على هذا الجهاز');
+        return;
+      }
+
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await _showMessage('فشل فتح واتساب. حاول مرة أخرى.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingOrder = false;
+        });
+      }
     }
   }
 
@@ -219,82 +438,171 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('تفاصيل الطلب', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                ...selectedProducts.map((product) {
-                  final qty = _selectedQuantities[product.id] ?? 0;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            final currentProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: Text('${product.name} x$qty', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('سلة الطلب', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Row(
+                          children: [
+                            Text('${currentProducts.length} صنف', style: const TextStyle(color: Colors.grey)),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              label: const Text('مسح الكل'),
+                              onPressed: currentProducts.isNotEmpty
+                                  ? () async {
+                                      final confirmed = await _confirmClearCart(context);
+                                      if (confirmed) {
+                                        _clearCart();
+                                        setStateSheet(() {});
+                                      }
+                                    }
+                                  : null,
+                            ),
+                          ],
                         ),
-                        Text((product.price * qty).toStringAsFixed(0)),
                       ],
                     ),
-                  );
-                }),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('المجموع', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(_selectedTotal.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+                    const SizedBox(height: 12),
+                    ...currentProducts.map((product) {
+                      final qty = _selectedQuantities[product.id] ?? 0;
+                      return Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 20),
+                                    onPressed: () {
+                                      _removeFromCart(product.id);
+                                      setStateSheet(() {});
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('سعر الوحدة: ${product.price.toStringAsFixed(0)} د.ع'),
+                                  Text('المجموع: ${(product.price * qty).toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline),
+                                        onPressed: qty > 1
+                                            ? () {
+                                                _updateCartQuantity(product.id, -1);
+                                                setStateSheet(() {});
+                                              }
+                                            : null,
+                                      ),
+                                      Text('$qty', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      IconButton(
+                                        icon: const Icon(Icons.add_circle_outline),
+                                        onPressed: product.remainingQty > qty
+                                            ? () {
+                                                _updateCartQuantity(product.id, 1);
+                                                setStateSheet(() {});
+                                              }
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                  if (product.remainingQty <= qty)
+                                    const Text('غير متوفر', style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('إجمالي السلة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(_selectedTotal.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'سيتم تحويل الطلب إلى واتساب رقم $whatsappTargetNumber بطريقة منظمة.',
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _customerNameController,
+                      decoration: const InputDecoration(labelText: 'الاسم'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _customerPhoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'رقم الجوال'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _orderNoteController,
+                      decoration: const InputDecoration(labelText: 'ملاحظات الطلب (اختياري)'),
+                      minLines: 2,
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      icon: _isSendingOrder ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send),
+                      label: Text(_isSendingOrder ? 'جاري إرسال الطلب...' : 'إرسال الطلب عبر واتساب'),
+                      onPressed: _isSendingOrder
+                          ? null
+                          : () async {
+                              final sheetContext = context;
+                              final confirmed = await _confirmSendOrder(sheetContext);
+                              if (!confirmed || !sheetContext.mounted) return;
+
+                              await _sendOrderWhatsApp(
+                                customerName: _customerNameController.text.trim(),
+                                customerPhone: _customerPhoneController.text.trim(),
+                                orderNote: _orderNoteController.text.trim(),
+                              );
+                              if (!sheetContext.mounted) return;
+                              Navigator.of(sheetContext).pop();
+                            },
+                    ),
+                    const SizedBox(height: 12),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'سيتم تحويل الطلب إلى واتساب رقم 07867360219 بطريقة منظمة.',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _customerNameController,
-                  decoration: const InputDecoration(labelText: 'الاسم'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _customerPhoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'رقم الجوال'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _orderNoteController,
-                  decoration: const InputDecoration(labelText: 'ملاحظات الطلب (اختياري)'),
-                  minLines: 2,
-                  maxLines: 4,
-                ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  icon: const Icon(Icons.send),
-                  label: const Text('إرسال الطلب عبر واتساب'),
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    await _sendOrderWhatsApp(
-                      customerName: _customerNameController.text.trim(),
-                      customerPhone: _customerPhoneController.text.trim(),
-                      orderNote: _orderNoteController.text.trim(),
-                    );
-                    if (mounted) navigator.pop();
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -317,13 +625,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   const Icon(Icons.shopping_cart),
                   if (_selectedCount > 0)
                     Positioned(
-                      right: 0,
-                      top: 10,
+                      right: -2,
+                      top: 8,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.redAccent,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         child: Text(
                           _selectedCount.toString(),
@@ -348,8 +657,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           }
           final products = snapshot.data ?? [];
           _lastProducts = products;
+          final authUser = Supabase.instance.client.auth.currentUser;
           if (products.isEmpty) {
-            final authUser = Supabase.instance.client.auth.currentUser;
             final noStoreLink = widget.storeSlug == null && widget.storeUserId == null && authUser == null;
             return Center(
               child: Padding(
@@ -379,76 +688,108 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  color: Theme.of(context).colorScheme.primary.withAlpha(24),
-                  margin: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: const [
-                        Text('واجهة متجر احترافية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 8),
-                        Text('اختر المنتجات واضغط إتمام الطلب لمراجعة ملخص الطلب ثم إرساله عبر واتساب مباشرة.', style: TextStyle(fontSize: 14)),
-                      ],
+                if (_showWelcomeBanner)
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    color: Theme.of(context).colorScheme.primary.withAlpha(24),
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('واجهة متجر احترافية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          if (_showWelcomeDescription)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'اضغط زر البحث في الأعلى لكتابة اسم المنتج وفرز النتائج داخل شاشة البحث. يمكنك إزالة هذا الشرح بالضغط على علامة الإغلاق.',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 20),
+                                    tooltip: 'إزالة الشرح',
+                                    onPressed: () {
+                                      setState(() {
+                                        _showWelcomeDescription = false;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+                  ),
+                if (_showWelcomeBanner) const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.black54),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _searchController.text.isEmpty
+                              ? 'استخدم حقل البحث والفرز هنا للعثور على المنتج المناسب بسرعة.'
+                              : 'نتائج البحث عن: ${_searchController.text}',
+                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    labelText: 'ابحث في المنتجات',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                            },
+                if (_selectedCount == 0)
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    color: Colors.blue.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shopping_cart_outlined, color: Colors.blue),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'سلتك فارغة الآن. أضف أول منتج للبدء في الطلب بسهولة.',
+                              style: TextStyle(color: Colors.blue.shade900, fontSize: 14),
+                            ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  color: Theme.of(context).colorScheme.secondary.withAlpha(24),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('السلة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text('$_selectedCount منتج'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(_selectedTotal.toStringAsFixed(0)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.shopping_cart_checkout),
-                          label: const Text('عرض السلة وإتمام الطلب'),
-                          onPressed: _selectedCount > 0 ? _showOrderSummaryDialog : null,
-                        ),
-                        if (_selectedCount == 0) ...[
-                          const SizedBox(height: 12),
-                          const Text('أضف منتجات إلى السلة ليظهر ملخص الطلب هنا.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                        ]
-                      ],
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    color: Colors.green.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shopping_cart, color: Colors.green),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'السلة تحتوي على $_selectedCount منتج. اضغط أيقونة العربة لمراجعة الطلب وإتمامه.',
+                              style: TextStyle(color: Colors.green.shade900, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 16),
                 Expanded(
                   child: filtered.isEmpty
@@ -458,107 +799,219 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                             style: const TextStyle(fontSize: 16),
                           ),
                         )
-                      : ListView.separated(
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final product = filtered[index];
-                            final quantity = _selectedQuantities[product.id] ?? 0;
-                            final available = product.remainingQty;
-                            return Card(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              child: InkWell(
-                                onTap: () => _showProductDetails(product),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: product.imageUrl != null
-                                            ? Image.network(product.imageUrl!, width: 90, height: 90, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(
-                                                  width: 90,
-                                                  height: 90,
-                                                  color: Colors.grey.shade200,
-                                                  child: const Icon(Icons.image_not_supported),
-                                                ))
-                                            : Container(
-                                                width: 90,
-                                                height: 90,
-                                                color: Colors.grey.shade200,
-                                                child: const Icon(Icons.image_not_supported),
-                                              ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final sortedProducts = _sortProducts(filtered);
+                            final crossAxisCount = constraints.maxWidth > 1000
+                                ? 3
+                                : constraints.maxWidth > 650
+                                    ? 2
+                                    : 1;
+                            return GridView.builder(
+                              padding: EdgeInsets.zero,
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.78,
+                              ),
+                              itemCount: sortedProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = sortedProducts[index];
+                                final quantity = _selectedQuantities[product.id] ?? 0;
+                                final available = product.remainingQty;
+                                return Card(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                  elevation: 2,
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: () => _showProductDetails(product),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Stack(
                                           children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(product.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                            SizedBox(
+                                              height: 180,
+                                              child: product.imageUrl != null
+                                                  ? Image.network(
+                                                      product.imageUrl!,
+                                                      fit: BoxFit.cover,
+                                                      width: double.infinity,
+                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                                        color: Colors.grey.shade200,
+                                                        child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
+                                                      ),
+                                                    )
+                                                  : Container(
+                                                      color: Colors.grey.shade200,
+                                                      child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
+                                                    ),
+                                            ),
+                                            Positioned(
+                                              top: 12,
+                                              left: 12,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: available > 0
+                                                      ? available <= 5
+                                                          ? Colors.orange.withOpacity(0.95)
+                                                          : Colors.green.withOpacity(0.95)
+                                                      : Colors.red.withOpacity(0.95),
+                                                  borderRadius: BorderRadius.circular(12),
                                                 ),
-                                                Text('${product.price.toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                              ],
+                                                child: Text(
+                                                  available > 0
+                                                      ? available <= 5
+                                                          ? 'كمية محدودة'
+                                                          : 'متوفر'
+                                                      : 'منفد',
+                                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
                                             ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              product.description.isEmpty ? 'بدون وصف' : product.description,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children: [
-                                                Chip(label: Text('المخزون: $available')),
-                                                if (product.hasWholesale)
-                                                  Chip(label: Text('جملة ${product.wholesalePrice.toStringAsFixed(0)}')),
-                                              ],
-                                            ),
+                                            if (quantity > 0)
+                                              Positioned(
+                                                top: 12,
+                                                right: 12,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withOpacity(0.7),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    'في السلة x$quantity',
+                                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                  ),
+                                                ),
+                                              ),
                                           ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.add_circle_outline),
-                                            onPressed: available > quantity
-                                                ? () {
-                                                    setState(() {
-                                                      _selectedQuantities[product.id] = quantity + 1;
-                                                    });
-                                                  }
-                                                : null,
+                                        Padding(
+                                          padding: const EdgeInsets.all(14),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              Text(
+                                                product.name,
+                                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.2),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                product.description.isEmpty ? 'لا يوجد وصف.' : product.description,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(color: Colors.grey.shade700, height: 1.3),
+                                              ),
+                                              const SizedBox(height: 14),
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        '${product.price.toStringAsFixed(0)} د.ع',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Theme.of(context).colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        '/قطعة',
+                                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  if (available > 0)
+                                                    Text(
+                                                      '${available} قطعة متاحة',
+                                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 14),
+                                              Row(
+                                                children: [
+                                                  IconButton(
+                                                    icon: const Icon(Icons.remove_circle_outline),
+                                                    tooltip: 'نقص كمية',
+                                                    onPressed: quantity > 0
+                                                        ? () {
+                                                            setState(() {
+                                                              final next = quantity - 1;
+                                                              if (next <= 0) {
+                                                                _selectedQuantities.remove(product.id);
+                                                              } else {
+                                                                _selectedQuantities[product.id] = next;
+                                                              }
+                                                              _quantityControllers[product.id]?.text = next > 0 ? next.toString() : '';
+                                                            });
+                                                          }
+                                                        : null,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  SizedBox(
+                                                    width: 72,
+                                                    child: TextField(
+                                                      controller: _quantityControllers.putIfAbsent(
+                                                        product.id,
+                                                        () => TextEditingController(text: quantity > 0 ? quantity.toString() : ''),
+                                                      )..text = quantity > 0 ? quantity.toString() : '',
+                                                      keyboardType: TextInputType.number,
+                                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                      textAlign: TextAlign.center,
+                                                      decoration: InputDecoration(
+                                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                                        hintText: '0',
+                                                      ),
+                                                      onChanged: (value) {
+                                                        final parsed = int.tryParse(value) ?? 0;
+                                                        final newValue = parsed.clamp(0, available);
+                                                        setState(() {
+                                                          if (newValue <= 0) {
+                                                            _selectedQuantities.remove(product.id);
+                                                          } else {
+                                                            _selectedQuantities[product.id] = newValue;
+                                                          }
+                                                          _quantityControllers[product.id]?.text = newValue > 0 ? newValue.toString() : '';
+                                                          _quantityControllers[product.id]?.selection = TextSelection.collapsed(offset: _quantityControllers[product.id]?.text.length ?? 0);
+                                                        });
+                                                      },
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.add_circle_outline),
+                                                    tooltip: 'زيادة كمية',
+                                                    onPressed: available > quantity
+                                                        ? () {
+                                                            setState(() {
+                                                              final next = quantity + 1;
+                                                              _selectedQuantities[product.id] = next;
+                                                              _quantityControllers[product.id]?.text = next.toString();
+                                                            });
+                                                          }
+                                                        : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
-                                          Text('$quantity', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                          IconButton(
-                                            icon: const Icon(Icons.remove_circle_outline),
-                                            onPressed: quantity > 0
-                                                ? () {
-                                                    setState(() {
-                                                      final next = quantity - 1;
-                                                      if (next <= 0) {
-                                                        _selectedQuantities.remove(product.id);
-                                                      } else {
-                                                        _selectedQuantities[product.id] = next;
-                                                      }
-                                                    });
-                                                  }
-                                                : null,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             );
                           },
                         ),
