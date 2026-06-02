@@ -644,6 +644,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       appBar: AppBar(
         title: const Text('متجر الطلبات'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'بحث',
+            onPressed: _openSearchAndSortSheet,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
