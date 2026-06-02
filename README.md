@@ -1,6 +1,6 @@
-# al_mustalazimat_al_iraqiya
+# مستلزمات النخلة
 
-A new Flutter project.
+تطبيق متجر إلكتروني متخصص في بيع مستلزمات النخيل والزراعة
 
 ## Getting Started
 

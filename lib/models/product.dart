@@ -12,6 +12,7 @@ class Product {
     required this.remainingQty,
     this.imageUrl,
     this.storeId,
+    this.deliveryPrice,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -28,6 +29,7 @@ class Product {
       remainingQty: (map['remaining_qty'] as num?)?.toInt() ?? 0,
       imageUrl: map['image_url'] as String?,
       storeId: map['store_id']?.toString(),
+      deliveryPrice: (map['delivery_price'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -43,4 +45,5 @@ class Product {
   final int remainingQty;
   final String? imageUrl;
   final String? storeId;
+  final double? deliveryPrice;
 }

@@ -13,12 +13,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/invoices_page.dart';
+import 'pages/photo_viewer_page.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
-const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya';
+const storeShareBaseUrl = 'https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya-main';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1471,6 +1472,7 @@ class _AddProductPageState extends State<AddProductPage> {
   final _minWholesaleController = TextEditingController();
   final _singlePriceController = TextEditingController();
   final _remainingQtyController = TextEditingController();
+  final _deliveryPriceController = TextEditingController(text: '0');
   final _descriptionController = TextEditingController();
   bool _hasWholesale = false;
   XFile? _pickedImage;
@@ -1559,6 +1561,7 @@ class _AddProductPageState extends State<AddProductPage> {
     final minWholesale = _parseInt(_minWholesaleController.text) ?? 0;
     final singlePrice = _parseDouble(_singlePriceController.text) ?? 0;
     final remainingQty = _parseInt(_remainingQtyController.text) ?? 0;
+    final deliveryPrice = _parseDouble(_deliveryPriceController.text) ?? 0;
     final description = _descriptionController.text.trim();
 
     String? imageUrl;
@@ -1578,6 +1581,7 @@ class _AddProductPageState extends State<AddProductPage> {
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
+      'delivery_price': deliveryPrice,
       'image_url': imageUrl,
       if (storeId != null) 'store_id': storeId,
       'created_at': DateTime.now().toIso8601String(),
@@ -1667,6 +1671,12 @@ class _AddProductPageState extends State<AddProductPage> {
                 controller: _remainingQtyController,
                 decoration: const InputDecoration(labelText: 'الكمية المتبقية'),
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _deliveryPriceController,
+                decoration: const InputDecoration(labelText: 'سعر التوصيل (اختياري)'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -2493,20 +2503,49 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (product.imageUrl != null)
-              Hero(
-                tag: 'product-image-${product.id}',
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    product.imageUrl!,
-                    height: 300,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PhotoViewerPage(
+                        imageUrl: product.imageUrl!,
+                        productName: product.name,
+                      ),
+                    ),
+                  );
+                },
+                child: Hero(
+                  tag: 'product-image-${product.id}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          product.imageUrl!,
                           height: 300,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image_not_supported, size: 100),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 300,
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.image_not_supported, size: 100),
+                              ),
                         ),
+                        Positioned(
+                          bottom: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.7),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.zoom_in, color: Colors.white, size: 24),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )
@@ -2597,6 +2636,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         children: [
                           const Text('الحد الأدنى للجملة:'),
                           Text('${product.minWholesaleQuantity} قطعة'),
+                        ],
+                      ),
+                    ],
+                    if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('سعر التوصيل:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                          Text('${product.deliveryPrice!.toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
                         ],
                       ),
                     ],
@@ -2715,6 +2766,7 @@ class _EditProductPageState extends State<EditProductPage> {
   late TextEditingController _minWholesaleController;
   late TextEditingController _singlePriceController;
   late TextEditingController _remainingQtyController;
+  late TextEditingController _deliveryPriceController;
   late TextEditingController _descriptionController;
   late bool _hasWholesale;
   XFile? _pickedImage;
@@ -2731,6 +2783,7 @@ class _EditProductPageState extends State<EditProductPage> {
     _minWholesaleController = TextEditingController(text: widget.product.minWholesaleQuantity.toString());
     _singlePriceController = TextEditingController(text: widget.product.singlePrice.toString());
     _remainingQtyController = TextEditingController(text: widget.product.remainingQty.toString());
+    _deliveryPriceController = TextEditingController(text: (widget.product.deliveryPrice ?? 0).toString());
     _descriptionController = TextEditingController(text: widget.product.description);
     _hasWholesale = widget.product.hasWholesale;
   }
@@ -2744,6 +2797,7 @@ class _EditProductPageState extends State<EditProductPage> {
     _minWholesaleController.dispose();
     _singlePriceController.dispose();
     _remainingQtyController.dispose();
+    _deliveryPriceController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -2821,6 +2875,7 @@ class _EditProductPageState extends State<EditProductPage> {
     final minWholesale = _parseInt(_minWholesaleController.text) ?? 0;
     final singlePrice = _parseDouble(_singlePriceController.text) ?? 0;
     final remainingQty = _parseInt(_remainingQtyController.text) ?? 0;
+    final deliveryPrice = _parseDouble(_deliveryPriceController.text) ?? 0;
     final description = _descriptionController.text.trim();
 
     String? imageUrl = widget.product.imageUrl;
@@ -2838,7 +2893,8 @@ class _EditProductPageState extends State<EditProductPage> {
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
-      'image_url': ?imageUrl,
+      'delivery_price': deliveryPrice,
+      'image_url': imageUrl,
     };
 
     try {
@@ -2924,6 +2980,12 @@ class _EditProductPageState extends State<EditProductPage> {
                 controller: _remainingQtyController,
                 decoration: const InputDecoration(labelText: 'الكمية المتبقية'),
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _deliveryPriceController,
+                decoration: const InputDecoration(labelText: 'سعر التوصيل (اختياري)'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 12),
               TextFormField(

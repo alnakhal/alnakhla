@@ -1,11 +1,11 @@
 {
-    "name": "al_mustalazimat_al_iraqiya",
-    "short_name": "al_mustalazimat_al_iraqiya",
+    "name": "مستلزمات النخلة",
+    "short_name": "النخلة",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "متجر إلكتروني متخصص في بيع مستلزمات النخيل والزراعة",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

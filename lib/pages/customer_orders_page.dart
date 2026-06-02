@@ -12,6 +12,7 @@ import '../services/product_service.dart';
 import '../db/customer_orders_db.dart';
 import 'customer_orders_tracking_page.dart';
 import 'order_tracking_public_page.dart';
+import 'photo_viewer_page.dart';
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
@@ -326,20 +327,40 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                 Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 if (product.imageUrl != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: AspectRatio(
-                      aspectRatio: 4 / 3,
-                      child: Image.network(
-                        product.imageUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image_not_supported, size: 80),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PhotoViewerPage(
+                            imageUrl: product.imageUrl!,
+                            productName: product.name,
+                          ),
+                        ),
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: Image.network(
+                          product.imageUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.image_not_supported, size: 80),
+                          ),
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'اضغط على الصورة لعرضها بالكامل مع إمكانية التدوير',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -361,6 +382,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                 if (product.singlePrice > 0) ...[
                   const SizedBox(height: 8),
                   Text('سعر المفرد: ${product.singlePrice.toStringAsFixed(0)}'),
+                ],
+                if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                  const SizedBox(height: 8),
+                  Text('سعر التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                 ],
                 const SizedBox(height: 20),
                 FilledButton(
@@ -577,6 +602,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                   Text('المجموع: ${(product.price * qty).toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ],
                               ),
+                              if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    border: Border.all(color: Colors.green.shade300),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
+                                    style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 10),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -949,20 +989,47 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                           children: [
                                             SizedBox(
                                               height: 180,
-                                              child: product.imageUrl != null
-                                                  ? Image.network(
-                                                      product.imageUrl!,
-                                                      fit: BoxFit.cover,
-                                                      width: double.infinity,
-                                                      errorBuilder: (context, error, stackTrace) => Container(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  if (product.imageUrl != null) {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) => PhotoViewerPage(
+                                                          imageUrl: product.imageUrl!,
+                                                          productName: product.name,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                child: product.imageUrl != null
+                                                    ? Image.network(
+                                                        product.imageUrl!,
+                                                        fit: BoxFit.cover,
+                                                        width: double.infinity,
+                                                        errorBuilder: (context, error, stackTrace) => Container(
+                                                          color: Colors.grey.shade200,
+                                                          child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
+                                                        ),
+                                                      )
+                                                    : Container(
                                                         color: Colors.grey.shade200,
                                                         child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
                                                       ),
-                                                    )
-                                                  : Container(
-                                                      color: Colors.grey.shade200,
-                                                      child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
-                                                    ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 8,
+                                              right: 8,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.7),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.zoom_in, color: Colors.white, size: 18),
+                                              ),
                                             ),
                                             Positioned(
                                               top: 12,
@@ -1053,6 +1120,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                     ),
                                                 ],
                                               ),
+                                              if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                                                const SizedBox(height: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.shade50,
+                                                    border: Border.all(color: Colors.green.shade300),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    'التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
+                                                    style: TextStyle(color: Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.w600),
+                                                  ),
+                                                ),
+                                              ],
                                               const SizedBox(height: 14),
                                               Row(
                                                 children: [
