@@ -33,10 +33,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   final TextEditingController _customerPhoneController = TextEditingController();
   final TextEditingController _customerAddressController = TextEditingController();
   final TextEditingController _orderNoteController = TextEditingController();
+  final PageController _sliderPageController = PageController();
+  static const List<String> _defaultSliderImages = [
+    'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=1200&q=80',
+  ];
+  List<String> _sliderImageUrls = [];
+  int _currentSliderIndex = 0;
   late final Future<List<Product>> _productsFuture;
   final Map<int, int> _selectedQuantities = {};
   final Map<int, TextEditingController> _quantityControllers = {};
   bool _isSendingOrder = false;
+  Timer? _sliderTimer;
   String _sortOption = 'الأحدث';
   final List<String> _sortOptions = ['الأحدث', 'السعر الأقل', 'السعر الأعلى'];
   bool _showWelcomeBanner = false;
@@ -52,12 +61,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (mounted) setState(() {});
     });
     _loadWelcomeState();
+    _loadSliderImages();
+    _startSliderTimer();
   }
 
   @override
   void dispose() {
     _welcomeTimer?.cancel();
-    _welcomeTimer?.cancel();
+    _sliderTimer?.cancel();
+    _sliderPageController.dispose();
     _searchController.dispose();
     _customerNameController.dispose();
     _customerAddressController.dispose();
@@ -68,6 +80,112 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     }
     _quantityControllers.clear();
     super.dispose();
+  }
+
+  Future<void> _loadSliderImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList('orders_page_slider_images');
+    if (!mounted) return;
+    setState(() {
+      _sliderImageUrls = stored != null && stored.isNotEmpty ? stored : _defaultSliderImages;
+    });
+  }
+
+  void _startSliderTimer() {
+    _sliderTimer?.cancel();
+    _sliderTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || _sliderImageUrls.isEmpty) return;
+      _currentSliderIndex = (_currentSliderIndex + 1) % _sliderImageUrls.length;
+      _sliderPageController.animateToPage(
+        _currentSliderIndex,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  Widget _buildImageSlider() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            height: 190,
+            child: PageView.builder(
+              controller: _sliderPageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentSliderIndex = index;
+                });
+              },
+              itemCount: _sliderImageUrls.length,
+              itemBuilder: (context, index) {
+                final imageUrl = _sliderImageUrls[index];
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey.shade200,
+                          child: const Center(child: CircularProgressIndicator()),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(child: Icon(Icons.broken_image, size: 56, color: Colors.grey)),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.black.withOpacity(0.15), Colors.black.withOpacity(0.0)],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _sliderImageUrls.length,
+            (index) => Container(
+              width: _currentSliderIndex == index ? 12 : 8,
+              height: _currentSliderIndex == index ? 12 : 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: _currentSliderIndex == index ? Colors.white : Colors.white54,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary.withAlpha(30),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Text(
+            'أفضل مقاس للصور: 1200×600 بيكسل (نسبة 2:1). يمكنك تعديل الروابط من زر "تعديل صور العرض" في الصفحة الرئيسية.',
+            style: TextStyle(fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
   }
 
   Future<List<Product>> _loadProducts() async {
@@ -844,6 +962,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_sliderImageUrls.isNotEmpty) ...[
+                  _buildImageSlider(),
+                  const SizedBox(height: 16),
+                ],
                 if (_showWelcomeBanner)
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

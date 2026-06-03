@@ -14,6 +14,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
+import 'pages/slider_images_settings_page.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
 
@@ -921,6 +922,14 @@ class _HomeTabState extends State<HomeTab> {
                     label: const Text('جميع الفواتير'),
                     onPressed: () {
                       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AllInvoicesPage()));
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('تعديل صور العرض'),
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SliderImagesSettingsPage()));
                     },
                   ),
                 ],
