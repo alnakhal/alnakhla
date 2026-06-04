@@ -1,4 +1,4 @@
-package com.example.al_mustalazimat_al_iraqiya
+package com.nakhla.mustalazimat
 
 import io.flutter.embedding.android.FlutterActivity
 

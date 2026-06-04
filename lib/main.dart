@@ -17,6 +17,7 @@ import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
+import 'services/storage_service.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXFnb2h0d3R2YmxtbGJ3Y2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTkyMjMsImV4cCI6MjA5NDgzNTIyM30.qeGH6AkRgxnSKJIU3r5LEH94HAJ743-SvZ6g0wWkZxg';
@@ -1503,22 +1504,16 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<String?> _uploadImage(XFile file) async {
     try {
       final bytes = _pickedImageBytes ?? await file.readAsBytes();
-      final sanitizedName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9_.-]'), '_');
-      final storagePath = 'products/${DateTime.now().millisecondsSinceEpoch}_$sanitizedName';
-      
-      final uploadResponse = await supabase.storage.from('product-images').uploadBinary(storagePath, bytes);
-      debugPrint('Upload response: $uploadResponse');
-      
-      final bucketUrl = supabase.storage.from('product-images').getPublicUrl(storagePath);
-      debugPrint('Bucket URL: $bucketUrl');
-      
-      if (bucketUrl.isEmpty) {
-        debugPrint('Error: Public URL is empty');
-        return null;
+      final imageUrl = await uploadImageToSupabase(
+        bytes: bytes,
+        bucket: 'product-images',
+        folder: 'products',
+        fileName: file.name,
+      );
+      if (imageUrl == null) {
+        throw 'فشل في الحصول على رابط الصورة بعد الرفع';
       }
-      
-      debugPrint('Image uploaded successfully: $bucketUrl');
-      return bucketUrl;
+      return imageUrl;
     } catch (e) {
       debugPrint('Image upload error: $e');
       if (!mounted) return null;
@@ -2826,22 +2821,16 @@ class _EditProductPageState extends State<EditProductPage> {
   Future<String?> _uploadImage(XFile file) async {
     try {
       final bytes = _pickedImageBytes ?? await file.readAsBytes();
-      final sanitizedName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9_.-]'), '_');
-      final storagePath = 'products/${DateTime.now().millisecondsSinceEpoch}_$sanitizedName';
-      
-      final uploadResponse = await supabase.storage.from('product-images').uploadBinary(storagePath, bytes);
-      debugPrint('Upload response: $uploadResponse');
-      
-      final bucketUrl = supabase.storage.from('product-images').getPublicUrl(storagePath);
-      debugPrint('Bucket URL: $bucketUrl');
-      
-      if (bucketUrl.isEmpty) {
-        debugPrint('Error: Public URL is empty');
-        return null;
+      final imageUrl = await uploadImageToSupabase(
+        bytes: bytes,
+        bucket: 'product-images',
+        folder: 'products',
+        fileName: file.name,
+      );
+      if (imageUrl == null) {
+        throw 'فشل في الحصول على رابط الصورة بعد الرفع';
       }
-      
-      debugPrint('Image uploaded successfully: $bucketUrl');
-      return bucketUrl;
+      return imageUrl;
     } catch (e) {
       debugPrint('Image upload error: $e');
       if (!mounted) return null;
