@@ -57,7 +57,7 @@ class DataService {
       final path = 'slider/$fileName.jpg';
       final bytes = imageBytes ?? await imageFile!.readAsBytes();
 
-      await _supabase.storage.from('uploads').upload(path, bytes);
+      await _supabase.storage.from('uploads').uploadBinary(path, bytes);
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('slider_items').insert({
@@ -105,7 +105,7 @@ class DataService {
       final path = 'categories/$fileName.jpg';
       final bytes = imageBytes ?? await imageFile!.readAsBytes();
 
-      await _supabase.storage.from('uploads').upload(path, bytes);
+      await _supabase.storage.from('uploads').uploadBinary(path, bytes);
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('category_items').insert({
@@ -176,6 +176,89 @@ class DataService {
       debugPrint('خطأ في رفع الصورة من الكاميرا: $e');
       debugPrint(st.toString());
       return UploadResult.failure(e.toString());
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadSliderImages() async {
+    try {
+      final response = await _supabase
+          .from('slider_items')
+          .select()
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('خطأ في جلب صور السلايدر: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadCategoryImages() async {
+    try {
+      final response = await _supabase
+          .from('category_items')
+          .select()
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('خطأ في جلب صور الأقسام: $e');
+      return [];
+    }
+  }
+
+  Uint8List decodeBase64Image(String base64String) {
+    return base64Decode(base64String);
+  }
+
+  Widget buildImageWidget(String imageData, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (imageData.startsWith('http')) {
+      return Image.network(
+        imageData,
+        fit: fit,
+        width: width,
+        height: height,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey.shade200,
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: width,
+          height: height,
+          color: Colors.grey.shade200,
+          child: const Center(
+            child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+          ),
+        ),
+      );
+    } else {
+      return _buildImageFromBase64(imageData, fit: fit);
+    }
+  }
+
+  Widget _buildImageFromBase64(String base64String, {BoxFit fit = BoxFit.cover}) {
+    try {
+      final imageBytes = decodeBase64Image(base64String);
+      return Image.memory(
+        imageBytes,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.grey.shade200,
+          child: const Center(
+            child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+          ),
+        ),
+      );
+    } catch (e) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Center(
+          child: Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+        ),
+      );
     }
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -24,11 +23,11 @@ class SliderImagesSettingsPage extends StatefulWidget {
 }
 
 class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
+  final DataService _dataService = DataService();
   final List<TextEditingController> _controllers = List.generate(5, (_) => TextEditingController());
   final List<bool> _isUploading = List.generate(5, (_) => false);
   bool _isSaving = false;
   List<Map<String, dynamic>> _sliderImages = [];
-  List<Map<String, dynamic>> _categoryImages = [];
 
   final List<_CategorySection> _categorySections = const [
     _CategorySection(
@@ -69,12 +68,10 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
 
   Future<void> _loadSliderImages() async {
     try {
-      final images = await fetchSliderImages();
-      final categories = await fetchCategoryImages();
+      final images = await _dataService.loadSliderImages();
       if (mounted) {
         setState(() {
           _sliderImages = images;
-          _categoryImages = categories;
           // تحميل أول 5 صور إلى المحررات
           for (var i = 0; i < _controllers.length && i < images.length; i++) {
             _controllers[i].text = images[i]['image_url'] ?? '';
@@ -97,7 +94,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
         final imageUrl = _controllers[i].text.trim();
         if (imageUrl.isNotEmpty && i >= _sliderImages.length) {
           if (imageUrl.startsWith('http')) {
-            final result = await dataService.saveSliderImageUrl(
+            final result = await _dataService.saveSliderImageUrl(
               imageUrl,
               'صورة السلايدر ${i + 1}',
             );
@@ -105,9 +102,10 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
               throw Exception(result.error ?? 'فشل حفظ رابط صورة السلايدر');
             }
           } else {
-            final result = await uploadSliderImage(
-              imageBytes: decodeBase64Image(imageUrl),
-              title: 'صورة السلايدر ${i + 1}',
+            final imageBytes = _dataService.decodeBase64Image(imageUrl);
+            final result = await _dataService.uploadSliderImageFromBytes(
+              imageBytes,
+              'صورة السلايدر ${i + 1}',
             );
             if (result.failed) {
               throw Exception(result.error ?? 'فشل حفظ صورة السلايدر');
@@ -179,10 +177,10 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     });
 
     try {
-      final uploadResult = await uploadImageFromPicker(
-        pickedFile: result,
-        title: 'صورة السلايدر ${index + 1}',
-        isSlider: true,
+      final imageBytes = await result.readAsBytes();
+      final uploadResult = await _dataService.uploadSliderImageFromBytes(
+        imageBytes,
+        'صورة السلايدر ${index + 1}',
       );
 
       if (uploadResult.failed) {
@@ -376,7 +374,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: buildImageWidget(
+              child: _dataService.buildImageWidget(
                 imageData[index],
                 fit: BoxFit.cover,
               ),
@@ -520,7 +518,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
                         height: 140,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: buildImageWidget(
+                          child: _dataService.buildImageWidget(
                             _controllers[index].text.trim(),
                             fit: BoxFit.cover,
                           ),
