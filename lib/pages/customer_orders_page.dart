@@ -70,7 +70,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   Timer? _sliderTimer;
   bool _showWelcomeBanner = false;
 
-  List<String> _categoryImageUrls = [];
+  Map<String, String> _categoryImageUrls = {};
   final List<bool> _isCategoryUploading = List.generate(4, (_) => false);
 
   final List<_ProductCategory> _productCategories = const [
@@ -168,13 +168,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (!mounted) return;
       if (categories.isNotEmpty) {
         setState(() {
-          _categoryImageUrls = categories
-              .map((cat) => cat['image_url'] as String)
-              .toList();
+          _categoryImageUrls = Map.fromEntries(
+            categories.map((cat) {
+              final name = (cat['category_name'] ?? '').toString();
+              final imageUrl = (cat['image_url'] ?? '').toString();
+              return MapEntry(name, imageUrl);
+            }).where((entry) => entry.key.isNotEmpty && entry.value.isNotEmpty),
+          );
         });
       } else {
         // استخدام الصور الافتراضية إذا لم تكن هناك صور في Supabase
-        final defaults = _productCategories.map((c) => c.imageUrl).toList();
+        final defaults = Map.fromEntries(
+          _productCategories.map((c) => MapEntry(c.title, c.imageUrl)),
+        );
         setState(() {
           _categoryImageUrls = defaults;
         });
@@ -182,7 +188,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     } catch (e) {
       debugPrint('خطأ في تحميل صور الأقسام: $e');
       if (!mounted) return;
-      final defaults = _productCategories.map((c) => c.imageUrl).toList();
+      final defaults = Map.fromEntries(
+        _productCategories.map((c) => MapEntry(c.title, c.imageUrl)),
+      );
       setState(() {
         _categoryImageUrls = defaults;
       });
@@ -228,8 +236,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
       if (!mounted) return;
       setState(() {
-        _categoryImageUrls[index] =
-            uploadResult.imageUrl ?? _categoryImageUrls[index];
+        final imageUrl = uploadResult.imageUrl ?? _categoryImageUrls[categoryName];
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          _categoryImageUrls[categoryName] =
+              _appendCacheBustingQuery(imageUrl);
+        }
       });
 
       if (!mounted) return;
@@ -251,13 +262,25 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     }
   }
 
+  String _appendCacheBustingQuery(String imageUrl) {
+    try {
+      final uri = Uri.parse(imageUrl);
+      final queryParameters = Map<String, String>.from(uri.queryParameters);
+      queryParameters['cb'] = DateTime.now().millisecondsSinceEpoch.toString();
+      return uri.replace(queryParameters: queryParameters).toString();
+    } catch (_) {
+      return imageUrl;
+    }
+  }
+
   void _startSliderTimer() {
     _sliderTimer?.cancel();
     _sliderTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted ||
           _sliderImageUrls.isEmpty ||
-          !_sliderPageController.hasClients)
+          !_sliderPageController.hasClients) {
         return;
+      }
       _currentSliderIndex = (_currentSliderIndex + 1) % _sliderImageUrls.length;
       _sliderPageController.animateToPage(
         _currentSliderIndex,
@@ -414,11 +437,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           runSpacing: 16,
           children: List.generate(_productCategories.length, (index) {
             final category = _productCategories[index];
-            final imageUrl =
-                index < _categoryImageUrls.length &&
-                    _categoryImageUrls[index].isNotEmpty
-                ? _categoryImageUrls[index]
-                : category.imageUrl;
+            final imageUrl = _categoryImageUrls[category.title] ?? category.imageUrl;
             final itemWidth = (MediaQuery.of(context).size.width - 64) / 2;
             return SizedBox(
               width: itemWidth,

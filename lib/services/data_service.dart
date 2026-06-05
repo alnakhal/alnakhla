@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +47,8 @@ class DataService {
   }) async {
     try {
       final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
-      final path = 'slider/$sanitizedFileName';
+      final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
+      final path = 'slider/$uniqueFileName';
 
       await _supabase.storage.from('uploads').uploadBinary(
         path,
@@ -92,7 +92,8 @@ class DataService {
   }) async {
     try {
       final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
-      final path = 'categories/$sanitizedFileName';
+      final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
+      final path = 'categories/$uniqueFileName';
 
       await _supabase.storage.from('uploads').uploadBinary(
         path,
