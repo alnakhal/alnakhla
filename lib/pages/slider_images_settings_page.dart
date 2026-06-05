@@ -77,7 +77,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
           _categoryImages = categories;
           // تحميل أول 5 صور إلى المحررات
           for (var i = 0; i < _controllers.length && i < images.length; i++) {
-            _controllers[i].text = images[i]['image_data'] ?? '';
+            _controllers[i].text = images[i]['image_url'] ?? '';
           }
         });
       }
@@ -94,14 +94,24 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     try {
       // حفظ جميع الصور المعبأة
       for (var i = 0; i < _controllers.length; i++) {
-        if (_controllers[i].text.trim().isNotEmpty && i >= _sliderImages.length) {
-          // إضافة صور جديدة إلى Supabase
-          final result = await uploadSliderImage(
-            imageBytes: decodeBase64Image(_controllers[i].text.trim()),
-            title: 'صورة السلايدر ${i + 1}',
-          );
-          if (result.failed) {
-            throw Exception(result.error ?? 'فشل حفظ صورة السلايدر');
+        final imageUrl = _controllers[i].text.trim();
+        if (imageUrl.isNotEmpty && i >= _sliderImages.length) {
+          if (imageUrl.startsWith('http')) {
+            final result = await dataService.saveSliderImageUrl(
+              imageUrl,
+              'صورة السلايدر ${i + 1}',
+            );
+            if (result.failed) {
+              throw Exception(result.error ?? 'فشل حفظ رابط صورة السلايدر');
+            }
+          } else {
+            final result = await uploadSliderImage(
+              imageBytes: decodeBase64Image(imageUrl),
+              title: 'صورة السلايدر ${i + 1}',
+            );
+            if (result.failed) {
+              throw Exception(result.error ?? 'فشل حفظ صورة السلايدر');
+            }
           }
         }
       }
@@ -183,13 +193,9 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
         return;
       }
 
-      // قراءة الصورة كـ base64 وتخزينها في المتغير
-      final imageBytes = await result.readAsBytes();
-      final base64Image = base64Encode(imageBytes);
-
       if (!mounted) return;
       setState(() {
-        _controllers[index].text = base64Image;
+        _controllers[index].text = uploadResult.imageUrl ?? _controllers[index].text;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -370,7 +376,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: buildImageFromBase64(
+              child: buildImageWidget(
                 imageData[index],
                 fit: BoxFit.cover,
               ),
@@ -514,7 +520,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
                         height: 140,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: buildImageFromBase64(
+                          child: buildImageWidget(
                             _controllers[index].text.trim(),
                             fit: BoxFit.cover,
                           ),

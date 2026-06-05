@@ -141,7 +141,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (!mounted) return;
       if (images.isNotEmpty) {
         setState(() {
-          _sliderImageUrls = images.map((img) => img['image_data'] as String).toList();
+          _sliderImageUrls = images.map((img) => img['image_url'] as String).toList();
         });
       } else {
         setState(() {
@@ -163,7 +163,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (!mounted) return;
       if (categories.isNotEmpty) {
         setState(() {
-          _categoryImageUrls = categories.map((cat) => cat['image_data'] as String).toList();
+          _categoryImageUrls = categories.map((cat) => cat['image_url'] as String).toList();
         });
       } else {
         // استخدام الصور الافتراضية إذا لم تكن هناك صور في Supabase
@@ -216,13 +216,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
         return;
       }
       
-      // قراءة الصورة كـ base64 وتحديثها في الحالة
-      final imageBytes = await result.readAsBytes();
-      final base64Image = base64Encode(imageBytes);
-      
       if (!mounted) return;
       setState(() {
-        _categoryImageUrls[index] = base64Image;
+        _categoryImageUrls[index] = uploadResult.imageUrl ?? _categoryImageUrls[index];
       });
       
       if (!mounted) return;
