@@ -29,7 +29,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
   bool _isSaving = false;
   bool _isSliderLoading = false;
   bool _isCategoryLoading = false;
-  List<Map<String, dynamic>> _sliderImages = [];
+  List<String> _sliderImages = [];
   List<Map<String, dynamic>> _sliderItems = [];
   List<Map<String, dynamic>> _categoryItems = [];
 
