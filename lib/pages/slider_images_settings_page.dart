@@ -96,10 +96,13 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
       for (var i = 0; i < _controllers.length; i++) {
         if (_controllers[i].text.trim().isNotEmpty && i >= _sliderImages.length) {
           // إضافة صور جديدة إلى Supabase
-          await uploadSliderImage(
+          final result = await uploadSliderImage(
             imageBytes: decodeBase64Image(_controllers[i].text.trim()),
             title: 'صورة السلايدر ${i + 1}',
           );
+          if (result.failed) {
+            throw Exception(result.error ?? 'فشل حفظ صورة السلايدر');
+          }
         }
       }
       
@@ -166,16 +169,16 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     });
 
     try {
-      final success = await uploadImageFromPicker(
+      final uploadResult = await uploadImageFromPicker(
         pickedFile: result,
         title: 'صورة السلايدر ${index + 1}',
         isSlider: true,
       );
 
-      if (!success) {
+      if (uploadResult.failed) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل رفع الصورة. تأكد من صلاحيات Supabase.')),
+          SnackBar(content: Text('فشل رفع الصورة: ${uploadResult.error ?? 'حدث خطأ'}')),
         );
         return;
       }

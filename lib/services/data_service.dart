@@ -8,8 +8,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final SupabaseClient _supabaseClient = Supabase.instance.client;
 
+class UploadResult {
+  final bool success;
+  final String? error;
+
+  const UploadResult({required this.success, this.error});
+
+  bool get failed => !success;
+
+  factory UploadResult.success() => const UploadResult(success: true);
+  factory UploadResult.failure(String message) => UploadResult(success: false, error: message);
+}
+
 /// رفع صورة السلايدر وحفظها مباشرة في Supabase
-Future<bool> uploadSliderImage({
+Future<UploadResult> uploadSliderImage({
   required Uint8List imageBytes,
   required String title,
 }) async {
@@ -24,15 +36,16 @@ Future<bool> uploadSliderImage({
       'created_at': DateTime.now().toIso8601String(),
     });
     
-    return true;
-  } catch (e) {
+    return UploadResult.success();
+  } catch (e, st) {
     debugPrint('خطأ في رفع صورة السلايدر: $e');
-    return false;
+    debugPrint(st.toString());
+    return UploadResult.failure(e.toString());
   }
 }
 
 /// رفع صورة القسم وحفظها مباشرة في Supabase
-Future<bool> uploadCategoryImage({
+Future<UploadResult> uploadCategoryImage({
   required Uint8List imageBytes,
   required String categoryName,
   required List<String> productKeywords,
@@ -49,10 +62,11 @@ Future<bool> uploadCategoryImage({
       'created_at': DateTime.now().toIso8601String(),
     });
     
-    return true;
-  } catch (e) {
+    return UploadResult.success();
+  } catch (e, st) {
     debugPrint('خطأ في رفع صورة القسم: $e');
-    return false;
+    debugPrint(st.toString());
+    return UploadResult.failure(e.toString());
   }
 }
 
@@ -179,7 +193,7 @@ Widget buildImageFromBase64(String base64String, {BoxFit fit = BoxFit.cover}) {
 }
 
 /// رفع صورة من ImagePicker وحفظها مباشرة
-Future<bool> uploadImageFromPicker({
+Future<UploadResult> uploadImageFromPicker({
   required XFile pickedFile,
   required String title,
   required bool isSlider,
@@ -201,8 +215,9 @@ Future<bool> uploadImageFromPicker({
         productKeywords: productKeywords ?? [],
       );
     }
-  } catch (e) {
+  } catch (e, st) {
     debugPrint('خطأ في رفع الصورة من الكاميرا: $e');
-    return false;
+    debugPrint(st.toString());
+    return UploadResult.failure(e.toString());
   }
 }

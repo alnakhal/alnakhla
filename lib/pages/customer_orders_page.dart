@@ -200,7 +200,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       final categoryName = _productCategories[index].title;
       final keywords = _productCategories[index].keywords;
       
-      final success = await uploadImageFromPicker(
+      final uploadResult = await uploadImageFromPicker(
         pickedFile: result,
         title: categoryName,
         isSlider: false,
@@ -208,10 +208,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
         productKeywords: keywords,
       );
       
-      if (!success) {
+      if (uploadResult.failed) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل رفع صورة القسم، حاول مرة أخرى.')),
+          SnackBar(content: Text('فشل رفع صورة القسم: ${uploadResult.error ?? 'حدث خطأ'}')),
         );
         return;
       }
