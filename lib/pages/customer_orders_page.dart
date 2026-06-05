@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
-import '../services/storage_service.dart';
+import '../services/data_service.dart';
 import '../db/customer_orders_db.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
@@ -135,27 +136,54 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   }
 
   Future<void> _loadSliderImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList('orders_page_slider_images');
-    if (!mounted) return;
-    setState(() {
-      _sliderImageUrls = stored != null && stored.isNotEmpty ? stored : _defaultSliderImages;
-    });
+    try {
+      final images = await fetchSliderImages();
+      if (!mounted) return;
+      if (images.isNotEmpty) {
+        setState(() {
+          _sliderImageUrls = images.map((img) => img['image_data'] as String).toList();
+        });
+      } else {
+        setState(() {
+          _sliderImageUrls = _defaultSliderImages;
+        });
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل صور السلايدر: $e');
+      if (!mounted) return;
+      setState(() {
+        _sliderImageUrls = _defaultSliderImages;
+      });
+    }
   }
 
   Future<void> _loadCategoryImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_categoryImagesPrefKey);
-    final defaults = _productCategories.map((c) => c.imageUrl).toList();
-    if (!mounted) return;
-    setState(() {
-      _categoryImageUrls = (stored != null && stored.length == defaults.length) ? stored : defaults;
-    });
+    try {
+      final categories = await fetchCategoryImages();
+      if (!mounted) return;
+      if (categories.isNotEmpty) {
+        setState(() {
+          _categoryImageUrls = categories.map((cat) => cat['image_data'] as String).toList();
+        });
+      } else {
+        // استخدام الصور الافتراضية إذا لم تكن هناك صور في Supabase
+        final defaults = _productCategories.map((c) => c.imageUrl).toList();
+        setState(() {
+          _categoryImageUrls = defaults;
+        });
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل صور الأقسام: $e');
+      if (!mounted) return;
+      final defaults = _productCategories.map((c) => c.imageUrl).toList();
+      setState(() {
+        _categoryImageUrls = defaults;
+      });
+    }
   }
 
   Future<void> _saveCategoryImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_categoryImagesPrefKey, _categoryImageUrls);
+    // لا مزيد من الحاجة لحفظ في SharedPreferences - البيانات محفوظة في Supabase بالفعل
   }
 
   Future<void> _pickAndUploadCategoryImage(int index) async {
@@ -169,32 +197,41 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     });
 
     try {
-      final bytes = await result.readAsBytes();
-      final publicUrl = await uploadImageToSupabase(
-        bytes: bytes,
-        bucket: 'category-images',
-        folder: 'orders-categories',
-        fileName: result.name,
+      final categoryName = _productCategories[index].title;
+      final keywords = _productCategories[index].keywords;
+      
+      final success = await uploadImageFromPicker(
+        pickedFile: result,
+        title: categoryName,
+        isSlider: false,
+        categoryName: categoryName,
+        productKeywords: keywords,
       );
-      if (publicUrl == null) {
+      
+      if (!success) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('فشل رفع صورة القسم، حاول مرة أخرى.')),
         );
         return;
       }
+      
+      // قراءة الصورة كـ base64 وتحديثها في الحالة
+      final imageBytes = await result.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+      
       if (!mounted) return;
       setState(() {
-        _categoryImageUrls[index] = publicUrl;
+        _categoryImageUrls[index] = base64Image;
       });
-      await _saveCategoryImages();
+      
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم حفظ صورة القسم بنجاح')),
       );
     } catch (e) {
       if (!mounted) return;
-      debugPrint('Category image upload error: $e');
+      debugPrint('خطأ في رفع صورة القسم: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('حدث خطأ أثناء رفع صورة القسم: $e')),
       );
@@ -237,25 +274,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
               },
               itemCount: _sliderImageUrls.length,
               itemBuilder: (context, index) {
-                final imageUrl = _sliderImageUrls[index];
+                final imageData = _sliderImageUrls[index];
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(child: CircularProgressIndicator()),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(child: Icon(Icons.broken_image, size: 56, color: Colors.grey)),
-                      ),
-                    ),
+                    buildImageWidget(imageData, fit: BoxFit.cover),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -373,17 +396,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       alignment: Alignment.bottomRight,
                       children: [
                         ClipOval(
-                          child: Image.network(
+                          child: buildImageWidget(
                             imageUrl,
+                            fit: BoxFit.cover,
                             width: 90,
                             height: 90,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              width: 90,
-                              height: 90,
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.broken_image, color: Colors.grey),
-                            ),
                           ),
                         ),
                         if (_canEditSlider)

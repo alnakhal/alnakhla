@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/storage_service.dart';
+import '../services/data_service.dart';
 
 class _CategorySection {
   final String name;
@@ -24,10 +24,11 @@ class SliderImagesSettingsPage extends StatefulWidget {
 }
 
 class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
-  static const String _sliderPrefKey = 'orders_page_slider_images';
   final List<TextEditingController> _controllers = List.generate(5, (_) => TextEditingController());
   final List<bool> _isUploading = List.generate(5, (_) => false);
   bool _isSaving = false;
+  List<Map<String, dynamic>> _sliderImages = [];
+  List<Map<String, dynamic>> _categoryImages = [];
 
   final List<_CategorySection> _categorySections = const [
     _CategorySection(
@@ -67,14 +68,21 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
   }
 
   Future<void> _loadSliderImages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_sliderPrefKey) ?? [];
-    if (mounted) {
-      setState(() {
-        for (var i = 0; i < _controllers.length; i++) {
-          _controllers[i].text = i < stored.length ? stored[i] : '';
-        }
-      });
+    try {
+      final images = await fetchSliderImages();
+      final categories = await fetchCategoryImages();
+      if (mounted) {
+        setState(() {
+          _sliderImages = images;
+          _categoryImages = categories;
+          // تحميل أول 5 صور إلى المحررات
+          for (var i = 0; i < _controllers.length && i < images.length; i++) {
+            _controllers[i].text = images[i]['image_data'] ?? '';
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل الصور: $e');
     }
   }
 
@@ -82,17 +90,38 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     setState(() {
       _isSaving = true;
     });
-    final urls = _controllers.map((c) => c.text.trim()).where((url) => url.isNotEmpty).toList();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_sliderPrefKey, urls);
-    if (!mounted) return;
-    setState(() {
-      _isSaving = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ صور السلايدر بنجاح')),
-    );
-    Navigator.of(context).pop();
+    
+    try {
+      // حفظ جميع الصور المعبأة
+      for (var i = 0; i < _controllers.length; i++) {
+        if (_controllers[i].text.trim().isNotEmpty && i >= _sliderImages.length) {
+          // إضافة صور جديدة إلى Supabase
+          await uploadSliderImage(
+            imageBytes: decodeBase64Image(_controllers[i].text.trim()),
+            title: 'صورة السلايدر ${i + 1}',
+          );
+        }
+      }
+      
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ صور السلايدر بنجاح في Supabase')),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      debugPrint('خطأ في حفظ الصور: $e');
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ: $e')),
+      );
+    }
   }
 
   Future<void> _confirmSave() async {
@@ -137,31 +166,35 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     });
 
     try {
-      final bytes = await result.readAsBytes();
-      final publicUrl = await uploadImageToSupabase(
-        bytes: bytes,
-        bucket: 'slider-images',
-        folder: 'orders-slider',
-        fileName: result.name,
+      final success = await uploadImageFromPicker(
+        pickedFile: result,
+        title: 'صورة السلايدر ${index + 1}',
+        isSlider: true,
       );
-      if (publicUrl == null) {
+
+      if (!success) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل رفع الصورة. تأكد من صلاحيات التخزين.')),
+          const SnackBar(content: Text('فشل رفع الصورة. تأكد من صلاحيات Supabase.')),
         );
         return;
       }
 
+      // قراءة الصورة كـ base64 وتخزينها في المتغير
+      final imageBytes = await result.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
       if (!mounted) return;
       setState(() {
-        _controllers[index].text = publicUrl;
+        _controllers[index].text = base64Image;
       });
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم رفع الصورة وحفظ الرابط بنجاح')),
+        const SnackBar(content: Text('تم رفع الصورة بنجاح')),
       );
     } catch (e) {
       if (!mounted) return;
-      debugPrint('Slider image upload error: $e');
+      debugPrint('خطأ في رفع صورة السلايدر: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('حدث خطأ أثناء رفع الصورة: $e')),
       );
@@ -305,8 +338,12 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
   }
 
   Widget _buildSliderPreview() {
-    final imageUrls = _controllers.map((controller) => controller.text.trim()).where((url) => url.isNotEmpty).toList();
-    if (imageUrls.isEmpty) {
+    final imageData = _controllers
+        .map((controller) => controller.text.trim())
+        .where((data) => data.isNotEmpty)
+        .toList();
+    
+    if (imageData.isEmpty) {
       return Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: SizedBox(
@@ -320,28 +357,19 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
         ),
       );
     }
+    
     return SizedBox(
       height: 180,
       child: PageView.builder(
-        itemCount: imageUrls.length,
+        itemCount: imageData.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                imageUrls[index],
+              child: buildImageFromBase64(
+                imageData[index],
                 fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(value: progress.expectedTotalBytes != null ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes! : null),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade200,
-                  child: const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.grey)),
-                ),
               ),
             ),
           );
@@ -483,14 +511,9 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
                         height: 140,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
+                          child: buildImageFromBase64(
                             _controllers[index].text.trim(),
                             fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.grey.shade200,
-                              child: const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.grey)),
-                            ),
                           ),
                         ),
                       ),
