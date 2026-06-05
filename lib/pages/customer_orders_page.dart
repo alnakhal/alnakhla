@@ -51,8 +51,10 @@ class CustomerOrdersPage extends StatefulWidget {
 class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _customerNameController = TextEditingController();
-  final TextEditingController _customerPhoneController = TextEditingController();
-  final TextEditingController _customerAddressController = TextEditingController();
+  final TextEditingController _customerPhoneController =
+      TextEditingController();
+  final TextEditingController _customerAddressController =
+      TextEditingController();
   final TextEditingController _orderNoteController = TextEditingController();
   final PageController _sliderPageController = PageController();
   final String _sortOption = 'الأحدث';
@@ -77,22 +79,26 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   final List<_ProductCategory> _productCategories = const [
     _ProductCategory(
       title: 'مستلزمات حجامة جملة',
-      imageUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
+      imageUrl:
+          'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
       keywords: ['حجامة', 'مستلزمات', 'كاسات', 'زيوت', 'أنابيب', 'جملة'],
     ),
     _ProductCategory(
       title: 'حجامة مفرد',
-      imageUrl: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=500&q=80',
+      imageUrl:
+          'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=500&q=80',
       keywords: ['حجامة', 'مفرد', 'جلسة', 'شفط', 'تنظيف'],
     ),
     _ProductCategory(
       title: 'العروض الحالية',
-      imageUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
+      imageUrl:
+          'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
       keywords: ['عرض', 'تخفيض', 'خصم', 'عرض خاص', 'عرضية'],
     ),
     _ProductCategory(
       title: 'كل المنتجات',
-      imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80',
+      imageUrl:
+          'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80',
       keywords: [''],
     ),
   ];
@@ -141,7 +147,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (!mounted) return;
       if (images.isNotEmpty) {
         setState(() {
-          _sliderImageUrls = images.map((img) => img['image_url'] as String).toList();
+          _sliderImageUrls = images
+              .map((img) => img['image_url'] as String)
+              .toList();
         });
       } else {
         setState(() {
@@ -163,7 +171,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (!mounted) return;
       if (categories.isNotEmpty) {
         setState(() {
-          _categoryImageUrls = categories.map((cat) => cat['image_url'] as String).toList();
+          _categoryImageUrls = categories
+              .map((cat) => cat['image_url'] as String)
+              .toList();
         });
       } else {
         // استخدام الصور الافتراضية إذا لم تكن هناك صور في Supabase
@@ -188,7 +198,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   Future<void> _pickAndUploadCategoryImage(int index) async {
     final picker = ImagePicker();
-    final result = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final result = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (result == null) return;
 
     if (!mounted) return;
@@ -199,7 +212,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     try {
       final categoryName = _productCategories[index].title;
       final keywords = _productCategories[index].keywords;
-      
+
       final uploadResult = await uploadImageFromPicker(
         pickedFile: result,
         title: categoryName,
@@ -207,24 +220,29 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
         categoryName: categoryName,
         productKeywords: keywords,
       );
-      
+
       if (uploadResult.failed) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل رفع صورة القسم: ${uploadResult.error ?? 'حدث خطأ'}')),
+          SnackBar(
+            content: Text(
+              'فشل رفع صورة القسم: ${uploadResult.error ?? 'حدث خطأ'}',
+            ),
+          ),
         );
         return;
       }
-      
+
       if (!mounted) return;
       setState(() {
-        _categoryImageUrls[index] = uploadResult.imageUrl ?? _categoryImageUrls[index];
+        _categoryImageUrls[index] =
+            uploadResult.imageUrl ?? _categoryImageUrls[index];
       });
-      
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حفظ صورة القسم بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حفظ صورة القسم بنجاح')));
     } catch (e) {
       if (!mounted) return;
       debugPrint('خطأ في رفع صورة القسم: $e');
@@ -243,7 +261,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   void _startSliderTimer() {
     _sliderTimer?.cancel();
     _sliderTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted || _sliderImageUrls.isEmpty || !_sliderPageController.hasClients) return;
+      if (!mounted ||
+          _sliderImageUrls.isEmpty ||
+          !_sliderPageController.hasClients)
+        return;
       _currentSliderIndex = (_currentSliderIndex + 1) % _sliderImageUrls.length;
       _sliderPageController.animateToPage(
         _currentSliderIndex,
@@ -280,7 +301,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.black.withValues(alpha: 0.15), Colors.black.withValues(alpha: 0.0)],
+                          colors: [
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.0),
+                          ],
                         ),
                       ),
                     ),
@@ -300,7 +324,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
               height: _currentSliderIndex == index ? 12 : 8,
               margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
-                color: _currentSliderIndex == index ? Colors.white : Colors.white54,
+                color: _currentSliderIndex == index
+                    ? Colors.white
+                    : Colors.white54,
                 shape: BoxShape.circle,
               ),
             ),
@@ -312,7 +338,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   }
 
   void _showCategoryProducts(_ProductCategory category) {
-    final products = _lastProducts.where((product) => category.matches(product)).toList();
+    final products = _lastProducts
+        .where((product) => category.matches(product))
+        .toList();
 
     showModalBottomSheet<void>(
       context: context,
@@ -335,7 +363,13 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(category.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    category.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
@@ -346,14 +380,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
               if (products.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('لا توجد منتجات محددة لهذا القسم حالياً.', style: TextStyle(fontSize: 16)),
+                  child: Text(
+                    'لا توجد منتجات محددة لهذا القسم حالياً.',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 )
               else
                 Column(
                   children: products.map((product) {
                     return ListTile(
                       title: Text(product.name),
-                      subtitle: Text(product.description.isEmpty ? 'بدون وصف' : product.description),
+                      subtitle: Text(
+                        product.description.isEmpty
+                            ? 'بدون وصف'
+                            : product.description,
+                      ),
                       trailing: Text('${product.price.toStringAsFixed(0)} د.ع'),
                     );
                   }).toList(),
@@ -370,14 +411,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('الأقسام', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'الأقسام',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 16,
           runSpacing: 16,
           children: List.generate(_productCategories.length, (index) {
             final category = _productCategories[index];
-            final imageUrl = index < _categoryImageUrls.length && _categoryImageUrls[index].isNotEmpty
+            final imageUrl =
+                index < _categoryImageUrls.length &&
+                    _categoryImageUrls[index].isNotEmpty
                 ? _categoryImageUrls[index]
                 : category.imageUrl;
             final itemWidth = (MediaQuery.of(context).size.width - 64) / 2;
@@ -418,9 +464,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                 child: _isCategoryUploading[index]
                                     ? const Padding(
                                         padding: EdgeInsets.all(6.0),
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
                                       )
-                                    : const Icon(Icons.edit, size: 18, color: Colors.white),
+                                    : const Icon(
+                                        Icons.edit,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
                           ),
@@ -468,27 +521,34 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     await _productsFuture;
   }
 
-  int get _selectedCount => _selectedQuantities.values.fold(0, (sum, qty) => sum + qty);
+  int get _selectedCount =>
+      _selectedQuantities.values.fold(0, (sum, qty) => sum + qty);
 
-  double get _selectedTotal => _selectedQuantities.entries.fold(0.0, (sum, entry) {
-    final productId = entry.key;
-    final quantity = entry.value;
-    return sum + quantity * _productPrice(productId);
-  });
+  double get _selectedTotal =>
+      _selectedQuantities.entries.fold(0.0, (sum, entry) {
+        final productId = entry.key;
+        final quantity = entry.value;
+        return sum + quantity * _productPrice(productId);
+      });
 
   double _productPrice(int productId) {
-    return _lastProducts.firstWhere((p) => p.id == productId, orElse: () => Product(
-          id: 0,
-          name: '',
-          description: '',
-          price: 0,
-          cost: 0,
-          wholesalePrice: 0,
-          minWholesaleQuantity: 0,
-          singlePrice: 0,
-          hasWholesale: false,
-          remainingQty: 0,
-        )).price;
+    return _lastProducts
+        .firstWhere(
+          (p) => p.id == productId,
+          orElse: () => Product(
+            id: 0,
+            name: '',
+            description: '',
+            price: 0,
+            cost: 0,
+            wholesalePrice: 0,
+            minWholesaleQuantity: 0,
+            singlePrice: 0,
+            hasWholesale: false,
+            remainingQty: 0,
+          ),
+        )
+        .price;
   }
 
   List<Product> _lastProducts = [];
@@ -565,7 +625,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   Future<void> _showMessage(String message) async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _loadWelcomeState() async {
@@ -601,7 +663,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           builder: (context) {
             return AlertDialog(
               title: const Text('تأكيد إرسال الطلب'),
-              content: const Text('هل أنت متأكد من إرسال الطلب عبر واتساب الآن؟'),
+              content: const Text(
+                'هل أنت متأكد من إرسال الطلب عبر واتساب الآن؟',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
@@ -629,7 +693,13 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(
+                  product.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 if (product.imageUrl != null) ...[
                   GestureDetector(
@@ -653,10 +723,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                           product.imageUrl!,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.image_not_supported, size: 80),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: Colors.grey.shade200,
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 80,
+                                ),
+                              ),
                         ),
                       ),
                     ),
@@ -664,17 +738,28 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   const SizedBox(height: 8),
                   Text(
                     'اضغط على الصورة لعرضها بالكامل مع إمكانية التدوير',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                 ],
-                Text(product.description.isEmpty ? 'لا توجد تفاصيل إضافية.' : product.description),
+                Text(
+                  product.description.isEmpty
+                      ? 'لا توجد تفاصيل إضافية.'
+                      : product.description,
+                ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('السعر:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'السعر:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(product.price.toStringAsFixed(0)),
                   ],
                 ),
@@ -682,15 +767,24 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                 Text('المخزون المتوفر: ${product.remainingQty} قطعة'),
                 if (product.hasWholesale) ...[
                   const SizedBox(height: 8),
-                  Text('سعر الجملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع'),
+                  Text(
+                    'سعر الجملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع',
+                  ),
                 ],
                 if (product.singlePrice > 0) ...[
                   const SizedBox(height: 8),
                   Text('سعر المفرد: ${product.singlePrice.toStringAsFixed(0)}'),
                 ],
-                if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                if (product.deliveryPrice != null &&
+                    product.deliveryPrice! > 0) ...[
                   const SizedBox(height: 8),
-                  Text('سعر التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  Text(
+                    'سعر التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 20),
                 FilledButton(
@@ -716,7 +810,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       _isSendingOrder = true;
     });
     try {
-      final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+      final selectedProducts = _lastProducts
+          .where((product) => (_selectedQuantities[product.id] ?? 0) > 0)
+          .toList();
       if (selectedProducts.isEmpty) {
         await _showMessage('يرجى اختيار منتج واحد على الأقل قبل إرسال الطلب');
         return;
@@ -756,7 +852,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       for (var i = 0; i < selectedProducts.length; i++) {
         final product = selectedProducts[i];
         final qty = _selectedQuantities[product.id] ?? 0;
-        text.writeln('${i + 1}. ${product.name} x$qty = ${(product.price * qty).toStringAsFixed(0)}');
+        text.writeln(
+          '${i + 1}. ${product.name} x$qty = ${(product.price * qty).toStringAsFixed(0)}',
+        );
       }
       text.writeln('---');
       text.writeln('المجموع: ${total.toStringAsFixed(0)}');
@@ -769,14 +867,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       text.writeln('- أدخل رقم الطلب: $orderNumber');
       text.writeln('- ستشاهد جميع مراحل معالجة طلبك');
 
-      final url = Uri.parse('https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}');
+      final url = Uri.parse(
+        'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}',
+      );
       final canOpen = await canLaunchUrl(url);
       if (!canOpen) {
         await _showMessage('لا يمكن فتح واتساب على هذا الجهاز');
         return;
       }
 
-      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         await _showMessage('فشل فتح واتساب. حاول مرة أخرى.');
         return;
@@ -793,12 +896,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           status: 'pending',
           notes: orderNote.isNotEmpty ? orderNote : null,
           items: selectedProducts
-              .map((p) => {
-                    'id': p.id,
-                    'name': p.name,
-                    'quantity': _selectedQuantities[p.id] ?? 0,
-                    'price': p.price,
-                  })
+              .map(
+                (p) => {
+                  'id': p.id,
+                  'name': p.name,
+                  'quantity': _selectedQuantities[p.id] ?? 0,
+                  'price': p.price,
+                },
+              )
               .toList(),
           createdAt: DateTime.now(),
         );
@@ -822,7 +927,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   }
 
   void _showOrderSummaryDialog() {
-    final selectedProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+    final selectedProducts = _lastProducts
+        .where((product) => (_selectedQuantities[product.id] ?? 0) > 0)
+        .toList();
     if (selectedProducts.isEmpty) {
       _showMessage('يرجى اختيار منتجات قبل إتمام الطلب');
       return;
@@ -837,7 +944,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateSheet) {
-            final currentProducts = _lastProducts.where((product) => (_selectedQuantities[product.id] ?? 0) > 0).toList();
+            final currentProducts = _lastProducts
+                .where((product) => (_selectedQuantities[product.id] ?? 0) > 0)
+                .toList();
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -852,17 +961,28 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('سلة الطلب', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'سلة الطلب',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         Row(
                           children: [
-                            Text('${currentProducts.length} صنف', style: const TextStyle(color: Colors.grey)),
+                            Text(
+                              '${currentProducts.length} صنف',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
                             const SizedBox(width: 8),
                             TextButton.icon(
                               icon: const Icon(Icons.delete_outline, size: 18),
                               label: const Text('مسح الكل'),
                               onPressed: currentProducts.isNotEmpty
                                   ? () async {
-                                      final confirmed = await _confirmClearCart(context);
+                                      final confirmed = await _confirmClearCart(
+                                        context,
+                                      );
                                       if (confirmed) {
                                         _clearCart();
                                         setStateSheet(() {});
@@ -878,7 +998,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     ...currentProducts.map((product) {
                       final qty = _selectedQuantities[product.id] ?? 0;
                       return Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         margin: const EdgeInsets.only(bottom: 12),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -888,7 +1010,13 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                               Row(
                                 children: [
                                   Expanded(
-                                    child: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    child: Text(
+                                      product.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.close, size: 20),
@@ -901,48 +1029,83 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                               ),
                               const SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('سعر الوحدة: ${product.price.toStringAsFixed(0)} د.ع'),
-                                  Text('المجموع: ${(product.price * qty).toStringAsFixed(0)} د.ع', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    'سعر الوحدة: ${product.price.toStringAsFixed(0)} د.ع',
+                                  ),
+                                  Text(
+                                    'المجموع: ${(product.price * qty).toStringAsFixed(0)} د.ع',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
+                              if (product.deliveryPrice != null &&
+                                  product.deliveryPrice! > 0) ...[
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.green.shade50,
-                                    border: Border.all(color: Colors.green.shade300),
+                                    border: Border.all(
+                                      color: Colors.green.shade300,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     'التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
-                                    style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      color: Colors.green.shade700,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ],
                               const SizedBox(height: 10),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.remove_circle_outline),
+                                        icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                        ),
                                         onPressed: qty > 1
                                             ? () {
-                                                _updateCartQuantity(product.id, -1);
+                                                _updateCartQuantity(
+                                                  product.id,
+                                                  -1,
+                                                );
                                                 setStateSheet(() {});
                                               }
                                             : null,
                                       ),
-                                      Text('$qty', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      Text(
+                                        '$qty',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                       IconButton(
-                                        icon: const Icon(Icons.add_circle_outline),
+                                        icon: const Icon(
+                                          Icons.add_circle_outline,
+                                        ),
                                         onPressed: product.remainingQty > qty
                                             ? () {
-                                                _updateCartQuantity(product.id, 1);
+                                                _updateCartQuantity(
+                                                  product.id,
+                                                  1,
+                                                );
                                                 setStateSheet(() {});
                                               }
                                             : null,
@@ -950,7 +1113,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                     ],
                                   ),
                                   if (product.remainingQty <= qty)
-                                    const Text('غير متوفر', style: TextStyle(color: Colors.red)),
+                                    const Text(
+                                      'غير متوفر',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
                                 ],
                               ),
                             ],
@@ -962,8 +1128,17 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('إجمالي السلة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text(_selectedTotal.toStringAsFixed(0), style: const TextStyle(fontSize: 16)),
+                        const Text(
+                          'إجمالي السلة',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          _selectedTotal.toStringAsFixed(0),
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -980,51 +1155,75 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     TextField(
                       controller: _customerPhoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'رقم الجوال (مطلوب)'),
+                      decoration: const InputDecoration(
+                        labelText: 'رقم الجوال (مطلوب)',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _customerAddressController,
-                      decoration: const InputDecoration(labelText: 'العنوان (مطلوب)'),
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان (مطلوب)',
+                      ),
                       minLines: 1,
                       maxLines: 3,
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _orderNoteController,
-                      decoration: const InputDecoration(labelText: 'ملاحظات الطلب (اختياري)'),
+                      decoration: const InputDecoration(
+                        labelText: 'ملاحظات الطلب (اختياري)',
+                      ),
                       minLines: 2,
                       maxLines: 4,
                     ),
                     const SizedBox(height: 20),
                     FilledButton.icon(
-                      icon: _isSendingOrder ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send),
-                      label: Text(_isSendingOrder ? 'جاري إرسال الطلب...' : 'إرسال الطلب عبر واتساب'),
+                      icon: _isSendingOrder
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send),
+                      label: Text(
+                        _isSendingOrder
+                            ? 'جاري إرسال الطلب...'
+                            : 'إرسال الطلب عبر واتساب',
+                      ),
                       onPressed: _isSendingOrder
                           ? null
                           : () async {
                               final sheetContext = context;
-                                      // validate required fields
-                                      final phoneVal = _customerPhoneController.text.trim();
-                                      final addressVal = _customerAddressController.text.trim();
-                                      if (phoneVal.isEmpty) {
-                                        await _showMessage('الرجاء إدخال رقم الجوال');
-                                        return;
-                                      }
-                                      if (addressVal.isEmpty) {
-                                        await _showMessage('الرجاء إدخال العنوان');
-                                        return;
-                                      }
+                              // validate required fields
+                              final phoneVal = _customerPhoneController.text
+                                  .trim();
+                              final addressVal = _customerAddressController.text
+                                  .trim();
+                              if (phoneVal.isEmpty) {
+                                await _showMessage('الرجاء إدخال رقم الجوال');
+                                return;
+                              }
+                              if (addressVal.isEmpty) {
+                                await _showMessage('الرجاء إدخال العنوان');
+                                return;
+                              }
 
-                                      final confirmed = await _confirmSendOrder(sheetContext);
-                                      if (!confirmed || !sheetContext.mounted) return;
+                              final confirmed = await _confirmSendOrder(
+                                sheetContext,
+                              );
+                              if (!confirmed || !sheetContext.mounted) return;
 
-                                      await _sendOrderWhatsApp(
-                                        customerName: _customerNameController.text.trim(),
-                                        customerPhone: phoneVal,
-                                        customerAddress: addressVal,
-                                        orderNote: _orderNoteController.text.trim(),
-                                      );
+                              await _sendOrderWhatsApp(
+                                customerName: _customerNameController.text
+                                    .trim(),
+                                customerPhone: phoneVal,
+                                customerAddress: addressVal,
+                                orderNote: _orderNoteController.text.trim(),
+                              );
                               if (!sheetContext.mounted) return;
                               Navigator.of(sheetContext).pop();
                             },
@@ -1042,21 +1241,49 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final width = MediaQuery.of(context).size.width;
+    final pagePadding = width > 900
+        ? 28.0
+        : width > 650
+        ? 22.0
+        : 16.0;
+    final cardSpacing = width > 900 ? 18.0 : 12.0;
+    final appBarHeight = width > 600 ? 82.0 : 70.0;
+    final crossAxisCount = width >= 1100
+        ? 3
+        : width >= 720
+        ? 2
+        : 1;
+    final productCardAspectRatio = width >= 1100
+        ? 1.1
+        : width >= 720
+        ? 0.95
+        : 0.85;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('متجرنا صمم خصيصا لك'),
+        title: Text(
+          'متجرنا صمم خصيصا لك',
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
+          preferredSize: Size.fromHeight(appBarHeight),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: EdgeInsets.fromLTRB(pagePadding, 0, pagePadding, 12),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
                 hintText: 'ابحث عن المنتجات',
                 filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                fillColor: colorScheme.surfaceVariant,
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: width > 700 ? 18 : 14,
+                  horizontal: 16,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -1081,7 +1308,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       right: -2,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.redAccent,
                           borderRadius: BorderRadius.circular(12),
@@ -1089,7 +1319,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                         ),
                         child: Text(
                           _selectedCount.toString(),
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -1106,13 +1340,18 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'));
+            return Center(
+              child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'),
+            );
           }
           final products = snapshot.data ?? [];
           _lastProducts = products;
           final authUser = Supabase.instance.client.auth.currentUser;
           if (products.isEmpty) {
-            final noStoreLink = widget.storeSlug == null && widget.storeUserId == null && authUser == null;
+            final noStoreLink =
+                widget.storeSlug == null &&
+                widget.storeUserId == null &&
+                authUser == null;
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -1120,8 +1359,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                   noStoreLink
                       ? 'استخدم رابط المتجر المخصص لعرض المنتجات، أو سجّل دخول صاحب المتجر.'
                       : authUser == null
-                          ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
-                          : 'لا يوجد منتجات في المتجر حالياً.',
+                      ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
+                      : 'لا يوجد منتجات في المتجر حالياً.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),
@@ -1137,7 +1376,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           }).toList();
 
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(pagePadding),
             child: RefreshIndicator(
               onRefresh: _refreshProducts,
               child: SingleChildScrollView(
@@ -1152,7 +1391,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                           children: [
                             FilledButton.icon(
                               onPressed: () async {
-                                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SliderImagesSettingsPage()));
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SliderImagesSettingsPage(),
+                                  ),
+                                );
                                 _loadSliderImages();
                               },
                               icon: const Icon(Icons.photo_library_outlined),
@@ -1169,20 +1413,28 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     ],
                     if (_showWelcomeBanner)
                       Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        color: Theme.of(context).colorScheme.primary.withAlpha(24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        color: colorScheme.primaryContainer.withOpacity(0.18),
                         margin: EdgeInsets.zero,
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(pagePadding),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text('واجهة متجر احترافية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(
+                                'واجهة متجر احترافية',
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               if (_showWelcomeDescription)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 12),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Expanded(
                                         child: Text(
@@ -1209,18 +1461,29 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     if (_showWelcomeBanner) const SizedBox(height: 16),
                     if (_selectedCount > 0) ...[
                       Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        color: Colors.green.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        color: colorScheme.secondaryContainer.withOpacity(0.16),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: pagePadding,
+                            vertical: 14,
+                          ),
                           child: Row(
                             children: [
-                              const Icon(Icons.shopping_cart, color: Colors.green),
+                              Icon(
+                                Icons.shopping_cart,
+                                color: colorScheme.primary,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   'السلة تحتوي على $_selectedCount منتج. اضغط أيقونة العربة لمراجعة الطلب وإتمامه.',
-                                  style: TextStyle(color: Colors.green.shade900, fontSize: 14),
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSecondaryContainer,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1243,253 +1506,300 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final sortedProducts = _sortProducts(filtered);
-                          final crossAxisCount = constraints.maxWidth > 1000
-                              ? 3
-                              : constraints.maxWidth > 650
-                                  ? 2
-                                  : 1;
+                          final crossAxisCount = constraints.maxWidth > 500
+                              ? 2
+                              : 1;
                           return GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             padding: EdgeInsets.zero,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.78,
-                            ),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: cardSpacing,
+                                  mainAxisSpacing: cardSpacing,
+                                  childAspectRatio: productCardAspectRatio,
+                                ),
                             itemCount: sortedProducts.length,
                             itemBuilder: (context, index) {
                               final product = sortedProducts[index];
-                              final quantity = _selectedQuantities[product.id] ?? 0;
+                              final quantity =
+                                  _selectedQuantities[product.id] ?? 0;
                               final available = product.remainingQty;
                               return Card(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
                                 elevation: 2,
                                 clipBehavior: Clip.antiAlias,
                                 child: InkWell(
                                   onTap: () => _showProductDetails(product),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  child: Stack(
                                     children: [
-                                      Stack(
-                                        children: [
-                                          SizedBox(
-                                            height: 180,
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                if (product.imageUrl != null) {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) => PhotoViewerPage(
-                                                        imageUrl: product.imageUrl!,
-                                                        productName: product.name,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              child: product.imageUrl != null
-                                                  ? Image.network(
-                                                      product.imageUrl!,
-                                                      fit: BoxFit.cover,
-                                                      width: double.infinity,
-                                                      errorBuilder: (context, error, stackTrace) => Container(
-                                                        color: Colors.grey.shade200,
-                                                        child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
-                                                      ),
-                                                    )
-                                                  : Container(
-                                                      color: Colors.grey.shade200,
-                                                      child: const Center(child: Icon(Icons.image_not_supported, size: 60)),
-                                                    ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            bottom: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.7),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(Icons.zoom_in, color: Colors.white, size: 18),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 12,
-                                            left: 12,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: available > 0
-                                                    ? available <= 5
-                                                        ? Colors.orange.withValues(alpha: 0.95)
-                                                        : Colors.green.withValues(alpha: 0.95)
-                                                    : Colors.red.withValues(alpha: 0.95),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                available > 0
-                                                    ? available <= 5
-                                                        ? 'كمية محدودة'
-                                                        : 'متوفر'
-                                                    : 'منفد',
-                                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ),
-                                          if (quantity > 0)
-                                            Positioned(
-                                              top: 12,
-                                              right: 12,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.7),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  'في السلة x$quantity',
-                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            Text(
-                                              product.name,
-                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.2),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              product.description.isEmpty ? 'لا يوجد وصف.' : product.description,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(color: Colors.grey.shade700, height: 1.3),
-                                            ),
-                                            const SizedBox(height: 14),
-                                            Row(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '${product.price.toStringAsFixed(0)} د.ع',
-                                                      style: TextStyle(
-                                                        fontSize: 20,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Theme.of(context).colorScheme.primary,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      '/قطعة',
-                                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                                    ),
-                                                  ],
-                                                ),
-                                                if (available > 0)
-                                                  Text(
-                                                    '$available قطعة متاحة',
-                                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                                  ),
-                                              ],
-                                            ),
-                                            if (product.deliveryPrice != null && product.deliveryPrice! > 0) ...[
-                                              const SizedBox(height: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green.shade50,
-                                                  border: Border.all(color: Colors.green.shade300),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  'التوصيل: ${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
-                                                  style: TextStyle(color: Colors.green.shade700, fontSize: 11, fontWeight: FontWeight.w600),
-                                                ),
-                                              ),
-                                            ],
-                                            const SizedBox(height: 14),
-                                            Row(
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(Icons.remove_circle_outline),
-                                                  tooltip: 'نقص كمية',
-                                                  onPressed: quantity > 0
-                                                      ? () {
-                                                          setState(() {
-                                                            final next = quantity - 1;
-                                                            if (next <= 0) {
-                                                              _selectedQuantities.remove(product.id);
-                                                            } else {
-                                                              _selectedQuantities[product.id] = next;
-                                                            }
-                                                            _quantityControllers[product.id]?.text = next > 0 ? next.toString() : '';
-                                                          });
-                                                        }
-                                                      : null,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                SizedBox(
-                                                  width: 72,
-                                                  child: TextField(
-                                                    controller: _quantityControllers.putIfAbsent(
-                                                      product.id,
-                                                      () => TextEditingController(text: quantity > 0 ? quantity.toString() : ''),
-                                                    )..text = quantity > 0 ? quantity.toString() : '',
-                                                    keyboardType: TextInputType.number,
-                                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                                    textAlign: TextAlign.center,
-                                                    decoration: InputDecoration(
-                                                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                                      hintText: '0',
-                                                    ),
-                                                    onChanged: (value) {
-                                                      final parsed = int.tryParse(value) ?? 0;
-                                                      final newValue = parsed.clamp(0, available);
-                                                      setState(() {
-                                                        if (newValue <= 0) {
-                                                          _selectedQuantities.remove(product.id);
-                                                        } else {
-                                                          _selectedQuantities[product.id] = newValue;
-                                                        }
-                                                        _quantityControllers[product.id]?.text = newValue > 0 ? newValue.toString() : '';
-                                                        _quantityControllers[product.id]?.selection = TextSelection.collapsed(offset: _quantityControllers[product.id]?.text.length ?? 0);
-                                                      });
+                                      Positioned.fill(
+                                        child: product.imageUrl != null
+                                            ? Image.network(
+                                                product.imageUrl!,
+                                                fit: BoxFit.cover,
+                                                loadingBuilder:
+                                                    (
+                                                      context,
+                                                      child,
+                                                      loadingProgress,
+                                                    ) {
+                                                      if (loadingProgress ==
+                                                          null) {
+                                                        return child;
+                                                      }
+                                                      return Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade200,
+                                                        child: const Center(
+                                                          child:
+                                                              CircularProgressIndicator(),
+                                                        ),
+                                                      );
                                                     },
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => Container(
+                                                      color:
+                                                          Colors.grey.shade200,
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons
+                                                              .image_not_supported,
+                                                          size: 60,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              )
+                                            : Container(
+                                                color: Colors.grey.shade200,
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 60,
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
-                                                IconButton(
-                                                  icon: const Icon(Icons.add_circle_outline),
-                                                  tooltip: 'زيادة كمية',
-                                                  onPressed: available > quantity
-                                                      ? () {
-                                                          setState(() {
-                                                            final next = quantity + 1;
-                                                            _selectedQuantities[product.id] = next;
-                                                            _quantityControllers[product.id]?.text = next.toString();
-                                                          });
-                                                        }
-                                                      : null,
+                                              ),
+                                      ),
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black.withOpacity(0.4),
+                                              ],
+                                              stops: const [0.45, 1.0],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 12,
+                                        left: 12,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: available > 0
+                                                ? available <= 5
+                                                      ? colorScheme
+                                                            .errorContainer
+                                                            .withOpacity(0.9)
+                                                      : colorScheme
+                                                            .primaryContainer
+                                                            .withOpacity(0.9)
+                                                : colorScheme.error.withOpacity(
+                                                    0.85,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            available > 0
+                                                ? available <= 5
+                                                      ? 'كمية محدودة'
+                                                      : 'متوفر'
+                                                : 'منفد',
+                                            style: textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colorScheme.onPrimary,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black.withOpacity(0.85),
                                               ],
                                             ),
-                                          ],
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                product.name,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        '${product.price.toStringAsFixed(0)} د.ع',
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        '/قطعة',
+                                                        style: textTheme
+                                                            .bodySmall
+                                                            ?.copyWith(
+                                                              color: colorScheme
+                                                                  .onSurfaceVariant,
+                                                              fontSize: 11,
+                                                            ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  FilledButton.small(
+                                                    onPressed: available > 0
+                                                        ? () {
+                                                            setState(() {
+                                                              final next =
+                                                                  quantity + 1;
+                                                              _selectedQuantities[product
+                                                                      .id] =
+                                                                  next;
+                                                            });
+                                                          }
+                                                        : null,
+                                                    style: FilledButton.styleFrom(
+                                                      backgroundColor:
+                                                          colorScheme.onPrimary,
+                                                      foregroundColor:
+                                                          colorScheme.primary,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal:
+                                                                width > 700
+                                                                ? 14
+                                                                : 10,
+                                                            vertical: 8,
+                                                          ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .add_shopping_cart,
+                                                          size: width > 700
+                                                              ? 18
+                                                              : 16,
+                                                        ),
+                                                        SizedBox(
+                                                          width: width > 700
+                                                              ? 8
+                                                              : 6,
+                                                        ),
+                                                        Text(
+                                                          'أضف',
+                                                          style: textTheme
+                                                              .labelLarge
+                                                              ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              )
+                                                              .copyWith(
+                                                                fontSize:
+                                                                    width > 700
+                                                                    ? 13
+                                                                    : 12,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              if (quantity > 0) ...[
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'في السلة x$quantity',
+                                                  style: const TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 10,
+                                        right: 10,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.45,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.zoom_in,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
                                     ],

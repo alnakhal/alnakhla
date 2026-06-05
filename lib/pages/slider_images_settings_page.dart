@@ -42,7 +42,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
     _CategorySection(
       name: 'قسم التجميل',
       imageUrl: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=400&q=80',
-      products: ['ماسك طبيعي', 'صبغة شعر', 'مستحضرات تجميل'],
+      products: ['ماسك طبيعي', 'صبغة ', 'مستحضرات '],
     ),
     _CategorySection(
       name: 'قسم الصحة',
