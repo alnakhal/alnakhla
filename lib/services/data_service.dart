@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,35 +29,28 @@ class DataService {
     return _supabase.storage.from('uploads').getPublicUrl(path);
   }
 
-  Future<UploadResult> uploadSliderImage(File imageFile, String title) async {
-    return _uploadSliderImageInternal(
-      imageFile: imageFile,
-      title: title,
-    );
-  }
+  Future<UploadResult> uploadSliderImageFromBytes(Uint8List imageBytes, String title, {String? fileName}) async {
+    if (kIsWeb) {
+      debugPrint('Web platform detected: uploading slider image using bytes only.');
+    }
 
-  Future<UploadResult> uploadSliderImageFromBytes(Uint8List imageBytes, String title) async {
     return _uploadSliderImageInternal(
       imageBytes: imageBytes,
       title: title,
+      fileName: fileName,
     );
   }
 
   Future<UploadResult> _uploadSliderImageInternal({
-    File? imageFile,
-    Uint8List? imageBytes,
+    required Uint8List imageBytes,
     required String title,
+    String? fileName,
   }) async {
     try {
-      if (imageFile == null && imageBytes == null) {
-        return UploadResult.failure('No image provided for slider upload');
-      }
+      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
+      final path = 'slider/$sanitizedFileName';
 
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final path = 'slider/$fileName.jpg';
-      final bytes = imageBytes ?? await imageFile!.readAsBytes();
-
-      await _supabase.storage.from('uploads').uploadBinary(path, bytes);
+      await _supabase.storage.from('uploads').uploadBinary(path, imageBytes);
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('slider_items').insert({
@@ -74,38 +67,30 @@ class DataService {
     }
   }
 
-  Future<UploadResult> uploadCategoryImage(File imageFile, String categoryName, List<String> productKeywords) async {
-    return _uploadCategoryImageInternal(
-      imageFile: imageFile,
-      categoryName: categoryName,
-      productKeywords: productKeywords,
-    );
-  }
+  Future<UploadResult> uploadCategoryImageFromBytes(Uint8List imageBytes, String categoryName, List<String> productKeywords, {String? fileName}) async {
+    if (kIsWeb) {
+      debugPrint('Web platform detected: uploading category image using bytes only.');
+    }
 
-  Future<UploadResult> uploadCategoryImageFromBytes(Uint8List imageBytes, String categoryName, List<String> productKeywords) async {
     return _uploadCategoryImageInternal(
       imageBytes: imageBytes,
       categoryName: categoryName,
       productKeywords: productKeywords,
+      fileName: fileName,
     );
   }
 
   Future<UploadResult> _uploadCategoryImageInternal({
-    File? imageFile,
-    Uint8List? imageBytes,
+    required Uint8List imageBytes,
     required String categoryName,
     required List<String> productKeywords,
+    String? fileName,
   }) async {
     try {
-      if (imageFile == null && imageBytes == null) {
-        return UploadResult.failure('No image provided for category upload');
-      }
+      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
+      final path = 'categories/$sanitizedFileName';
 
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final path = 'categories/$fileName.jpg';
-      final bytes = imageBytes ?? await imageFile!.readAsBytes();
-
-      await _supabase.storage.from('uploads').uploadBinary(path, bytes);
+      await _supabase.storage.from('uploads').uploadBinary(path, imageBytes);
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('category_items').insert({
@@ -162,14 +147,16 @@ class DataService {
     List<String>? productKeywords,
   }) async {
     try {
-      final imageFile = File(pickedFile.path);
+      final fileName = pickedFile.name;
+      final bytes = await pickedFile.readAsBytes();
       if (isSlider) {
-        return await uploadSliderImage(imageFile, title);
+        return await uploadSliderImageFromBytes(bytes, title, fileName: fileName);
       } else {
-        return await uploadCategoryImage(
-          imageFile,
+        return await uploadCategoryImageFromBytes(
+          bytes,
           categoryName ?? 'بدون عنوان',
           productKeywords ?? [],
+          fileName: fileName,
         );
       }
     } catch (e, st) {
@@ -177,6 +164,14 @@ class DataService {
       debugPrint(st.toString());
       return UploadResult.failure(e.toString());
     }
+  }
+
+  String _sanitizeFileName(String fileName) {
+    final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_.-]'), '_');
+    if (safeName.isEmpty) {
+      return DateTime.now().millisecondsSinceEpoch.toString();
+    }
+    return safeName;
   }
 
   Future<List<Map<String, dynamic>>> loadSliderImages() async {

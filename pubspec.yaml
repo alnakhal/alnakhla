@@ -37,6 +37,7 @@ dependencies:
   supabase_flutter: ^2.0.0
   http: ^1.6.0
   image_picker: any
+  file_picker: ^5.0.1
   shared_preferences: any
   share_plus: any
   url_launcher: any

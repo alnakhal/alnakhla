@@ -1,5 +1,5 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../services/data_service.dart';
 
@@ -168,19 +168,31 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
   }
 
   Future<void> _pickAndUploadImage(int index) async {
-    final picker = ImagePicker();
-    final result = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (result == null) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    final imageBytes = file.bytes;
+    if (imageBytes == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لم يتم تحميل بيانات الصورة بشكل صحيح')),
+      );
+      return;
+    }
 
     setState(() {
       _isUploading[index] = true;
     });
 
     try {
-      final imageBytes = await result.readAsBytes();
       final uploadResult = await _dataService.uploadSliderImageFromBytes(
         imageBytes,
         'صورة السلايدر ${index + 1}',
+        fileName: file.name,
       );
 
       if (uploadResult.failed) {
