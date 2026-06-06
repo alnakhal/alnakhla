@@ -20,4 +20,4 @@ samples, guidance on mobile development, and a full API reference.
 
 You can view the deployed web app on GitHub Pages at:
 
-- https://alnwm162-jpg.github.io/al_mustalazimat_al_iraqiya-main/
+- https://alnakhal.github.io/alnakhla/
