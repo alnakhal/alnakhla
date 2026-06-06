@@ -1301,6 +1301,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           ),
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const LoginPage(),
+              ));
+            },
+            icon: const Icon(Icons.login, color: Colors.white),
+            label: const Text(
+              'تسجيل الدخول',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Stack(
