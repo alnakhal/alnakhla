@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../main.dart' show LoginPage;
 import '../models/product.dart';
@@ -12,6 +13,7 @@ import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
 import '../services/data_service.dart';
 import '../db/customer_orders_db.dart';
+import '../utils/device_image_source.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
 
@@ -170,11 +172,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       if (categories.isNotEmpty) {
         setState(() {
           _categoryImageUrls = Map.fromEntries(
-            categories.map((cat) {
-              final name = (cat['category_name'] ?? '').toString();
-              final imageUrl = (cat['image_url'] ?? '').toString();
-              return MapEntry(name, imageUrl);
-            }).where((entry) => entry.key.isNotEmpty && entry.value.isNotEmpty),
+            categories
+                .map((cat) {
+                  final name = (cat['category_name'] ?? '').toString();
+                  final imageUrl = (cat['image_url'] ?? '').toString();
+                  return MapEntry(name, imageUrl);
+                })
+                .where(
+                  (entry) => entry.key.isNotEmpty && entry.value.isNotEmpty,
+                ),
           );
         });
       } else {
@@ -198,10 +204,43 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     }
   }
 
+  Future<DeviceImageSource?> _chooseCategoryImageSource() async {
+    return showModalBottomSheet<DeviceImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('اختيار من المعرض'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(DeviceImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('التقاط صورة بالكاميرا'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(DeviceImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickAndUploadCategoryImage(int index) async {
+    final selectedSource = await _chooseCategoryImageSource();
+    if (selectedSource == null) return;
+
     final picker = ImagePicker();
     final result = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: selectedSource.imageSource,
       imageQuality: 80,
     );
     if (result == null) return;
@@ -237,10 +276,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
       if (!mounted) return;
       setState(() {
-        final imageUrl = uploadResult.imageUrl ?? _categoryImageUrls[categoryName];
+        final imageUrl =
+            uploadResult.imageUrl ?? _categoryImageUrls[categoryName];
         if (imageUrl != null && imageUrl.isNotEmpty) {
-          _categoryImageUrls[categoryName] =
-              _appendCacheBustingQuery(imageUrl);
+          _categoryImageUrls[categoryName] = _appendCacheBustingQuery(imageUrl);
         }
       });
 
@@ -292,65 +331,80 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   }
 
   Widget _buildImageSlider() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: SizedBox(
-            height: 190,
-            child: PageView.builder(
-              controller: _sliderPageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentSliderIndex = index;
-                });
-              },
-              itemCount: _sliderImageUrls.length,
-              itemBuilder: (context, index) {
-                final imageData = _sliderImageUrls[index];
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    buildImageWidget(imageData, fit: BoxFit.cover),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.15),
-                            Colors.black.withValues(alpha: 0.0),
-                          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              height: 190,
+              child: PageView.builder(
+                controller: _sliderPageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentSliderIndex = index;
+                  });
+                },
+                itemCount: _sliderImageUrls.length,
+                itemBuilder: (context, index) {
+                  final imageData = _sliderImageUrls[index];
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      buildImageWidget(imageData, fit: BoxFit.cover),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.15),
+                              Colors.black.withValues(alpha: 0.0),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _sliderImageUrls.length,
-            (index) => Container(
-              width: _currentSliderIndex == index ? 12 : 8,
-              height: _currentSliderIndex == index ? 12 : 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: _currentSliderIndex == index
-                    ? Colors.white
-                    : Colors.white54,
-                shape: BoxShape.circle,
+                    ],
+                  );
+                },
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-      ],
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _sliderImageUrls.length,
+              (index) => Container(
+                width: _currentSliderIndex == index ? 12 : 8,
+                height: _currentSliderIndex == index ? 12 : 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: _currentSliderIndex == index
+                      ? Colors.brown.shade700
+                      : Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ),
     );
   }
 
@@ -424,87 +478,175 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     );
   }
 
+  Widget _buildTrustChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.brown.shade50,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.brown.shade700),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.brown.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoriesRow() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'الأقسام',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: List.generate(_productCategories.length, (index) {
-            final category = _productCategories[index];
-            final imageUrl = _categoryImageUrls[category.title] ?? category.imageUrl;
-            final itemWidth = (MediaQuery.of(context).size.width - 64) / 2;
-            return SizedBox(
-              width: itemWidth,
-              child: InkWell(
-                onTap: () => _showCategoryProducts(category),
-                borderRadius: BorderRadius.circular(18),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.brown.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.grid_view_rounded,
+                  color: Colors.brown.shade700,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        ClipOval(
-                          child: buildImageWidget(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            width: 90,
-                            height: 90,
-                          ),
-                        ),
-                        if (_canEditSlider)
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: InkWell(
-                              onTap: () {
-                                _pickAndUploadCategoryImage(index);
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: _isCategoryUploading[index]
-                                    ? const Padding(
-                                        padding: EdgeInsets.all(6.0),
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.edit,
-                                        size: 18,
-                                        color: Colors.white,
-                                      ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    const Text(
+                      'الأقسام',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 2),
                     Text(
-                      category.title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      'تصفح أقسام المتجر بشكل مرتب ومميز',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ),
-            );
-          }),
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: List.generate(_productCategories.length, (index) {
+              final category = _productCategories[index];
+              final imageUrl =
+                  _categoryImageUrls[category.title] ?? category.imageUrl;
+              final itemWidth = (MediaQuery.of(context).size.width - 64) / 2;
+              return SizedBox(
+                width: itemWidth,
+                child: InkWell(
+                  onTap: () => _showCategoryProducts(category),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            ClipOval(
+                              child: buildImageWidget(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: 90,
+                                height: 90,
+                              ),
+                            ),
+                            if (_canEditSlider)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: InkWell(
+                                  onTap: () {
+                                    _pickAndUploadCategoryImage(index);
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: _isCategoryUploading[index]
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(6.0),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.edit,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          category.title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1284,17 +1426,28 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'ابحث عن المنتجات',
+                prefixIcon: Icon(Icons.search, color: Colors.brown.shade700),
+                hintText: 'ابحث عن المنتجات أو الأقسام',
+                hintStyle: TextStyle(color: Colors.grey.shade600),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
+                fillColor: Colors.white,
                 contentPadding: EdgeInsets.symmetric(
                   vertical: width > 700 ? 18 : 14,
                   horizontal: 16,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade300,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: Colors.brown.shade700,
+                    width: 1.6,
+                  ),
                 ),
               ),
               textInputAction: TextInputAction.search,
@@ -1302,19 +1455,29 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           ),
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const LoginPage(),
-              ));
-            },
-            icon: const Icon(Icons.login, color: Colors.white),
-            label: const Text(
-              'تسجيل الدخول',
-              style: TextStyle(color: Colors.white),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+          Container(
+            margin: const EdgeInsets.only(left: 6),
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+              },
+              icon: const Icon(Icons.login, color: Colors.white),
+              label: const Text(
+                'دخول',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
           ),
           Padding(
@@ -1324,7 +1487,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.shopping_cart),
-                  onPressed: _selectedCount > 0 ? _showOrderSummaryDialog : null,
+                  onPressed: _selectedCount > 0
+                      ? _showOrderSummaryDialog
+                      : null,
                   tooltip: 'سلة الطلبات',
                 ),
                 if (_selectedCount > 0)
@@ -1429,6 +1594,67 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                         ),
                         const SizedBox(height: 10),
                       ],
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        color: Colors.brown.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'شارك رابط المتجر',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.brown.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'https://alnakhal.github.io/alnakhla/',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  await Share.share(
+                                    'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.share_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('شارك'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.brown.shade700,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       _buildImageSlider(),
                       const SizedBox(height: 16),
                       _buildCategoriesRow(),
@@ -1437,47 +1663,60 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                     if (_showWelcomeBanner)
                       Card(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        color: colorScheme.primaryContainer.withValues(
-                          alpha: 0.18,
-                        ),
+                        color: Colors.brown.shade50,
                         margin: EdgeInsets.zero,
                         child: Padding(
                           padding: EdgeInsets.all(pagePadding),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'واجهة متجر احترافية',
-                                style: textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.info_outline,
+                                  color: Colors.brown.shade700,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'تجربة طلب واضحة وسهلة',
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (_showWelcomeDescription)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          'اضغط على المنتج لمشاهدة التفاصيل، ثم استخدم زر إضافة إلى السلة لإتمام الطلب بسرعة.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                               if (_showWelcomeDescription)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Expanded(
-                                        child: Text(
-                                          'اضغط على المنتج لمشاهدة التفاصيل واضغط على أيقونة العربة لإضافة المنتج إلى الطلب.',
-                                          style: TextStyle(fontSize: 14),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.close, size: 20),
-                                        tooltip: 'إزالة الشرح',
-                                        onPressed: () {
-                                          setState(() {
-                                            _showWelcomeDescription = false;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 20),
+                                  tooltip: 'إزالة الشرح',
+                                  onPressed: () {
+                                    setState(() {
+                                      _showWelcomeDescription = false;
+                                    });
+                                  },
                                 ),
                             ],
                           ),
@@ -1519,6 +1758,71 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.brown.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.storefront_outlined,
+                                    color: Colors.brown.shade700,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'من نحن',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'نوفر لك منتجات عالية الجودة مع خدمة سريعة واحترافية، ونحرص على سهولة الطلب والتواصل مباشرة مع العميل.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 8,
+                              children: [
+                                _buildTrustChip(
+                                  Icons.phone_outlined,
+                                  'واتساب: +964 774 658 2364',
+                                ),
+                                _buildTrustChip(
+                                  Icons.local_shipping_outlined,
+                                  'توصيل سريع',
+                                ),
+                                _buildTrustChip(
+                                  Icons.verified_outlined,
+                                  'ضمان جودة المنتجات',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     if (filtered.isEmpty)
                       SizedBox(
                         height: 300,
@@ -1742,7 +2046,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                       ),
                                                     ],
                                                   ),
-                                                  FilledButton(
+                                                  FilledButton.icon(
                                                     onPressed: available > 0
                                                         ? () {
                                                             setState(() {
@@ -1756,9 +2060,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                         : null,
                                                     style: FilledButton.styleFrom(
                                                       backgroundColor:
-                                                          colorScheme.onPrimary,
+                                                          Colors.white,
                                                       foregroundColor:
-                                                          colorScheme.primary,
+                                                          Colors.brown.shade800,
                                                       padding:
                                                           EdgeInsets.symmetric(
                                                             horizontal:
@@ -1767,40 +2071,33 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                                 : 10,
                                                             vertical: 8,
                                                           ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
                                                     ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .add_shopping_cart,
-                                                          size: width > 700
-                                                              ? 18
-                                                              : 16,
-                                                        ),
-                                                        SizedBox(
-                                                          width: width > 700
-                                                              ? 8
-                                                              : 6,
-                                                        ),
-                                                        Text(
-                                                          'أضف',
-                                                          style: textTheme
-                                                              .labelLarge
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                              )
-                                                              .copyWith(
-                                                                fontSize:
-                                                                    width > 700
-                                                                    ? 13
-                                                                    : 12,
-                                                              ),
-                                                        ),
-                                                      ],
+                                                    icon: Icon(
+                                                      Icons.add_shopping_cart,
+                                                      size: width > 700
+                                                          ? 18
+                                                          : 16,
+                                                    ),
+                                                    label: Text(
+                                                      'أضف',
+                                                      style: textTheme
+                                                          .labelLarge
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          )
+                                                          .copyWith(
+                                                            fontSize:
+                                                                width > 700
+                                                                ? 13
+                                                                : 12,
+                                                          ),
                                                     ),
                                                   ),
                                                 ],
