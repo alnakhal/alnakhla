@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -1018,11 +1018,23 @@ class OwnerDashboardPage extends StatefulWidget {
 
 class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
   late Future<_DashboardStats> _statsFuture;
+  Timer? _notificationTimer;
+  int? _lastPendingOrderCount;
 
   @override
   void initState() {
     super.initState();
     _statsFuture = _loadStats();
+    _notificationTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refresh(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
   }
 
   Future<_DashboardStats> _loadStats() async {
@@ -1034,7 +1046,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     ]);
     final products = results[0] as List<Product>;
     final orders = results[1] as List<CustomerOrderModel>;
-    return _DashboardStats(
+    final stats = _DashboardStats(
       productCount: products.length,
       lowStockCount:
           products.where((product) => product.remainingQty <= 5).length,
@@ -1045,6 +1057,27 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           orders.where((order) => order.status == 'pending').length,
       orderTotal: orders.fold(0.0, (sum, order) => sum + order.totalAmount),
     );
+    final previousPendingCount = _lastPendingOrderCount;
+    _lastPendingOrderCount = stats.pendingOrderCount;
+    if (mounted &&
+        previousPendingCount != null &&
+        stats.pendingOrderCount > previousPendingCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'لديك ${stats.pendingOrderCount - previousPendingCount} طلب جديد',
+            ),
+            action: SnackBarAction(
+              label: 'عرض الطلبات',
+              onPressed: () => _open(const CustomerOrdersTrackingPage()),
+            ),
+          ),
+        );
+      });
+    }
+    return stats;
   }
 
   Future<void> _refresh() async {
@@ -1066,6 +1099,45 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       appBar: AppBar(
         title: const Text('لوحة تحكم المتجر'),
         actions: [
+          FutureBuilder<_DashboardStats>(
+            future: _statsFuture,
+            builder: (context, snapshot) {
+              final pendingCount = snapshot.data?.pendingOrderCount ?? 0;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () => _open(const CustomerOrdersTrackingPage()),
+                    icon: const Icon(Icons.notifications_outlined),
+                    tooltip: 'الطلبات الجديدة',
+                  ),
+                  if (pendingCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 8,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 18),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          pendingCount > 99 ? '99+' : pendingCount.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             onPressed: _refresh,
             icon: const Icon(Icons.refresh),
