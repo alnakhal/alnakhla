@@ -15,14 +15,14 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.x'
+          flutter-version: '3.19.0'
           channel: 'stable'
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --base-href "/alnakhla/"
+        run: flutter build web --base-href "/alnakhla/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
