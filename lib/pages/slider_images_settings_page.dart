@@ -205,7 +205,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
   }
 
   Future<void> _pickAndUploadImage(int index) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.image,
       withData: true,
     );
@@ -265,7 +265,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
 
   Future<void> _replaceSliderImage(int index) async {
     if (index < 0 || index >= _sliderItems.length) return;
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.image,
       withData: true,
     );
@@ -356,7 +356,7 @@ class _SliderImagesSettingsPageState extends State<SliderImagesSettingsPage> {
 
   Future<void> _replaceCategoryImage(int index) async {
     if (index < 0 || index >= _categoryItems.length) return;
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.image,
       withData: true,
     );

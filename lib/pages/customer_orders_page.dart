@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,28 +12,8 @@ import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
 import '../services/data_service.dart';
 import '../db/customer_orders_db.dart';
-import '../utils/device_image_source.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
-
-class _ProductCategory {
-  final String title;
-  final String imageUrl;
-  final List<String> keywords;
-
-  const _ProductCategory({
-    required this.title,
-    required this.imageUrl,
-    required this.keywords,
-  });
-
-  bool matches(Product product) {
-    final text = '${product.name} ${product.description}'.toLowerCase();
-    return keywords.any((keyword) => text.contains(keyword));
-  }
-
-  String get header => title;
-}
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
@@ -73,35 +52,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   Timer? _sliderTimer;
   bool _showWelcomeBanner = false;
 
-  Map<String, String> _categoryImageUrls = {};
-  final List<bool> _isCategoryUploading = List.generate(4, (_) => false);
-
-  final List<_ProductCategory> _productCategories = const [
-    _ProductCategory(
-      title: 'مستلزمات حجامة جملة',
-      imageUrl:
-          'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
-      keywords: ['حجامة', 'مستلزمات', 'كاسات', 'زيوت', 'أنابيب', 'جملة'],
-    ),
-    _ProductCategory(
-      title: 'حجامة مفرد',
-      imageUrl:
-          'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=500&q=80',
-      keywords: ['حجامة', 'مفرد', 'جلسة', 'شفط', 'تنظيف'],
-    ),
-    _ProductCategory(
-      title: 'العروض الحالية',
-      imageUrl:
-          'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=500&q=80',
-      keywords: ['عرض', 'تخفيض', 'خصم', 'عرض خاص', 'عرضية'],
-    ),
-    _ProductCategory(
-      title: 'كل المنتجات',
-      imageUrl:
-          'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80',
-      keywords: [''],
-    ),
-  ];
   bool _showWelcomeDescription = true;
   Timer? _welcomeTimer;
 
@@ -120,7 +70,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     });
     _loadWelcomeState();
     _loadSliderImages();
-    _loadCategoryImages();
     _startSliderTimer();
   }
 
@@ -162,154 +111,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
       setState(() {
         _sliderImageUrls = _defaultSliderImages;
       });
-    }
-  }
-
-  Future<void> _loadCategoryImages() async {
-    try {
-      final categories = await fetchCategoryImages();
-      if (!mounted) return;
-      if (categories.isNotEmpty) {
-        setState(() {
-          _categoryImageUrls = Map.fromEntries(
-            categories
-                .map((cat) {
-                  final name = (cat['category_name'] ?? '').toString();
-                  final imageUrl = (cat['image_url'] ?? '').toString();
-                  return MapEntry(name, imageUrl);
-                })
-                .where(
-                  (entry) => entry.key.isNotEmpty && entry.value.isNotEmpty,
-                ),
-          );
-        });
-      } else {
-        // استخدام الصور الافتراضية إذا لم تكن هناك صور في Supabase
-        final defaults = Map.fromEntries(
-          _productCategories.map((c) => MapEntry(c.title, c.imageUrl)),
-        );
-        setState(() {
-          _categoryImageUrls = defaults;
-        });
-      }
-    } catch (e) {
-      debugPrint('خطأ في تحميل صور الأقسام: $e');
-      if (!mounted) return;
-      final defaults = Map.fromEntries(
-        _productCategories.map((c) => MapEntry(c.title, c.imageUrl)),
-      );
-      setState(() {
-        _categoryImageUrls = defaults;
-      });
-    }
-  }
-
-  Future<DeviceImageSource?> _chooseCategoryImageSource() async {
-    return showModalBottomSheet<DeviceImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('اختيار من المعرض'),
-                onTap: () =>
-                    Navigator.of(sheetContext).pop(DeviceImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('التقاط صورة بالكاميرا'),
-                onTap: () =>
-                    Navigator.of(sheetContext).pop(DeviceImageSource.camera),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickAndUploadCategoryImage(int index) async {
-    final selectedSource = await _chooseCategoryImageSource();
-    if (selectedSource == null) return;
-
-    final picker = ImagePicker();
-    final result = await picker.pickImage(
-      source: selectedSource.imageSource,
-      imageQuality: 80,
-    );
-    if (result == null) return;
-
-    if (!mounted) return;
-    setState(() {
-      _isCategoryUploading[index] = true;
-    });
-
-    try {
-      final categoryName = _productCategories[index].title;
-      final keywords = _productCategories[index].keywords;
-
-      final uploadResult = await uploadImageFromPicker(
-        pickedFile: result,
-        title: categoryName,
-        isSlider: false,
-        categoryName: categoryName,
-        productKeywords: keywords,
-      );
-
-      if (uploadResult.failed) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'فشل رفع صورة القسم: ${uploadResult.error ?? 'حدث خطأ'}',
-            ),
-          ),
-        );
-        return;
-      }
-
-      if (!mounted) return;
-      setState(() {
-        final imageUrl =
-            uploadResult.imageUrl ?? _categoryImageUrls[categoryName];
-        if (imageUrl != null && imageUrl.isNotEmpty) {
-          _categoryImageUrls[categoryName] = _appendCacheBustingQuery(imageUrl);
-        }
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تم حفظ صورة القسم بنجاح')));
-    } catch (e) {
-      if (!mounted) return;
-      debugPrint('خطأ في رفع صورة القسم: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ أثناء رفع صورة القسم: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCategoryUploading[index] = false;
-        });
-      }
-    }
-  }
-
-  String _appendCacheBustingQuery(String imageUrl) {
-    try {
-      final uri = Uri.parse(imageUrl);
-      final queryParameters = Map<String, String>.from(uri.queryParameters);
-      queryParameters['cb'] = DateTime.now().millisecondsSinceEpoch.toString();
-      return uri.replace(queryParameters: queryParameters).toString();
-    } catch (_) {
-      return imageUrl;
     }
   }
 
@@ -408,76 +209,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
     );
   }
 
-  void _showCategoryProducts(_ProductCategory category) {
-    final products = _lastProducts
-        .where((product) => category.matches(product))
-        .toList();
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    category.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (products.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'لا توجد منتجات محددة لهذا القسم حالياً.',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                )
-              else
-                Column(
-                  children: products.map((product) {
-                    return ListTile(
-                      title: Text(product.name),
-                      subtitle: Text(
-                        product.description.isEmpty
-                            ? 'بدون وصف'
-                            : product.description,
-                      ),
-                      trailing: Text('${product.price.toStringAsFixed(0)} د.ع'),
-                    );
-                  }).toList(),
-                ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildTrustChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -493,157 +224,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           Text(
             label,
             style: TextStyle(fontSize: 12, color: Colors.brown.shade800),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoriesRow() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.brown.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.grid_view_rounded,
-                  color: Colors.brown.shade700,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'الأقسام',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'تصفح أقسام المتجر بشكل مرتب ومميز',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: List.generate(_productCategories.length, (index) {
-              final category = _productCategories[index];
-              final imageUrl =
-                  _categoryImageUrls[category.title] ?? category.imageUrl;
-              final itemWidth = (MediaQuery.of(context).size.width - 64) / 2;
-              return SizedBox(
-                width: itemWidth,
-                child: InkWell(
-                  onTap: () => _showCategoryProducts(category),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            ClipOval(
-                              child: buildImageWidget(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                width: 90,
-                                height: 90,
-                              ),
-                            ),
-                            if (_canEditSlider)
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: InkWell(
-                                  onTap: () {
-                                    _pickAndUploadCategoryImage(index);
-                                  },
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: _isCategoryUploading[index]
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(6.0),
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.edit,
-                                            size: 18,
-                                            color: Colors.white,
-                                          ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          category.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
           ),
         ],
       ),
@@ -1455,30 +1035,37 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
           ),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(left: 6),
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
-              },
-              icon: const Icon(Icons.login, color: Colors.white),
-              label: const Text(
-                'دخول',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            tooltip: 'الإعدادات',
+            offset: const Offset(0, 48),
+            onSelected: (value) async {
+              if (value == 'login') {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                );
+                if (mounted) setState(() {});
+                return;
+              }
+
+              if (value == 'logout') {
+                await Supabase.instance.client.auth.signOut();
+                if (!mounted) return;
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
+                );
+              }
+            },
+            itemBuilder: (context) {
+              final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
+              return [
+                PopupMenuItem<String>(
+                  value: isLoggedIn ? 'logout' : 'login',
+                  child: Text(isLoggedIn ? 'تسجيل الخروج' : 'تسجيل الدخول'),
                 ),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.white.withValues(alpha: 0.14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
+              ];
+            },
           ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -1656,8 +1243,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       ),
                       const SizedBox(height: 14),
                       _buildImageSlider(),
-                      const SizedBox(height: 16),
-                      _buildCategoriesRow(),
                       const SizedBox(height: 20),
                     ],
                     if (_showWelcomeBanner)
@@ -1758,70 +1343,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.brown.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.storefront_outlined,
-                                    color: Colors.brown.shade700,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'من نحن',
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'نوفر لك منتجات عالية الجودة مع خدمة سريعة واحترافية، ونحرص على سهولة الطلب والتواصل مباشرة مع العميل.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 8,
-                              children: [
-                                _buildTrustChip(
-                                  Icons.phone_outlined,
-                                  'واتساب: +964 774 658 2364',
-                                ),
-                                _buildTrustChip(
-                                  Icons.local_shipping_outlined,
-                                  'توصيل سريع',
-                                ),
-                                _buildTrustChip(
-                                  Icons.verified_outlined,
-                                  'ضمان جودة المنتجات',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 16),
                     if (filtered.isEmpty)
                       SizedBox(
