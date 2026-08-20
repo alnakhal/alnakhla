@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,7 +29,8 @@ class CustomerOrdersPage extends StatefulWidget {
   State<CustomerOrdersPage> createState() => _CustomerOrdersPageState();
 }
 
-class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
+class _CustomerOrdersPageState extends State<CustomerOrdersPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _customerNameController = TextEditingController();
   final TextEditingController _customerPhoneController =
@@ -54,6 +56,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   bool _showWelcomeDescription = true;
   Timer? _welcomeTimer;
+  late final AnimationController _addButtonAnimationController;
 
   bool get _canEditSlider {
     final authUser = Supabase.instance.client.auth.currentUser;
@@ -64,6 +67,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
   @override
   void initState() {
     super.initState();
+    _addButtonAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
     _productsFuture = _loadProducts();
     _searchController.addListener(() {
       if (mounted) setState(() {});
@@ -75,6 +82,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   @override
   void dispose() {
+    _addButtonAnimationController.dispose();
     _welcomeTimer?.cancel();
     _sliderTimer?.cancel();
     _sliderPageController.dispose();
@@ -1045,9 +1053,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
             offset: const Offset(0, 48),
             onSelected: (value) async {
               if (value == 'login') {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                );
+                await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
                 if (mounted) setState(() {});
                 return;
               }
@@ -1064,13 +1072,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
               if (value == 'manage_products') {
                 await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProductManagementPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const ProductManagementPage(),
+                  ),
                 );
                 if (mounted) await _refreshProducts();
               }
             },
             itemBuilder: (context) {
-              final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
+              final isLoggedIn =
+                  Supabase.instance.client.auth.currentUser != null;
               if (isLoggedIn) {
                 return const [
                   PopupMenuItem<String>(
@@ -1591,64 +1602,139 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                       ),
                                                     ],
                                                   ),
-                                                  FilledButton.icon(
-                                                    onPressed: available > 0
-                                                        ? () {
-                                                            setState(() {
-                                                              final next =
-                                                                  quantity + 1;
-                                                              _selectedQuantities[product
-                                                                      .id] =
-                                                                  next;
-                                                            });
-                                                          }
-                                                        : null,
-                                                    style: FilledButton.styleFrom(
-                                                      backgroundColor:
-                                                          Colors.amber.shade700,
-                                                        foregroundColor:
-                                                          Colors.white,
-                                                        minimumSize: Size(
-                                                        width > 700 ? 104 : 92,
-                                                        40,
+                                                  AnimatedBuilder(
+                                                    animation:
+                                                        _addButtonAnimationController,
+                                                    builder: (context, child) {
+                                                      return DecoratedBox(
+                                                        decoration: BoxDecoration(
+                                                          gradient:
+                                                              available > 0
+                                                              ? LinearGradient(
+                                                                  begin: Alignment
+                                                                      .topLeft,
+                                                                  end: Alignment
+                                                                      .bottomRight,
+                                                                  transform: GradientRotation(
+                                                                    _addButtonAnimationController
+                                                                            .value *
+                                                                        math.pi *
+                                                                        2,
+                                                                  ),
+                                                                  colors: const [
+                                                                    Color(
+                                                                      0xFFFFB300,
+                                                                    ),
+                                                                    Color(
+                                                                      0xFFFF7043,
+                                                                    ),
+                                                                    Color(
+                                                                      0xFFEF5350,
+                                                                    ),
+                                                                    Color(
+                                                                      0xFFFFB300,
+                                                                    ),
+                                                                  ],
+                                                                )
+                                                              : null,
+                                                          color: available > 0
+                                                              ? null
+                                                              : Colors.grey,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                14,
+                                                              ),
+                                                          boxShadow:
+                                                              available > 0
+                                                              ? [
+                                                                  BoxShadow(
+                                                                    color: Colors
+                                                                        .deepOrange
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.42,
+                                                                        ),
+                                                                    blurRadius:
+                                                                        10,
+                                                                    spreadRadius:
+                                                                        1,
+                                                                  ),
+                                                                ]
+                                                              : null,
                                                         ),
-                                                        elevation: 3,
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal:
-                                                                width > 700
-                                                            ? 18
-                                                            : 14,
-                                                            vertical: 8,
-                                                          ),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
+                                                        child: FilledButton.icon(
+                                                          onPressed:
+                                                              available > 0
+                                                              ? () {
+                                                                  setState(() {
+                                                                    final next =
+                                                                        quantity +
+                                                                        1;
+                                                                    _selectedQuantities[product
+                                                                            .id] =
+                                                                        next;
+                                                                  });
+                                                                }
+                                                              : null,
+                                                          style: FilledButton.styleFrom(
+                                                            backgroundColor:
+                                                                Colors
+                                                                    .transparent,
+                                                            disabledBackgroundColor:
+                                                                Colors
+                                                                    .transparent,
+                                                            foregroundColor:
+                                                                Colors.white,
+                                                            minimumSize: Size(
+                                                              width > 700
+                                                                  ? 132
+                                                                  : 116,
+                                                              50,
                                                             ),
-                                                      ),
-                                                    ),
-                                                    icon: Icon(
-                                                      Icons.add_shopping_cart,
-                                                      size: width > 700
-                                                          ? 18
-                                                          : 16,
-                                                    ),
-                                                    label: Text(
-                                                      'أضف',
-                                                      style: textTheme
-                                                          .labelLarge
-                                                          ?.copyWith(
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          )
-                                                          .copyWith(
-                                                            fontSize:
-                                                                width > 700
-                                                                ? 13
-                                                                : 12,
+                                                            elevation: 0,
+                                                            shadowColor: Colors
+                                                                .transparent,
+                                                            padding:
+                                                                EdgeInsets.symmetric(
+                                                                  horizontal:
+                                                                      width >
+                                                                          700
+                                                                      ? 20
+                                                                      : 16,
+                                                                  vertical: 11,
+                                                                ),
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    14,
+                                                                  ),
+                                                            ),
                                                           ),
-                                                    ),
+                                                          icon: Icon(
+                                                            Icons
+                                                                .add_shopping_cart,
+                                                            size: width > 700
+                                                                ? 22
+                                                                : 20,
+                                                          ),
+                                                          label: Text(
+                                                            'أضف',
+                                                            style: textTheme
+                                                                .labelLarge
+                                                                ?.copyWith(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize:
+                                                                      width >
+                                                                          700
+                                                                      ? 16
+                                                                      : 15,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
                                                   ),
                                                 ],
                                               ),
