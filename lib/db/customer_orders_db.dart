@@ -38,6 +38,30 @@ class CustomerOrdersDatabase {
     await _orderStore.record(id).update(db, updatedMap);
   }
 
+  Future<void> updateOrderDetails({
+    required int id,
+    required String address,
+    required String notes,
+    required String receiptNumber,
+    required List<Map<String, dynamic>> items,
+    required double totalAmount,
+    required String deliveryResult,
+  }) async {
+    if (!['pending', 'received', 'returned'].contains(deliveryResult)) {
+      throw ArgumentError('نتيجة تسليم غير صالحة: $deliveryResult');
+    }
+    final db = await database;
+    await _orderStore.record(id).update(db, {
+      'customer_address': address,
+      'notes': notes.isEmpty ? null : notes,
+      'receipt_number': receiptNumber.isEmpty ? null : receiptNumber,
+      'items': items,
+      'total_amount': totalAmount,
+      'delivery_result': deliveryResult,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
   Future<CustomerOrderModel?> getOrder(int id) async {
     final db = await database;
     final record = await _orderStore.record(id).getSnapshot(db);
@@ -49,8 +73,10 @@ class CustomerOrdersDatabase {
 
   Future<CustomerOrderModel?> getOrderByNumber(String orderNumber) async {
     final db = await database;
-    final finder =
-        Finder(filter: Filter.equals('order_number', orderNumber), limit: 1);
+    final finder = Finder(
+      filter: Filter.equals('order_number', orderNumber),
+      limit: 1,
+    );
     final records = await _orderStore.find(db, finder: finder);
     if (records.isEmpty) return null;
     final map = Map<String, dynamic>.from(records.first.value);

@@ -9,6 +9,8 @@ class CustomerOrderModel {
   final String paymentMethod;
   final String deliveryArea;
   final double deliveryFee;
+  final String? receiptNumber;
+  final String deliveryResult;
   final String? notes;
   final List<Map<String, dynamic>>? items;
   final DateTime createdAt;
@@ -25,6 +27,8 @@ class CustomerOrderModel {
     this.paymentMethod = 'cash_on_delivery',
     this.deliveryArea = 'baghdad',
     this.deliveryFee = 0,
+    this.receiptNumber,
+    this.deliveryResult = 'pending',
     this.notes,
     this.items,
     required this.createdAt,
@@ -32,21 +36,23 @@ class CustomerOrderModel {
   });
 
   Map<String, dynamic> toMap() => {
-        if (id != null) 'id': id,
-        'order_number': orderNumber,
-        'customer_name': customerName,
-        'customer_phone': customerPhone,
-        'customer_address': customerAddress,
-        'total_amount': totalAmount,
-        'status': status,
-        'payment_method': paymentMethod,
-        'delivery_area': deliveryArea,
-        'delivery_fee': deliveryFee,
-        'notes': notes,
-        'items': items,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt?.toIso8601String(),
-      };
+    if (id != null) 'id': id,
+    'order_number': orderNumber,
+    'customer_name': customerName,
+    'customer_phone': customerPhone,
+    'customer_address': customerAddress,
+    'total_amount': totalAmount,
+    'status': status,
+    'payment_method': paymentMethod,
+    'delivery_area': deliveryArea,
+    'delivery_fee': deliveryFee,
+    'receipt_number': receiptNumber,
+    'delivery_result': deliveryResult,
+    'notes': notes,
+    'items': items,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+  };
 
   factory CustomerOrderModel.fromMap(Map<String, dynamic> map) {
     return CustomerOrderModel(
@@ -60,16 +66,19 @@ class CustomerOrderModel {
       paymentMethod: map['payment_method']?.toString() ?? 'cash_on_delivery',
       deliveryArea: map['delivery_area']?.toString() ?? 'baghdad',
       deliveryFee: (map['delivery_fee'] as num?)?.toDouble() ?? 0,
+      receiptNumber: map['receipt_number']?.toString(),
+      deliveryResult: map['delivery_result']?.toString() ?? 'pending',
       notes: map['notes']?.toString(),
       items: _readItems(map),
       createdAt: map['created_at'] is DateTime
           ? map['created_at'] as DateTime
-          : DateTime.parse(map['created_at']?.toString() ??
-              DateTime.now().toIso8601String()),
+          : DateTime.parse(
+              map['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+            ),
       updatedAt: map['updated_at'] != null
           ? (map['updated_at'] is DateTime
-              ? map['updated_at'] as DateTime
-              : DateTime.parse(map['updated_at'].toString()))
+                ? map['updated_at'] as DateTime
+                : DateTime.parse(map['updated_at'].toString()))
           : null,
     );
   }
@@ -114,6 +123,17 @@ class CustomerOrderModel {
         return 'بغداد';
       default:
         return deliveryArea;
+    }
+  }
+
+  String get deliveryResultArabic {
+    switch (deliveryResult) {
+      case 'received':
+        return 'واصل';
+      case 'returned':
+        return 'راجع';
+      default:
+        return 'غير محدد';
     }
   }
 }
