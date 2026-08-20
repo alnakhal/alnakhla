@@ -41,6 +41,7 @@ class CustomerOrdersDatabase {
   Future<void> updateOrderDetails({
     required int id,
     required String address,
+    required String landmark,
     required String notes,
     required String receiptNumber,
     required List<Map<String, dynamic>> items,
@@ -53,6 +54,7 @@ class CustomerOrdersDatabase {
     final db = await database;
     await _orderStore.record(id).update(db, {
       'customer_address': address,
+      'customer_landmark': landmark,
       'notes': notes.isEmpty ? null : notes,
       'receipt_number': receiptNumber.isEmpty ? null : receiptNumber,
       'items': items,

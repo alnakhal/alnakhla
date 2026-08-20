@@ -1650,7 +1650,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          'الكل',
                           'غير مصنف',
                           ...productCategories,
                         ]

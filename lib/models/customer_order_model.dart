@@ -4,6 +4,7 @@ class CustomerOrderModel {
   final String customerName;
   final String customerPhone;
   final String customerAddress;
+  final String customerLandmark;
   final double totalAmount;
   final String status; // pending, confirmed, shipped, delivered, cancelled
   final String paymentMethod;
@@ -22,6 +23,7 @@ class CustomerOrderModel {
     required this.customerName,
     required this.customerPhone,
     required this.customerAddress,
+    this.customerLandmark = '',
     required this.totalAmount,
     this.status = 'pending',
     this.paymentMethod = 'cash_on_delivery',
@@ -41,6 +43,7 @@ class CustomerOrderModel {
     'customer_name': customerName,
     'customer_phone': customerPhone,
     'customer_address': customerAddress,
+    'customer_landmark': customerLandmark,
     'total_amount': totalAmount,
     'status': status,
     'payment_method': paymentMethod,
@@ -61,6 +64,7 @@ class CustomerOrderModel {
       customerName: map['customer_name']?.toString() ?? '',
       customerPhone: map['customer_phone']?.toString() ?? '',
       customerAddress: map['customer_address']?.toString() ?? '',
+      customerLandmark: map['customer_landmark']?.toString() ?? '',
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
       status: map['status']?.toString() ?? 'pending',
       paymentMethod: map['payment_method']?.toString() ?? 'cash_on_delivery',
