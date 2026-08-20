@@ -10,6 +10,7 @@ class Product {
     required this.singlePrice,
     required this.hasWholesale,
     required this.remainingQty,
+    this.isHidden = false,
     this.imageUrl,
     this.storeId,
     this.deliveryPrice,
@@ -27,6 +28,7 @@ class Product {
       singlePrice: (map['single_price'] as num?)?.toDouble() ?? 0,
       hasWholesale: map['has_wholesale'] as bool? ?? false,
       remainingQty: (map['remaining_qty'] as num?)?.toInt() ?? 0,
+      isHidden: map['is_hidden'] as bool? ?? false,
       imageUrl: map['image_url'] as String?,
       storeId: map['store_id']?.toString(),
       deliveryPrice: (map['delivery_price'] as num?)?.toDouble() ?? 0,
@@ -43,6 +45,7 @@ class Product {
   final double singlePrice;
   final bool hasWholesale;
   final int remainingQty;
+  final bool isHidden;
   final String? imageUrl;
   final String? storeId;
   final double? deliveryPrice;

@@ -952,6 +952,18 @@ class _HomeTabState extends State<HomeTab> {
 
 enum ProductFilter { all, lowStock, wholesale }
 
+class ProductManagementPage extends StatelessWidget {
+  const ProductManagementPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('إدارة المنشورات')),
+      body: ProductsTab(),
+    );
+  }
+}
+
 class ProductsTab extends StatefulWidget {
   const ProductsTab({super.key});
 
@@ -1123,6 +1135,22 @@ class _ProductsTabState extends State<ProductsTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل تحديث الكمية: $e')));
+    }
+  }
+
+  Future<void> _toggleProductVisibility(Product product) async {
+    final isHidden = !product.isHidden;
+    try {
+      await supabase
+          .from('products')
+          .update({'is_hidden': isHidden})
+          .eq('id', product.id);
+      if (!mounted) return;
+      _showMessage(isHidden ? 'تم إخفاء المنشور' : 'تم إظهار المنشور');
+      await _refreshProducts();
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage('فشل تغيير حالة المنشور: $e');
     }
   }
 
@@ -1356,11 +1384,18 @@ class _ProductsTabState extends State<ProductsTab> {
                                       case 'stock':
                                         _setProductQuantity(product);
                                         break;
+                                      case 'visibility':
+                                        _toggleProductVisibility(product);
+                                        break;
                                     }
                                   },
                                   itemBuilder: (context) => [
                                     const PopupMenuItem(value: 'edit', child: Text('تعديل')),
                                     const PopupMenuItem(value: 'stock', child: Text('تعديل الكمية')),
+                                    PopupMenuItem(
+                                      value: 'visibility',
+                                      child: Text(product.isHidden ? 'إظهار المنشور' : 'إخفاء المنشور'),
+                                    ),
                                     const PopupMenuItem(value: 'delete', child: Text('حذف')),
                                   ],
                                 ),

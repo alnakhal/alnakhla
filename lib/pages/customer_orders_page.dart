@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../main.dart' show LoginPage;
+import '../main.dart' show LoginPage, ProductManagementPage;
 import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
@@ -232,21 +232,25 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
 
   Future<List<Product>> _loadProducts() async {
     if (widget.storeSlug != null && widget.storeSlug!.trim().isNotEmpty) {
-      return fetchProductsBySlug(widget.storeSlug!.trim());
+      final products = await fetchProductsBySlug(widget.storeSlug!.trim());
+      return products.where((product) => !product.isHidden).toList();
     }
     if (widget.storeUserId != null && widget.storeUserId!.trim().isNotEmpty) {
-      return fetchProductsByUserId(widget.storeUserId!.trim());
+      final products = await fetchProductsByUserId(widget.storeUserId!.trim());
+      return products.where((product) => !product.isHidden).toList();
     }
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final storeId = await getOrCreateStoreForUser(user.id);
       if (storeId != null) {
-        return fetchProductsByStoreId(storeId);
+        final products = await fetchProductsByStoreId(storeId);
+        return products.where((product) => !product.isHidden).toList();
       }
     }
 
-    return fetchAllProducts();
+    final products = await fetchAllProducts();
+    return products.where((product) => !product.isHidden).toList();
   }
 
   Future<void> _refreshProducts() async {
@@ -1055,14 +1059,34 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
                 );
+                return;
+              }
+
+              if (value == 'manage_products') {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProductManagementPage()),
+                );
+                if (mounted) await _refreshProducts();
               }
             },
             itemBuilder: (context) {
               final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
-              return [
+              if (isLoggedIn) {
+                return const [
+                  PopupMenuItem<String>(
+                    value: 'manage_products',
+                    child: Text('إدارة المنشورات'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: Text('تسجيل الخروج'),
+                  ),
+                ];
+              }
+              return const [
                 PopupMenuItem<String>(
-                  value: isLoggedIn ? 'logout' : 'login',
-                  child: Text(isLoggedIn ? 'تسجيل الخروج' : 'تسجيل الدخول'),
+                  value: 'login',
+                  child: Text('تسجيل الدخول'),
                 ),
               ];
             },
@@ -1581,15 +1605,20 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage> {
                                                         : null,
                                                     style: FilledButton.styleFrom(
                                                       backgroundColor:
+                                                          Colors.amber.shade700,
+                                                        foregroundColor:
                                                           Colors.white,
-                                                      foregroundColor:
-                                                          Colors.brown.shade800,
+                                                        minimumSize: Size(
+                                                        width > 700 ? 104 : 92,
+                                                        40,
+                                                        ),
+                                                        elevation: 3,
                                                       padding:
                                                           EdgeInsets.symmetric(
                                                             horizontal:
                                                                 width > 700
-                                                                ? 14
-                                                                : 10,
+                                                            ? 18
+                                                            : 14,
                                                             vertical: 8,
                                                           ),
                                                       shape: RoundedRectangleBorder(
