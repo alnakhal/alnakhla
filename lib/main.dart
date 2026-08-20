@@ -3925,7 +3925,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Expanded(
                       child: ListView.separated(
                         itemCount: _currentOrder.items.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = _currentOrder.items[index];
                           return ListTile(
@@ -5341,7 +5342,8 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
                       ),
                     );
                   },
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemCount: filtered.length,
                 ),
               ),
