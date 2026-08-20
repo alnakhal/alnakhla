@@ -18,6 +18,16 @@ import 'slider_images_settings_page.dart';
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
+const Map<String, String> deliveryAreaLabels = {
+  'pickup': 'استلام من المتجر',
+  'baghdad': 'بغداد',
+  'other_governorates': 'باقي المحافظات',
+};
+const Map<String, double> deliveryAreaFees = {
+  'pickup': 0,
+  'baghdad': 5000,
+  'other_governorates': 10000,
+};
 
 class CustomerOrdersPage extends StatefulWidget {
   final String? storeSlug;
@@ -41,6 +51,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   final PageController _sliderPageController = PageController();
   final String _sortOption = 'الأحدث';
   String _selectedCategory = 'الكل';
+  String _selectedDeliveryArea = 'baghdad';
+  String _selectedPaymentMethod = 'cash_on_delivery';
+  Set<int> _favoriteProductIds = <int>{};
+  bool _showFavoritesOnly = false;
   static const List<String> _defaultSliderImages = [
     'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
@@ -77,6 +91,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       if (mounted) setState(() {});
     });
     _loadWelcomeState();
+    _loadCustomerPreferences();
     _loadSliderImages();
     _startSliderTimer();
   }
@@ -120,6 +135,53 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         _sliderImageUrls = _defaultSliderImages;
       });
     }
+  }
+
+  String get _preferencesKey {
+    final storeKey = widget.storeSlug ?? widget.storeUserId ?? 'default';
+    return storeKey.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+  }
+
+  Future<void> _loadCustomerPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites =
+        prefs.getStringList('favorite_products_$_preferencesKey') ?? <String>[];
+    if (!mounted) return;
+    setState(() {
+      _favoriteProductIds =
+          favorites.map(int.tryParse).whereType<int>().toSet();
+      _customerNameController.text =
+          prefs.getString('customer_name_$_preferencesKey') ?? '';
+      _customerPhoneController.text =
+          prefs.getString('customer_phone_$_preferencesKey') ?? '';
+      _customerAddressController.text =
+          prefs.getString('customer_address_$_preferencesKey') ?? '';
+    });
+  }
+
+  Future<void> _saveCustomerPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'favorite_products_$_preferencesKey',
+      _favoriteProductIds.map((id) => id.toString()).toList(),
+    );
+    await prefs.setString(
+        'customer_name_$_preferencesKey', _customerNameController.text.trim());
+    await prefs.setString('customer_phone_$_preferencesKey',
+        _customerPhoneController.text.trim());
+    await prefs.setString('customer_address_$_preferencesKey',
+        _customerAddressController.text.trim());
+  }
+
+  Future<void> _toggleFavorite(Product product) async {
+    setState(() {
+      if (_favoriteProductIds.contains(product.id)) {
+        _favoriteProductIds.remove(product.id);
+      } else {
+        _favoriteProductIds.add(product.id);
+      }
+    });
+    await _saveCustomerPreferences();
   }
 
   void _startSliderTimer() {
@@ -300,7 +362,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         },
       );
 
-  double get _selectedGrandTotal => _selectedTotal + _selectedDeliveryTotal;
+  double get _selectedAreaDeliveryFee =>
+      deliveryAreaFees[_selectedDeliveryArea] ?? 0;
+
+  double get _selectedGrandTotal =>
+      _selectedTotal + _selectedDeliveryTotal + _selectedAreaDeliveryFee;
 
   double _productPrice(int productId) {
     return _lastProducts
@@ -580,6 +646,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     required String customerPhone,
     required String customerAddress,
     required String orderNote,
+    required String deliveryArea,
+    required String paymentMethod,
   }) async {
     if (_isSendingOrder) return;
     setState(() {
@@ -607,6 +675,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         await _showMessage('يرجى إدخال العنوان لإتمام الطلب');
         return;
       }
+      await _saveCustomerPreferences();
 
       final outOfStockProduct = selectedProducts.cast<Product?>().firstWhere(
             (product) =>
@@ -629,7 +698,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final qty = _selectedQuantities[product.id] ?? 0;
         return sum + (product.deliveryPrice ?? 0) * qty;
       });
-      final grandTotal = total + deliveryTotal;
+      final areaDeliveryFee = deliveryAreaFees[deliveryArea] ?? 0;
+      final grandTotal = total + deliveryTotal + areaDeliveryFee;
 
       final orderNumber = _generateOrderNumber();
       final text = StringBuffer();
@@ -646,6 +716,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       if (customerAddress.isNotEmpty) {
         text.writeln('عنوان العميل: $customerAddress');
       }
+      text.writeln('منطقة التوصيل: ${deliveryAreaLabels[deliveryArea]}');
+      text.writeln(
+        'طريقة الدفع: ${paymentMethod == 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'دفع إلكتروني'}',
+      );
       text.writeln('---');
       for (var i = 0; i < selectedProducts.length; i++) {
         final product = selectedProducts[i];
@@ -656,7 +730,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       }
       text.writeln('---');
       text.writeln('مجموع المنتجات: ${total.toStringAsFixed(0)} د.ع');
-      text.writeln('أجور التوصيل: ${deliveryTotal.toStringAsFixed(0)} د.ع');
+      text.writeln(
+        'توصيل المنتجات: ${deliveryTotal.toStringAsFixed(0)} د.ع',
+      );
+      text.writeln('أجور المنطقة: ${areaDeliveryFee.toStringAsFixed(0)} د.ع');
       text.writeln('الإجمالي النهائي: ${grandTotal.toStringAsFixed(0)} د.ع');
       if (orderNote.isNotEmpty) {
         text.writeln('ملاحظات: $orderNote');
@@ -694,6 +771,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           customerAddress: customerAddress,
           totalAmount: grandTotal,
           status: 'pending',
+          paymentMethod: paymentMethod,
+          deliveryArea: deliveryArea,
+          deliveryFee: deliveryTotal + areaDeliveryFee,
           notes: orderNote.isNotEmpty ? orderNote : null,
           items: selectedProducts
               .map(
@@ -954,6 +1034,20 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                         ],
                       ),
                     ],
+                    if (_selectedAreaDeliveryFee > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'توصيل ${deliveryAreaLabels[_selectedDeliveryArea]}',
+                          ),
+                          Text(
+                            '${_selectedAreaDeliveryFee.toStringAsFixed(0)} د.ع',
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1002,6 +1096,52 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       ),
                       minLines: 1,
                       maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedDeliveryArea,
+                      decoration: const InputDecoration(
+                        labelText: 'منطقة التوصيل',
+                        prefixIcon: Icon(Icons.local_shipping_outlined),
+                      ),
+                      items: deliveryAreaLabels.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(
+                                '${entry.value}${deliveryAreaFees[entry.key]! > 0 ? ' - ${deliveryAreaFees[entry.key]!.toStringAsFixed(0)} د.ع' : ''}',
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setStateSheet(() => _selectedDeliveryArea = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedPaymentMethod,
+                      decoration: const InputDecoration(
+                        labelText: 'طريقة الدفع',
+                        prefixIcon: Icon(Icons.payments_outlined),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'cash_on_delivery',
+                          child: Text('الدفع عند الاستلام'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'electronic',
+                          child: Text('دفع إلكتروني لاحقًا'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setStateSheet(() => _selectedPaymentMethod = value);
+                        }
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -1066,6 +1206,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                 customerPhone: phoneVal,
                                 customerAddress: addressVal,
                                 orderNote: _orderNoteController.text.trim(),
+                                deliveryArea: _selectedDeliveryArea,
+                                paymentMethod: _selectedPaymentMethod,
                               );
                               if (!sheetContext.mounted) return;
                               Navigator.of(sheetContext).pop();
@@ -1279,7 +1421,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                 product.description.toLowerCase().contains(query);
             final matchesCategory = _selectedCategory == 'الكل' ||
                 (product.category ?? 'غير مصنف') == _selectedCategory;
-            return matchesQuery && matchesCategory;
+            final matchesFavorites =
+                !_showFavoritesOnly || _favoriteProductIds.contains(product.id);
+            return matchesQuery && matchesCategory && matchesFavorites;
           }).toList();
 
           return Padding(
@@ -1485,7 +1629,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: ['الكل', 'غير مصنف', ...productCategories]
+                        children: [
+                          'الكل',
+                          'غير مصنف',
+                          ...productCategories,
+                        ]
                             .map(
                               (category) => Padding(
                                 padding: const EdgeInsetsDirectional.only(
@@ -1502,6 +1650,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                             )
                             .toList(),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    FilterChip(
+                      avatar: const Icon(Icons.favorite_border, size: 18),
+                      label: const Text('المفضلة فقط'),
+                      selected: _showFavoritesOnly,
+                      onSelected: (selected) {
+                        setState(() => _showFavoritesOnly = selected);
+                      },
                     ),
                     const SizedBox(height: 16),
                     if (filtered.isEmpty)
@@ -1648,6 +1805,34 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                               color: colorScheme.onPrimary,
                                               fontWeight: FontWeight.bold,
                                             ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Material(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                          shape: const CircleBorder(),
+                                          child: IconButton(
+                                            tooltip: _favoriteProductIds
+                                                    .contains(product.id)
+                                                ? 'إزالة من المفضلة'
+                                                : 'إضافة إلى المفضلة',
+                                            icon: Icon(
+                                              _favoriteProductIds
+                                                      .contains(product.id)
+                                                  ? Icons.favorite
+                                                  : Icons.favorite_border,
+                                              color: _favoriteProductIds
+                                                      .contains(product.id)
+                                                  ? Colors.redAccent
+                                                  : Colors.white,
+                                            ),
+                                            onPressed: () =>
+                                                _toggleFavorite(product),
                                           ),
                                         ),
                                       ),

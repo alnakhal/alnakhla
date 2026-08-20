@@ -7,12 +7,15 @@ class CustomerOrdersTrackingPage extends StatefulWidget {
   const CustomerOrdersTrackingPage({super.key});
 
   @override
-  State<CustomerOrdersTrackingPage> createState() => _CustomerOrdersTrackingPageState();
+  State<CustomerOrdersTrackingPage> createState() =>
+      _CustomerOrdersTrackingPageState();
 }
 
-class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage> {
+class _CustomerOrdersTrackingPageState
+    extends State<CustomerOrdersTrackingPage> {
   late Future<List<CustomerOrderModel>> _ordersFuture;
-  String _filterStatus = 'all'; // all, pending, confirmed, shipped, delivered, cancelled
+  String _filterStatus =
+      'all'; // all, pending, confirmed, shipped, delivered, cancelled
 
   @override
   void initState() {
@@ -28,11 +31,14 @@ class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage>
 
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
-      await CustomerOrdersDatabase.instance.updateOrderStatus(orderId, newStatus);
+      await CustomerOrdersDatabase.instance
+          .updateOrderStatus(orderId, newStatus);
       setState(() => _loadOrders());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم تحديث حالة الطلب إلى ${_getStatusArabic(newStatus)}')),
+          SnackBar(
+              content: Text(
+                  'تم تحديث حالة الطلب إلى ${_getStatusArabic(newStatus)}')),
         );
       }
     } catch (e) {
@@ -117,7 +123,9 @@ class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage>
                 final orders = snapshot.data ?? [];
                 if (orders.isEmpty) {
                   return Center(
-                    child: Text(_filterStatus == 'all' ? 'لا توجد طلبات بعد' : 'لا توجد طلبات بهذه الحالة'),
+                    child: Text(_filterStatus == 'all'
+                        ? 'لا توجد طلبات بعد'
+                        : 'لا توجد طلبات بهذه الحالة'),
                   );
                 }
                 return ListView.builder(
@@ -173,17 +181,20 @@ class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage>
                   children: [
                     Text(
                       'رقم الطلب: ${order.orderNumber}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       dateFmt.format(order.createdAt),
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -210,11 +221,25 @@ class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('العميل: ${order.customerName}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('العميل: ${order.customerName}',
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
-                  Text('الهاتف: ${order.customerPhone}', style: const TextStyle(fontSize: 12)),
+                  Text('الهاتف: ${order.customerPhone}',
+                      style: const TextStyle(fontSize: 12)),
                   const SizedBox(height: 4),
-                  Text('العنوان: ${order.customerAddress}', style: const TextStyle(fontSize: 12)),
+                  Text('العنوان: ${order.customerAddress}',
+                      style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text('التوصيل: ${order.deliveryAreaArabic}',
+                      style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'أجور التوصيل: ${order.deliveryFee.toStringAsFixed(0)} د.ع',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('الدفع: ${order.paymentMethodArabic}',
+                      style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
@@ -223,10 +248,14 @@ class _CustomerOrdersTrackingPageState extends State<CustomerOrdersTrackingPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('إجمالي الطلب:', style: TextStyle(fontWeight: FontWeight.w500)),
+                const Text('إجمالي الطلب:',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(
                   '${order.totalAmount.toStringAsFixed(0)} د.ع',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary),
                 ),
               ],
             ),

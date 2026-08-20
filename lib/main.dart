@@ -1055,6 +1055,25 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     ]);
     final products = results[0] as List<Product>;
     final orders = results[1] as List<CustomerOrderModel>;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monthStart = DateTime(now.year, now.month);
+    final todayOrders =
+        orders.where((order) => !order.createdAt.isBefore(today));
+    final monthOrders =
+        orders.where((order) => !order.createdAt.isBefore(monthStart));
+    final productQuantities = <String, int>{};
+    for (final order in orders) {
+      for (final item in order.items ?? const <Map<String, dynamic>>[]) {
+        final name = item['name']?.toString();
+        final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
+        if (name != null && name.isNotEmpty) {
+          productQuantities[name] = (productQuantities[name] ?? 0) + quantity;
+        }
+      }
+    }
+    final topProducts = productQuantities.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     final stats = _DashboardStats(
       productCount: products.length,
       lowStockCount:
@@ -1065,6 +1084,22 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       pendingOrderCount:
           orders.where((order) => order.status == 'pending').length,
       orderTotal: orders.fold(0.0, (sum, order) => sum + order.totalAmount),
+      todaySales:
+          todayOrders.fold(0.0, (sum, order) => sum + order.totalAmount),
+      monthSales:
+          monthOrders.fold(0.0, (sum, order) => sum + order.totalAmount),
+      confirmedOrderCount:
+          orders.where((order) => order.status == 'confirmed').length,
+      shippedOrderCount:
+          orders.where((order) => order.status == 'shipped').length,
+      deliveredOrderCount:
+          orders.where((order) => order.status == 'delivered').length,
+      cancelledOrderCount:
+          orders.where((order) => order.status == 'cancelled').length,
+      topProducts: topProducts
+          .take(5)
+          .map((entry) => '${entry.key} (${entry.value})')
+          .toList(),
     );
     final previousPendingCount = _lastPendingOrderCount;
     _lastPendingOrderCount = stats.pendingOrderCount;
@@ -1227,6 +1262,51 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('المبيعات',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 24,
+                          runSpacing: 12,
+                          children: [
+                            Text(
+                                'اليوم: ${stats.todaySales.toStringAsFixed(0)} د.ع'),
+                            Text(
+                                'هذا الشهر: ${stats.monthSales.toStringAsFixed(0)} د.ع'),
+                            Text('مؤكد: ${stats.confirmedOrderCount}'),
+                            Text('قيد الشحن: ${stats.shippedOrderCount}'),
+                            Text('مكتمل: ${stats.deliveredOrderCount}'),
+                            Text('ملغى: ${stats.cancelledOrderCount}'),
+                          ],
+                        ),
+                        if (stats.topProducts.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('الأكثر طلبًا',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          ...stats.topProducts.asMap().entries.map(
+                                (entry) => ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(
+                                    radius: 14,
+                                    child: Text('${entry.key + 1}'),
+                                  ),
+                                  title: Text(entry.value),
+                                ),
+                              ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _DashboardAction(
                     icon: Icons.inventory_2_outlined,
                     title: 'إدارة المنتجات',
@@ -1263,7 +1343,14 @@ class _DashboardStats {
       required this.stockUnits,
       required this.orderCount,
       required this.pendingOrderCount,
-      required this.orderTotal});
+      required this.orderTotal,
+      required this.todaySales,
+      required this.monthSales,
+      required this.confirmedOrderCount,
+      required this.shippedOrderCount,
+      required this.deliveredOrderCount,
+      required this.cancelledOrderCount,
+      required this.topProducts});
 
   const _DashboardStats.empty()
       : productCount = 0,
@@ -1271,7 +1358,14 @@ class _DashboardStats {
         stockUnits = 0,
         orderCount = 0,
         pendingOrderCount = 0,
-        orderTotal = 0;
+        orderTotal = 0,
+        todaySales = 0,
+        monthSales = 0,
+        confirmedOrderCount = 0,
+        shippedOrderCount = 0,
+        deliveredOrderCount = 0,
+        cancelledOrderCount = 0,
+        topProducts = const [];
 
   final int productCount;
   final int lowStockCount;
@@ -1279,6 +1373,13 @@ class _DashboardStats {
   final int orderCount;
   final int pendingOrderCount;
   final double orderTotal;
+  final double todaySales;
+  final double monthSales;
+  final int confirmedOrderCount;
+  final int shippedOrderCount;
+  final int deliveredOrderCount;
+  final int cancelledOrderCount;
+  final List<String> topProducts;
 }
 
 class _DashboardStatCard extends StatelessWidget {

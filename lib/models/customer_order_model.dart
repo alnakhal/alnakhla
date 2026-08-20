@@ -6,6 +6,9 @@ class CustomerOrderModel {
   final String customerAddress;
   final double totalAmount;
   final String status; // pending, confirmed, shipped, delivered, cancelled
+  final String paymentMethod;
+  final String deliveryArea;
+  final double deliveryFee;
   final String? notes;
   final List<Map<String, dynamic>>? items;
   final DateTime createdAt;
@@ -19,6 +22,9 @@ class CustomerOrderModel {
     required this.customerAddress,
     required this.totalAmount,
     this.status = 'pending',
+    this.paymentMethod = 'cash_on_delivery',
+    this.deliveryArea = 'baghdad',
+    this.deliveryFee = 0,
     this.notes,
     this.items,
     required this.createdAt,
@@ -33,8 +39,11 @@ class CustomerOrderModel {
         'customer_address': customerAddress,
         'total_amount': totalAmount,
         'status': status,
+        'payment_method': paymentMethod,
+        'delivery_area': deliveryArea,
+        'delivery_fee': deliveryFee,
         'notes': notes,
-        'items_json': items != null ? items.toString() : null,
+        'items': items,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt?.toIso8601String(),
       };
@@ -48,10 +57,11 @@ class CustomerOrderModel {
       customerAddress: map['customer_address']?.toString() ?? '',
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
       status: map['status']?.toString() ?? 'pending',
+      paymentMethod: map['payment_method']?.toString() ?? 'cash_on_delivery',
+      deliveryArea: map['delivery_area']?.toString() ?? 'baghdad',
+      deliveryFee: (map['delivery_fee'] as num?)?.toDouble() ?? 0,
       notes: map['notes']?.toString(),
-      items: map['items'] is List
-          ? List<Map<String, dynamic>>.from(map['items'] as List)
-          : null,
+      items: _readItems(map),
       createdAt: map['created_at'] is DateTime
           ? map['created_at'] as DateTime
           : DateTime.parse(map['created_at']?.toString() ??
@@ -62,6 +72,15 @@ class CustomerOrderModel {
               : DateTime.parse(map['updated_at'].toString()))
           : null,
     );
+  }
+
+  static List<Map<String, dynamic>>? _readItems(Map<String, dynamic> map) {
+    final rawItems = map['items'];
+    if (rawItems is! List) return null;
+    return rawItems
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
   }
 
   String get statusArabic {
@@ -78,6 +97,23 @@ class CustomerOrderModel {
         return 'ملغى';
       default:
         return status;
+    }
+  }
+
+  String get paymentMethodArabic => paymentMethod == 'cash_on_delivery'
+      ? 'الدفع عند الاستلام'
+      : 'دفع إلكتروني';
+
+  String get deliveryAreaArabic {
+    switch (deliveryArea) {
+      case 'pickup':
+        return 'استلام من المتجر';
+      case 'other_governorates':
+        return 'باقي المحافظات';
+      case 'baghdad':
+        return 'بغداد';
+      default:
+        return deliveryArea;
     }
   }
 }

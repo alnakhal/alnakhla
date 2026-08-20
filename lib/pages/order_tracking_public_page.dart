@@ -355,6 +355,14 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                             _buildInfoRow('الاسم', order.customerName),
                             _buildInfoRow('الهاتف', order.customerPhone),
                             _buildInfoRow('العنوان', order.customerAddress),
+                            _buildInfoRow(
+                                'منطقة التوصيل', order.deliveryAreaArabic),
+                            _buildInfoRow(
+                              'أجور التوصيل',
+                              '${order.deliveryFee.toStringAsFixed(0)} د.ع',
+                            ),
+                            _buildInfoRow(
+                                'طريقة الدفع', order.paymentMethodArabic),
                           ],
                         ),
                       ),
