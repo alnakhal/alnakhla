@@ -15,6 +15,7 @@ import '../services/data_service.dart';
 import '../db/customer_orders_db.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
+import 'customer_orders_tracking_page.dart';
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
@@ -1493,25 +1494,44 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              FilledButton.icon(
-                                onPressed: () async {
-                                  await Share.share(
-                                    'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.share_outlined,
-                                  size: 18,
-                                ),
-                                label: const Text('شارك'),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.brown.shade700,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed: () async {
+                                      await Share.share(
+                                        'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.share_outlined,
+                                      size: 18,
+                                    ),
+                                    label: const Text('شارك'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.brown.shade700,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const CustomerOrdersTrackingPage(),
+                                        ),
+                                      );
+                                    },
+                                    icon:
+                                        const Icon(Icons.receipt_long_outlined),
+                                    label: const Text('الطلبات'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
