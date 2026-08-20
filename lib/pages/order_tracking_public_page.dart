@@ -9,7 +9,8 @@ class OrderTrackingPublicPage extends StatefulWidget {
   const OrderTrackingPublicPage({super.key, this.orderNumber});
 
   @override
-  State<OrderTrackingPublicPage> createState() => _OrderTrackingPublicPageState();
+  State<OrderTrackingPublicPage> createState() =>
+      _OrderTrackingPublicPageState();
 }
 
 class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
@@ -36,7 +37,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
 
   Future<CustomerOrderModel?> _searchOrder(String orderNumber) async {
     try {
-      final order = await CustomerOrdersDatabase.instance.getOrderByNumber(orderNumber);
+      final order =
+          await CustomerOrdersDatabase.instance.getOrderByNumber(orderNumber);
       return order;
     } catch (e) {
       debugPrint('Error searching order: $e');
@@ -124,8 +126,16 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
   }
 
   bool _isStatusCompleted(String currentStatus, String checkStatus) {
-    const statusOrder = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-    return statusOrder.indexOf(currentStatus) >= statusOrder.indexOf(checkStatus) && currentStatus != 'cancelled';
+    const statusOrder = [
+      'pending',
+      'confirmed',
+      'shipped',
+      'delivered',
+      'cancelled'
+    ];
+    return statusOrder.indexOf(currentStatus) >=
+            statusOrder.indexOf(checkStatus) &&
+        currentStatus != 'cancelled';
   }
 
   @override
@@ -142,7 +152,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
           children: [
             // Search section
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -150,14 +161,16 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                   children: [
                     const Text(
                       'أدخل رقم الطلب',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _orderNumberController,
                       decoration: InputDecoration(
                         hintText: 'مثال: ORD-20250530-143025',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
                         prefixIcon: const Icon(Icons.search),
                       ),
                       textInputAction: TextInputAction.search,
@@ -201,17 +214,20 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
-                            Icon(Icons.info_outline, size: 48, color: Colors.grey.shade400),
+                            Icon(Icons.info_outline,
+                                size: 48, color: Colors.grey.shade400),
                             const SizedBox(height: 16),
                             Text(
                               'لم يتم العثور على الطلب: $_currentOrderNumber',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 16),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'يرجى التأكد من رقم الطلب والمحاولة مرة أخرى',
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 14),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -232,7 +248,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                   children: [
                     // Order header
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -246,17 +263,22 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                                   children: [
                                     Text(
                                       'رقم الطلب',
-                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       order.orderNumber,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
                                     ),
                                   ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: statusColor.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(8),
@@ -276,7 +298,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                             const SizedBox(height: 12),
                             Text(
                               'تاريخ الطلب: ${dateFmt.format(order.createdAt)}',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 13),
                             ),
                           ],
                         ),
@@ -286,14 +309,38 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                     // Tracking timeline
                     const Text(
                       'مراحل الطلب',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 16),
                     _buildTrackingTimeline(trackingSteps, order.status),
+                    if (order.status == 'cancelled') ...[
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.red.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Icons.cancel_outlined,
+                                  color: Colors.red.shade700),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'تم إلغاء هذا الطلب. تواصل مع المتجر لمعرفة التفاصيل.',
+                                  style: TextStyle(color: Colors.red.shade900),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     // Customer info
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -301,7 +348,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                           children: [
                             const Text(
                               'معلومات التسليم',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 12),
                             _buildInfoRow('الاسم', order.customerName),
@@ -314,7 +362,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                     const SizedBox(height: 16),
                     // Order total
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       color: Colors.green.shade50,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -323,7 +372,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                           children: [
                             const Text(
                               'إجمالي الطلب',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             Text(
                               '${order.totalAmount.toStringAsFixed(0)} د.ع',
@@ -340,7 +390,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                     if (order.notes != null && order.notes!.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         color: Colors.blue.shade50,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -349,7 +400,9 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                             children: [
                               Text(
                                 'ملاحظات',
-                                style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.blue.shade900,
+                                    fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -391,7 +444,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
     );
   }
 
-  Widget _buildTrackingTimeline(List<_TrackingStep> steps, String currentStatus) {
+  Widget _buildTrackingTimeline(
+      List<_TrackingStep> steps, String currentStatus) {
     return Column(
       children: List.generate(steps.length, (index) {
         final step = steps[index];
@@ -411,11 +465,16 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: step.isCompleted ? Colors.green : Colors.grey.shade300,
-                        border: isCurrentStep ? Border.all(color: Colors.green, width: 3) : null,
+                        color: step.isCompleted
+                            ? Colors.green
+                            : Colors.grey.shade300,
+                        border: isCurrentStep
+                            ? Border.all(color: Colors.green, width: 3)
+                            : null,
                       ),
                       child: step.isCompleted
-                          ? const Icon(Icons.check, color: Colors.white, size: 20)
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 20)
                           : Text(
                               '${index + 1}',
                               textAlign: TextAlign.center,
@@ -429,7 +488,9 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                       Container(
                         width: 2,
                         height: 40,
-                        color: step.isCompleted ? Colors.green : Colors.grey.shade300,
+                        color: step.isCompleted
+                            ? Colors.green
+                            : Colors.grey.shade300,
                       ),
                   ],
                 ),
@@ -452,7 +513,8 @@ class _OrderTrackingPublicPageState extends State<OrderTrackingPublicPage> {
                         const SizedBox(height: 4),
                         Text(
                           step.description,
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 13),
                         ),
                       ],
                     ),

@@ -14,17 +14,21 @@ class Product {
     this.imageUrl,
     this.storeId,
     this.deliveryPrice,
+    this.category,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
-      id: map['id'] is int ? (map['id'] as int) : int.tryParse(map['id']?.toString() ?? '0') ?? 0,
+      id: map['id'] is int
+          ? (map['id'] as int)
+          : int.tryParse(map['id']?.toString() ?? '0') ?? 0,
       name: map['name'] as String,
       description: map['description'] as String? ?? '',
       price: (map['price'] as num).toDouble(),
       cost: (map['cost'] as num?)?.toDouble() ?? 0,
       wholesalePrice: (map['wholesale_price'] as num?)?.toDouble() ?? 0,
-      minWholesaleQuantity: (map['min_wholesale_quantity'] as num?)?.toInt() ?? 0,
+      minWholesaleQuantity:
+          (map['min_wholesale_quantity'] as num?)?.toInt() ?? 0,
       singlePrice: (map['single_price'] as num?)?.toDouble() ?? 0,
       hasWholesale: map['has_wholesale'] as bool? ?? false,
       remainingQty: (map['remaining_qty'] as num?)?.toInt() ?? 0,
@@ -32,6 +36,7 @@ class Product {
       imageUrl: map['image_url'] as String?,
       storeId: map['store_id']?.toString(),
       deliveryPrice: (map['delivery_price'] as num?)?.toDouble() ?? 0,
+      category: map['category'] as String?,
     );
   }
 
@@ -49,4 +54,14 @@ class Product {
   final String? imageUrl;
   final String? storeId;
   final double? deliveryPrice;
+  final String? category;
 }
+
+const productCategories = [
+  'مستلزمات زراعية',
+  'أسمدة ومبيدات',
+  'أدوات الري',
+  'أدوات ومعدات',
+  'بذور وشتلات',
+  'أخرى',
+];

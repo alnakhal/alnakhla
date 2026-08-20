@@ -26,18 +26,18 @@ class CustomerOrderModel {
   });
 
   Map<String, dynamic> toMap() => {
-    if (id != null) 'id': id,
-    'order_number': orderNumber,
-    'customer_name': customerName,
-    'customer_phone': customerPhone,
-    'customer_address': customerAddress,
-    'total_amount': totalAmount,
-    'status': status,
-    'notes': notes,
-    'items_json': items != null ? items.toString() : null,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt?.toIso8601String(),
-  };
+        if (id != null) 'id': id,
+        'order_number': orderNumber,
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'customer_address': customerAddress,
+        'total_amount': totalAmount,
+        'status': status,
+        'notes': notes,
+        'items_json': items != null ? items.toString() : null,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt?.toIso8601String(),
+      };
 
   factory CustomerOrderModel.fromMap(Map<String, dynamic> map) {
     return CustomerOrderModel(
@@ -49,9 +49,18 @@ class CustomerOrderModel {
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
       status: map['status']?.toString() ?? 'pending',
       notes: map['notes']?.toString(),
-      items: map['items'] is List ? List<Map<String, dynamic>>.from(map['items'] as List) : null,
-      createdAt: map['created_at'] is DateTime ? map['created_at'] as DateTime : DateTime.parse(map['created_at']?.toString() ?? DateTime.now().toIso8601String()),
-      updatedAt: map['updated_at'] != null ? (map['updated_at'] is DateTime ? map['updated_at'] as DateTime : DateTime.parse(map['updated_at'].toString())) : null,
+      items: map['items'] is List
+          ? List<Map<String, dynamic>>.from(map['items'] as List)
+          : null,
+      createdAt: map['created_at'] is DateTime
+          ? map['created_at'] as DateTime
+          : DateTime.parse(map['created_at']?.toString() ??
+              DateTime.now().toIso8601String()),
+      updatedAt: map['updated_at'] != null
+          ? (map['updated_at'] is DateTime
+              ? map['updated_at'] as DateTime
+              : DateTime.parse(map['updated_at'].toString()))
+          : null,
     );
   }
 
@@ -72,3 +81,11 @@ class CustomerOrderModel {
     }
   }
 }
+
+const orderStatuses = [
+  'pending',
+  'confirmed',
+  'shipped',
+  'delivered',
+  'cancelled',
+];

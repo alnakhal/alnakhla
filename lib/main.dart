@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart';
+import 'pages/order_tracking_public_page.dart';
 import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
@@ -168,6 +169,14 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   if (path == '/customer-orders' || path == '/store') {
     return MaterialPageRoute(
       builder: (_) => CustomerOrdersPage(storeSlug: slug, storeUserId: userId),
+    );
+  }
+
+  if (path == '/track-order' || path == '/order-tracking') {
+    return MaterialPageRoute(
+      builder: (_) => OrderTrackingPublicPage(
+        orderNumber: uri.queryParameters['order_number'],
+      ),
     );
   }
 
@@ -1359,6 +1368,7 @@ class _ProductsTabState extends State<ProductsTab> {
   final ScrollController _scrollController = ScrollController();
   final List<Product> _products = [];
   ProductFilter _selectedFilter = ProductFilter.all;
+  String _selectedCategory = 'الكل';
   bool _isLoading = false;
   bool _hasMore = true;
   String? _errorMessage;
@@ -1567,6 +1577,13 @@ class _ProductsTabState extends State<ProductsTab> {
           .toList();
     }
 
+    if (_selectedCategory != 'الكل') {
+      filtered = filtered
+          .where((product) =>
+              (product.category ?? 'غير مصنف') == _selectedCategory)
+          .toList();
+    }
+
     switch (_selectedFilter) {
       case ProductFilter.lowStock:
         return filtered.where((product) => product.remainingQty <= 5).toList();
@@ -1578,24 +1595,46 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Widget _buildFilterChips() {
-    return Wrap(
-      spacing: 8,
-      children: ProductFilter.values.map((filter) {
-        final label = switch (filter) {
-          ProductFilter.all => 'الكل',
-          ProductFilter.lowStock => 'مخزون منخفض',
-          ProductFilter.wholesale => 'الجملة فقط',
-        };
-        return ChoiceChip(
-          label: Text(label),
-          selected: _selectedFilter == filter,
-          onSelected: (_) {
-            setState(() {
-              _selectedFilter = filter;
-            });
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: ProductFilter.values.map((filter) {
+            final label = switch (filter) {
+              ProductFilter.all => 'الكل',
+              ProductFilter.lowStock => 'مخزون منخفض',
+              ProductFilter.wholesale => 'الجملة فقط',
+            };
+            return ChoiceChip(
+              label: Text(label),
+              selected: _selectedFilter == filter,
+              onSelected: (_) {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedCategory,
+          decoration: const InputDecoration(
+            labelText: 'التصنيف',
+            prefixIcon: Icon(Icons.category_outlined),
+          ),
+          items: ['الكل', 'غير مصنف', ...productCategories]
+              .map((category) => DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            if (value != null) setState(() => _selectedCategory = value);
           },
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 
@@ -1805,6 +1844,8 @@ class _ProductsTabState extends State<ProductsTab> {
                                         'السعر: ${product.price.toStringAsFixed(0)}'),
                                     Text(
                                         'المخزون: ${product.remainingQty} قطعة'),
+                                    if (product.category != null)
+                                      Text('التصنيف: ${product.category}'),
                                     if (product.hasWholesale)
                                       Text(
                                           'جملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع'),
@@ -2000,6 +2041,7 @@ class _AddProductPageState extends State<AddProductPage> {
   final _remainingQtyController = TextEditingController();
   final _deliveryPriceController = TextEditingController(text: '0');
   final _descriptionController = TextEditingController();
+  String _category = productCategories.first;
   bool _hasWholesale = false;
   XFile? _pickedImage;
   Uint8List? _pickedImageBytes;
@@ -2104,6 +2146,7 @@ class _AddProductPageState extends State<AddProductPage> {
       'remaining_qty': remainingQty,
       'delivery_price': deliveryPrice,
       'image_url': imageUrl,
+      'category': _category,
       if (storeId != null) 'store_id': storeId,
       'created_at': DateTime.now().toIso8601String(),
       'user_id': user.id,
@@ -2167,6 +2210,20 @@ class _AddProductPageState extends State<AddProductPage> {
                 decoration: const InputDecoration(labelText: 'تكلفة المنتج'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
+                items: productCategories
+                    .map((category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
               ),
               const SizedBox(height: 12),
               SwitchListTile(
@@ -3514,6 +3571,7 @@ class _EditProductPageState extends State<EditProductPage> {
   late TextEditingController _deliveryPriceController;
   late TextEditingController _descriptionController;
   late bool _hasWholesale;
+  late String _category;
   XFile? _pickedImage;
   Uint8List? _pickedImageBytes;
   bool _isSaving = false;
@@ -3539,6 +3597,9 @@ class _EditProductPageState extends State<EditProductPage> {
     _descriptionController =
         TextEditingController(text: widget.product.description);
     _hasWholesale = widget.product.hasWholesale;
+    _category = productCategories.contains(widget.product.category)
+        ? widget.product.category!
+        : productCategories.first;
   }
 
   @override
@@ -3644,6 +3705,7 @@ class _EditProductPageState extends State<EditProductPage> {
       'remaining_qty': remainingQty,
       'delivery_price': deliveryPrice,
       'image_url': imageUrl,
+      'category': _category,
     };
 
     try {
@@ -3707,6 +3769,20 @@ class _EditProductPageState extends State<EditProductPage> {
                 decoration: const InputDecoration(labelText: 'تكلفة المنتج'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
+                items: productCategories
+                    .map((category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
               ),
               const SizedBox(height: 12),
               SwitchListTile(

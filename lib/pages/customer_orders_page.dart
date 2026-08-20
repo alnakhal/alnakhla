@@ -40,6 +40,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   final TextEditingController _orderNoteController = TextEditingController();
   final PageController _sliderPageController = PageController();
   final String _sortOption = 'الأحدث';
+  String _selectedCategory = 'الكل';
   static const List<String> _defaultSliderImages = [
     'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
@@ -593,12 +594,29 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         return;
       }
 
+      if (customerName.trim().isEmpty) {
+        await _showMessage('يرجى إدخال اسم العميل لإتمام الطلب');
+        return;
+      }
+
       if (!_isValidPhone(customerPhone)) {
         await _showMessage('يرجى إدخال رقم جوال عراقي صحيح مثل 077xxxxxxxx');
         return;
       }
       if (customerAddress.isEmpty) {
         await _showMessage('يرجى إدخال العنوان لإتمام الطلب');
+        return;
+      }
+
+      final outOfStockProduct = selectedProducts.cast<Product?>().firstWhere(
+            (product) =>
+                (_selectedQuantities[product!.id] ?? 0) > product.remainingQty,
+            orElse: () => null,
+          );
+      if (outOfStockProduct != null) {
+        await _showMessage(
+          'الكمية المطلوبة من ${outOfStockProduct.name} أكبر من المتوفر حاليًا',
+        );
         return;
       }
 
@@ -691,6 +709,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         );
         await CustomerOrdersDatabase.instance.insertOrder(order);
         if (mounted) {
+          setState(() => _selectedQuantities.clear());
           await _showMessage('✓ تم إرسال الطلب بنجاح! رقم الطلب: $orderNumber');
         }
       } catch (e) {
@@ -964,7 +983,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     const SizedBox(height: 16),
                     TextField(
                       controller: _customerNameController,
-                      decoration: const InputDecoration(labelText: 'الاسم'),
+                      decoration:
+                          const InputDecoration(labelText: 'الاسم (مطلوب)'),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -1016,8 +1036,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                               // validate required fields
                               final phoneVal =
                                   _customerPhoneController.text.trim();
+                              final nameVal =
+                                  _customerNameController.text.trim();
                               final addressVal =
                                   _customerAddressController.text.trim();
+                              if (nameVal.isEmpty) {
+                                await _showMessage('الرجاء إدخال اسم العميل');
+                                return;
+                              }
                               if (!_isValidPhone(phoneVal)) {
                                 await _showMessage(
                                   'الرجاء إدخال رقم جوال عراقي صحيح مثل 077xxxxxxxx',
@@ -1248,9 +1274,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
 
           final query = _searchController.text.trim().toLowerCase();
           final filtered = products.where((product) {
-            return query.isEmpty ||
+            final matchesQuery = query.isEmpty ||
                 product.name.toLowerCase().contains(query) ||
                 product.description.toLowerCase().contains(query);
+            final matchesCategory = _selectedCategory == 'الكل' ||
+                (product.category ?? 'غير مصنف') == _selectedCategory;
+            return matchesQuery && matchesCategory;
           }).toList();
 
           return Padding(
@@ -1446,6 +1475,34 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       ),
                       const SizedBox(height: 16),
                     ],
+                    Text(
+                      'التصنيفات',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: ['الكل', 'غير مصنف', ...productCategories]
+                            .map(
+                              (category) => Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                  end: 8,
+                                ),
+                                child: ChoiceChip(
+                                  label: Text(category),
+                                  selected: _selectedCategory == category,
+                                  onSelected: (_) => setState(
+                                    () => _selectedCategory = category,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     if (filtered.isEmpty)
                       SizedBox(
