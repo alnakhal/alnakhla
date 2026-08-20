@@ -277,6 +277,30 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         return sum + quantity * _productPrice(productId);
       });
 
+  double get _selectedDeliveryTotal => _selectedQuantities.entries.fold(
+        0.0,
+        (sum, entry) {
+          final product = _lastProducts.firstWhere(
+            (item) => item.id == entry.key,
+            orElse: () => Product(
+              id: 0,
+              name: '',
+              description: '',
+              price: 0,
+              cost: 0,
+              wholesalePrice: 0,
+              minWholesaleQuantity: 0,
+              singlePrice: 0,
+              hasWholesale: false,
+              remainingQty: 0,
+            ),
+          );
+          return sum + (product.deliveryPrice ?? 0) * entry.value;
+        },
+      );
+
+  double get _selectedGrandTotal => _selectedTotal + _selectedDeliveryTotal;
+
   double _productPrice(int productId) {
     return _lastProducts
         .firstWhere(
@@ -315,6 +339,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       return digits.substring(1);
     }
     return digits;
+  }
+
+  bool _isValidPhone(String raw) {
+    final phone = _normalizePhone(raw);
+    return RegExp(r'^(07\d{9}|9647\d{9})$').hasMatch(phone);
   }
 
   String _generateOrderNumber() {
@@ -564,8 +593,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         return;
       }
 
-      if (customerPhone.isEmpty) {
-        await _showMessage('يرجى إدخال رقم الجوال لإتمام الطلب');
+      if (!_isValidPhone(customerPhone)) {
+        await _showMessage('يرجى إدخال رقم جوال عراقي صحيح مثل 077xxxxxxxx');
         return;
       }
       if (customerAddress.isEmpty) {
@@ -578,6 +607,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final qty = _selectedQuantities[product.id] ?? 0;
         return sum + qty * product.price;
       });
+      final deliveryTotal = selectedProducts.fold<double>(0, (sum, product) {
+        final qty = _selectedQuantities[product.id] ?? 0;
+        return sum + (product.deliveryPrice ?? 0) * qty;
+      });
+      final grandTotal = total + deliveryTotal;
 
       final orderNumber = _generateOrderNumber();
       final text = StringBuffer();
@@ -603,7 +637,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         );
       }
       text.writeln('---');
-      text.writeln('المجموع: ${total.toStringAsFixed(0)}');
+      text.writeln('مجموع المنتجات: ${total.toStringAsFixed(0)} د.ع');
+      text.writeln('أجور التوصيل: ${deliveryTotal.toStringAsFixed(0)} د.ع');
+      text.writeln('الإجمالي النهائي: ${grandTotal.toStringAsFixed(0)} د.ع');
       if (orderNote.isNotEmpty) {
         text.writeln('ملاحظات: $orderNote');
       }
@@ -638,7 +674,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           customerName: customerName.isNotEmpty ? customerName : 'زائر',
           customerPhone: customerPhone,
           customerAddress: customerAddress,
-          totalAmount: total,
+          totalAmount: grandTotal,
           status: 'pending',
           notes: orderNote.isNotEmpty ? orderNote : null,
           items: selectedProducts
@@ -882,8 +918,41 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                           ),
                         ),
                         Text(
-                          _selectedTotal.toStringAsFixed(0),
+                          '${_selectedTotal.toStringAsFixed(0)} د.ع',
                           style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    if (_selectedDeliveryTotal > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('أجور التوصيل'),
+                          Text(
+                            '${_selectedDeliveryTotal.toStringAsFixed(0)} د.ع',
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'الإجمالي النهائي',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          '${_selectedGrandTotal.toStringAsFixed(0)} د.ع',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                       ],
                     ),
@@ -949,8 +1018,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                   _customerPhoneController.text.trim();
                               final addressVal =
                                   _customerAddressController.text.trim();
-                              if (phoneVal.isEmpty) {
-                                await _showMessage('الرجاء إدخال رقم الجوال');
+                              if (!_isValidPhone(phoneVal)) {
+                                await _showMessage(
+                                  'الرجاء إدخال رقم جوال عراقي صحيح مثل 077xxxxxxxx',
+                                );
                                 return;
                               }
                               if (addressVal.isEmpty) {
