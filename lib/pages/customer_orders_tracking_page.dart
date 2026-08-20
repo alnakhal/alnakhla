@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../db/customer_orders_db.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
+import '../services/customer_orders_supabase_service.dart';
+import '../main.dart' show LoginPage;
 
 class CustomerOrdersTrackingPage extends StatefulWidget {
   const CustomerOrdersTrackingPage({super.key});
@@ -14,6 +16,7 @@ class CustomerOrdersTrackingPage extends StatefulWidget {
 class _CustomerOrdersTrackingPageState
     extends State<CustomerOrdersTrackingPage> {
   late Future<List<CustomerOrderModel>> _ordersFuture;
+  final _ordersService = CustomerOrdersSupabaseService();
   String _filterStatus =
       'all'; // all, pending, confirmed, shipped, delivered, cancelled
 
@@ -24,14 +27,24 @@ class _CustomerOrdersTrackingPageState
   }
 
   void _loadOrders() {
-    _ordersFuture = CustomerOrdersDatabase.instance.getAllOrders(
+    _ordersFuture = _ordersService.getMyOrders(
       filterStatus: _filterStatus == 'all' ? null : _filterStatus,
     );
   }
 
+  SupabaseClient get _supabase => Supabase.instance.client;
+
+  Future<void> _requireLogin() async {
+    if (_supabase.auth.currentUser != null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+    if (mounted) setState(_loadOrders);
+  }
+
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
-      await CustomerOrdersDatabase.instance.updateOrderStatus(
+      await _ordersService.updateOrderStatus(
         orderId,
         newStatus,
       );
@@ -98,7 +111,13 @@ class _CustomerOrdersTrackingPageState
           IconButton(
             tooltip: 'إضافة طلب',
             icon: const Icon(Icons.add),
-            onPressed: _showAddOrderDialog,
+            onPressed: () async {
+              if (_supabase.auth.currentUser == null) {
+                await _requireLogin();
+                return;
+              }
+              await _showAddOrderDialog();
+            },
           ),
         ],
       ),
@@ -125,6 +144,15 @@ class _CustomerOrdersTrackingPageState
             child: FutureBuilder<List<CustomerOrderModel>>(
               future: _ordersFuture,
               builder: (context, snapshot) {
+                if (_supabase.auth.currentUser == null) {
+                  return Center(
+                    child: FilledButton.icon(
+                      onPressed: _requireLogin,
+                      icon: const Icon(Icons.login),
+                      label: const Text('تسجيل الدخول لمتابعة الطلبات'),
+                    ),
+                  );
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -406,6 +434,7 @@ class _CustomerOrdersTrackingPageState
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
     final landmarkController = TextEditingController();
+    final receiptController = TextEditingController();
     final notesController = TextEditingController();
     final itemNameControllers = [TextEditingController()];
     final itemQuantityControllers = [TextEditingController(text: '1')];
@@ -460,6 +489,15 @@ class _CustomerOrdersTrackingPageState
                       validator: (value) => value == null || value.trim().isEmpty
                           ? 'أدخل أقرب نقطة دالة'
                           : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: receiptController,
+                      decoration: const InputDecoration(
+                        labelText: 'رقم الوصل',
+                        hintText: 'أدخل رقم الوصل يدويًا',
+                      ),
+                      keyboardType: TextInputType.text,
                     ),
                     const SizedBox(height: 16),
                     const Align(
@@ -622,13 +660,16 @@ class _CustomerOrdersTrackingPageState
       try {
         final orderNumber =
             'MAN-${DateTime.now().millisecondsSinceEpoch}';
-        await CustomerOrdersDatabase.instance.insertOrder(
+        await _ordersService.insertOrder(
           CustomerOrderModel(
             orderNumber: orderNumber,
             customerName: nameController.text.trim(),
             customerPhone: phoneController.text.trim(),
             customerAddress: addressController.text.trim(),
             customerLandmark: landmarkController.text.trim(),
+            receiptNumber: receiptController.text.trim().isEmpty
+              ? null
+              : receiptController.text.trim(),
             totalAmount: totalAmount,
             deliveryResult: deliveryResult,
             notes: notesController.text.trim().isEmpty
@@ -657,6 +698,7 @@ class _CustomerOrdersTrackingPageState
     phoneController.dispose();
     addressController.dispose();
     landmarkController.dispose();
+    receiptController.dispose();
     notesController.dispose();
     for (final controller in itemNameControllers) {
       controller.dispose();
@@ -811,7 +853,7 @@ class _CustomerOrdersTrackingPageState
     }
 
     try {
-      await CustomerOrdersDatabase.instance.updateOrderDetails(
+      await _ordersService.updateOrderDetails(
         id: order.id!,
         address: addressController.text.trim(),
         landmark: landmarkController.text.trim(),

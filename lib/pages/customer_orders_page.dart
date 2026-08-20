@@ -12,7 +12,7 @@ import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
 import '../services/data_service.dart';
-import '../db/customer_orders_db.dart';
+import '../services/customer_orders_supabase_service.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
 import 'customer_orders_tracking_page.dart';
@@ -651,6 +651,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     required String paymentMethod,
   }) async {
     if (_isSendingOrder) return;
+    final authUser = Supabase.instance.client.auth.currentUser;
+    if (authUser == null) {
+      await _showMessage('يرجى تسجيل الدخول أولاً لحفظ ومتابعة الطلب');
+      return;
+    }
     setState(() {
       _isSendingOrder = true;
     });
@@ -768,6 +773,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final order = CustomerOrderModel(
           orderNumber: orderNumber,
           customerName: customerName.isNotEmpty ? customerName : 'زائر',
+          userId: authUser.id,
+          storeUserId: widget.storeUserId,
           customerPhone: customerPhone,
           customerAddress: customerAddress,
           totalAmount: grandTotal,
@@ -788,7 +795,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
               .toList(),
           createdAt: DateTime.now(),
         );
-        await CustomerOrdersDatabase.instance.insertOrder(order);
+        await CustomerOrdersSupabaseService().insertOrder(order);
         if (mounted) {
           setState(() => _selectedQuantities.clear());
           await _showMessage('✓ تم إرسال الطلب بنجاح! رقم الطلب: $orderNumber');
@@ -796,7 +803,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       } catch (e) {
         debugPrint('Error saving order: $e');
         if (mounted) {
-          await _showMessage('تحذير: لم يتم حفظ الطلب محليا، لكن تم إرساله');
+          await _showMessage('تحذير: تم إرسال الطلب لكن تعذر حفظه في الحساب');
         }
       }
     } finally {

@@ -1,5 +1,7 @@
 class CustomerOrderModel {
   final int? id;
+  final String? userId;
+  final String? storeUserId;
   final String orderNumber;
   final String customerName;
   final String customerPhone;
@@ -19,6 +21,8 @@ class CustomerOrderModel {
 
   CustomerOrderModel({
     this.id,
+    this.userId,
+    this.storeUserId,
     required this.orderNumber,
     required this.customerName,
     required this.customerPhone,
@@ -39,6 +43,8 @@ class CustomerOrderModel {
 
   Map<String, dynamic> toMap() => {
     if (id != null) 'id': id,
+    if (userId != null) 'user_id': userId,
+    if (storeUserId != null) 'store_user_id': storeUserId,
     'order_number': orderNumber,
     'customer_name': customerName,
     'customer_phone': customerPhone,
@@ -60,6 +66,8 @@ class CustomerOrderModel {
   factory CustomerOrderModel.fromMap(Map<String, dynamic> map) {
     return CustomerOrderModel(
       id: map['id'] as int?,
+      userId: map['user_id']?.toString(),
+      storeUserId: map['store_user_id']?.toString(),
       orderNumber: map['order_number']?.toString() ?? '',
       customerName: map['customer_name']?.toString() ?? '',
       customerPhone: map['customer_phone']?.toString() ?? '',
