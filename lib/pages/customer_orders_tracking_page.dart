@@ -480,16 +480,6 @@ class _CustomerOrdersTrackingPageState
             const SizedBox(height: 12),
             _buildOrderTimeline(order.status),
             const SizedBox(height: 16),
-            if (order.id != null)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: OutlinedButton.icon(
-                  onPressed: () => _showManualStatusDialog(order),
-                  icon: const Icon(Icons.edit_note),
-                  label: const Text('تعديل الحالة يدويًا'),
-                ),
-              ),
-            if (order.id != null) const SizedBox(height: 12),
             // Customer info
             Container(
               padding: const EdgeInsets.all(12),
@@ -603,72 +593,10 @@ class _CustomerOrdersTrackingPageState
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            // Status update buttons
-            if (order.id != null)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (order.status != 'pending')
-                    _buildStatusButton('pending', 'قيد الانتظار', order.id!),
-                  if (order.status != 'confirmed')
-                    _buildStatusButton('confirmed', 'مؤكد', order.id!),
-                  if (order.status != 'shipped')
-                    _buildStatusButton('shipped', 'قيد الشحن', order.id!),
-                  if (order.status != 'delivered')
-                    _buildStatusButton('delivered', 'تم التسليم', order.id!),
-                  if (order.status != 'cancelled')
-                    _buildStatusButton('cancelled', 'ملغى', order.id!),
-                ],
-              ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _showManualStatusDialog(CustomerOrderModel order) async {
-    var selectedStatus = order.status;
-    final newStatus = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('تعديل حالة الطلب'),
-          content: DropdownButtonFormField<String>(
-            value: selectedStatus,
-            decoration: const InputDecoration(labelText: 'الحالة الجديدة'),
-            items: orderStatuses
-                .map(
-                  (status) => DropdownMenuItem<String>(
-                    value: status,
-                    child: Text(_getStatusArabic(status)),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setDialogState(() => selectedStatus = value);
-              }
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(selectedStatus),
-              child: const Text('حفظ الحالة'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (newStatus != null && newStatus != order.status && mounted) {
-      await _updateOrderStatus(order.id!, newStatus);
-    }
   }
 
   String _itemsToText(CustomerOrderModel order) {
@@ -989,7 +917,6 @@ class _CustomerOrdersTrackingPageState
     final priceController = TextEditingController(
       text: order.totalAmount.toStringAsFixed(0),
     );
-    var orderStatus = order.status;
     var deliveryResult = order.deliveryResult;
     final formKey = GlobalKey<FormState>();
 
@@ -1059,40 +986,6 @@ class _CustomerOrdersTrackingPageState
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: orderStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'حالة الطلب',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'pending',
-                          child: Text('قيد الانتظار'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'confirmed',
-                          child: Text('مؤكد'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'shipped',
-                          child: Text('قيد الشحن'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'delivered',
-                          child: Text('تم التسليم'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'cancelled',
-                          child: Text('ملغى'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => orderStatus = value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
                       value: deliveryResult,
                       decoration: const InputDecoration(
                         labelText: 'حالة التسليم',
@@ -1153,7 +1046,6 @@ class _CustomerOrdersTrackingPageState
     try {
       await _ordersService.updateOrderDetails(
         id: order.id!,
-        status: orderStatus,
         address: addressController.text.trim(),
         landmark: landmarkController.text.trim(),
         notes: notesController.text.trim(),
@@ -1183,16 +1075,4 @@ class _CustomerOrdersTrackingPageState
     }
   }
 
-  Widget _buildStatusButton(String status, String label, int orderId) {
-    final color = _getStatusColor(status);
-    return OutlinedButton(
-      onPressed: () => _updateOrderStatus(orderId, status),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: color,
-        side: BorderSide(color: color),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      child: Text(label, style: const TextStyle(fontSize: 12)),
-    );
-  }
 }

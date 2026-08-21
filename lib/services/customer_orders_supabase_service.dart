@@ -84,7 +84,6 @@ class CustomerOrdersSupabaseService {
 
   Future<void> updateOrderDetails({
     required int id,
-    required String status,
     required String address,
     required String landmark,
     required String notes,
@@ -93,9 +92,6 @@ class CustomerOrdersSupabaseService {
     required double totalAmount,
     required String deliveryResult,
   }) async {
-    if (!orderStatuses.contains(status)) {
-      throw ArgumentError('حالة طلب غير صالحة: $status');
-    }
     if (!['pending', 'received', 'returned'].contains(deliveryResult)) {
       throw ArgumentError('نتيجة تسليم غير صالحة: $deliveryResult');
     }
@@ -103,7 +99,6 @@ class CustomerOrdersSupabaseService {
     final updatedRows = await _client
         .from('customer_orders')
         .update({
-          'status': status,
           'customer_address': address,
           'customer_landmark': landmark,
           'notes': notes.isEmpty ? null : notes,
