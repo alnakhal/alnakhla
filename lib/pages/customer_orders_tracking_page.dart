@@ -1,6 +1,10 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
@@ -37,9 +41,9 @@ class _CustomerOrdersTrackingPageState
     if (_supabase.auth.currentUser != null) return;
     final loginPageBuilder = widget.loginPageBuilder;
     if (loginPageBuilder == null) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: loginPageBuilder),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: loginPageBuilder));
     if (mounted) setState(_loadOrders);
   }
 
@@ -53,13 +57,15 @@ class _CustomerOrdersTrackingPageState
       if (!mounted) return;
       setState(_loadOrders);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}')),
+        SnackBar(
+          content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')));
     }
   }
 
@@ -79,6 +85,220 @@ class _CustomerOrdersTrackingPageState
         return status;
     }
   }
+
+  Future<void> _shareOrderAsImage(CustomerOrderModel order) async {
+    final boundaryKey = GlobalKey();
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: -10000,
+        top: 0,
+        child: RepaintBoundary(
+          key: boundaryKey,
+          child: _buildShareImage(order),
+        ),
+      ),
+    );
+
+    try {
+      Overlay.of(context).insert(entry);
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          boundaryKey.currentContext!.findRenderObject()!
+              as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2.5);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw StateError('تعذر إنشاء صورة الطلب');
+      final bytes = byteData.buffer.asUint8List();
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes,
+              mimeType: 'image/png',
+              name: 'order-${order.orderNumber}.png',
+            ),
+          ],
+          subject: 'تفاصيل الطلب ${order.orderNumber}',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر مشاركة صورة الطلب: $error')));
+    } finally {
+      entry.remove();
+    }
+  }
+
+  Widget _buildShareImage(CustomerOrderModel order) {
+    final itemRows = order.items ?? const <Map<String, dynamic>>[];
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
+      child: Material(
+        color: Colors.white,
+        child: SizedBox(
+          width: 900,
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'تفاصيل الطلب',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'مستلزمات النخلة',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '077821215446',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20),
+                ),
+                const SizedBox(height: 20),
+                _shareInfoRow('رقم الطلب', order.orderNumber),
+                _shareInfoRow('اسم الزبون', order.customerName),
+                _shareInfoRow('رقم الهاتف', order.customerPhone),
+                _shareInfoRow('العنوان', order.customerAddress),
+                if (order.customerLandmark.isNotEmpty)
+                  _shareInfoRow('أقرب نقطة دالة', order.customerLandmark),
+                _shareInfoRow('منطقة التوصيل', order.deliveryAreaArabic),
+                const SizedBox(height: 24),
+                const Text(
+                  'المنتجات',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  color: Colors.blueGrey.shade50,
+                  child: const Row(
+                    children: [
+                      Expanded(flex: 5, child: Text('المنتج')),
+                      Expanded(child: Text('العدد')),
+                      Expanded(child: Text('السعر')),
+                      Expanded(child: Text('المجموع')),
+                    ],
+                  ),
+                ),
+                ...itemRows.map((item) {
+                  final name = item['name']?.toString() ?? '';
+                  final quantity = (item['quantity'] as num?)?.toDouble() ?? 1;
+                  final price = (item['price'] as num?)?.toDouble() ?? 0;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(flex: 5, child: Text(name)),
+                        Expanded(child: Text(_formatNumber(quantity))),
+                        Expanded(
+                          child: Text('${price.toStringAsFixed(0)} د.ع'),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${(price * quantity).toStringAsFixed(0)} د.ع',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const Divider(height: 28),
+                _shareTotalRow('أجور التوصيل', order.deliveryFee),
+                _shareTotalRow('الإجمالي الكلي', order.totalAmount, bold: true),
+                const SizedBox(height: 32),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Container(
+                    width: 300,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.green.shade700,
+                        width: 3,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'تم التجهيز',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.green.shade800,
+                            fontSize: 25,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'مستلزمات النخلة',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.green.shade800,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _shareInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Text('$label: $value', style: const TextStyle(fontSize: 20)),
+    );
+  }
+
+  Widget _shareTotalRow(String label, double value, {bool bold = false}) {
+    final style = TextStyle(
+      fontSize: bold ? 24 : 20,
+      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: style),
+          Text('${value.toStringAsFixed(0)} د.ع', style: style),
+        ],
+      ),
+    );
+  }
+
+  String _formatNumber(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +368,9 @@ class _CustomerOrdersTrackingPageState
                 final orders = snapshot.data ?? [];
                 final filteredOrders = orders.where((order) {
                   if (_searchQuery.isEmpty) return true;
-                  return order.orderNumber.toLowerCase().contains(_searchQuery) ||
+                  return order.orderNumber.toLowerCase().contains(
+                        _searchQuery,
+                      ) ||
                       order.customerName.toLowerCase().contains(_searchQuery) ||
                       order.customerPhone.toLowerCase().contains(_searchQuery);
                 }).toList();
@@ -166,7 +388,7 @@ class _CustomerOrdersTrackingPageState
                               child: Text(
                                 _searchQuery.isNotEmpty
                                     ? 'لا توجد نتائج مطابقة للبحث'
-                                  : 'لا توجد طلبات بعد',
+                                    : 'لا توجد طلبات بعد',
                               ),
                             )
                           : SingleChildScrollView(
@@ -194,10 +416,7 @@ class _CustomerOrdersTrackingPageState
     );
   }
 
-  Widget _buildStatusColumn(
-    String status,
-    List<CustomerOrderModel> orders,
-  ) {
+  Widget _buildStatusColumn(String status, List<CustomerOrderModel> orders) {
     final color = _statusColor(status);
     return Container(
       width: 350,
@@ -278,200 +497,205 @@ class _CustomerOrdersTrackingPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            // Order header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCopyableText(
-                        'رقم الطلب: ${order.orderNumber}',
-                        order.orderNumber,
-                        softWrap: true,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _buildCopyableText(
-                        dateFmt.format(order.createdAt),
-                        dateFmt.format(order.createdAt),
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (order.updatedAt != null) ...[
-                        const SizedBox(height: 4),
+              // Order header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         _buildCopyableText(
-                          'تم التعديل ${dateFmt.format(order.updatedAt!)}',
-                          dateFmt.format(order.updatedAt!),
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                          'رقم الطلب: ${order.orderNumber}',
+                          order.orderNumber,
+                          softWrap: true,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        _buildCopyableText(
+                          dateFmt.format(order.createdAt),
+                          dateFmt.format(order.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (order.updatedAt != null) ...[
+                          const SizedBox(height: 4),
+                          _buildCopyableText(
+                            'تم التعديل ${dateFmt.format(order.updatedAt!)}',
+                            dateFmt.format(order.updatedAt!),
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'تعديل الطلب',
-                  onPressed: () => _showEditOrderDialog(order),
-                  icon: const Icon(Icons.edit_outlined),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: orderStatuses.contains(order.status)
-                  ? order.status
-                  : null,
-              decoration: const InputDecoration(
-                labelText: 'حالة الطلب',
-                prefixIcon: Icon(Icons.local_shipping_outlined),
-                isDense: true,
-              ),
-              items: orderStatuses
-                  .map(
-                    (status) => DropdownMenuItem<String>(
-                      value: status,
-                      child: Text(_statusArabic(status)),
                     ),
-                  )
-                  .toList(),
-              onChanged: (newStatus) {
-                if (newStatus != null) {
-                  _updateOrderStatus(order, newStatus);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            const SizedBox(height: 4),
-            // Customer info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCopyableText(
-                    'العميل: ${order.customerName}',
-                    order.customerName,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(height: 4),
-                  _buildCopyableText(
-                    'الهاتف: ${order.customerPhone}',
-                    order.customerPhone,
-                    style: const TextStyle(fontSize: 12),
+                  IconButton(
+                    tooltip: 'مشاركة الطلب كصورة',
+                    onPressed: () => _shareOrderAsImage(order),
+                    icon: const Icon(Icons.share_outlined),
                   ),
-                  const SizedBox(height: 4),
-                  _buildCopyableText(
-                    'العنوان: ${order.customerAddress}',
-                    order.customerAddress,
-                    style: const TextStyle(fontSize: 12),
+                  IconButton(
+                    tooltip: 'تعديل الطلب',
+                    onPressed: () => _showEditOrderDialog(order),
+                    icon: const Icon(Icons.edit_outlined),
                   ),
-                  if (order.customerLandmark.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    _buildCopyableText(
-                      'أقرب نقطة دالة: ${order.customerLandmark}',
-                      order.customerLandmark,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  _buildCopyableText(
-                    'التوصيل: ${order.deliveryAreaArabic}',
-                    order.deliveryAreaArabic,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildCopyableText(
-                    'أجور التوصيل: ${order.deliveryFee.toStringAsFixed(0)} د.ع',
-                    '${order.deliveryFee.toStringAsFixed(0)} د.ع',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildCopyableText(
-                    'الدفع: ${order.paymentMethodArabic}',
-                    order.paymentMethodArabic,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  if (order.receiptNumber != null &&
-                      order.receiptNumber!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    _buildCopyableText(
-                      'رقم الوصل: ${order.receiptNumber}',
-                      order.receiptNumber!,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
-            if (order.items != null && order.items!.isNotEmpty) ...[
-              const Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  'المواد المطلوبة:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: orderStatuses.contains(order.status)
+                    ? order.status
+                    : null,
+                decoration: const InputDecoration(
+                  labelText: 'حالة الطلب',
+                  prefixIcon: Icon(Icons.local_shipping_outlined),
+                  isDense: true,
                 ),
+                items: orderStatuses
+                    .map(
+                      (status) => DropdownMenuItem<String>(
+                        value: status,
+                        child: Text(_statusArabic(status)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (newStatus) {
+                  if (newStatus != null) {
+                    _updateOrderStatus(order, newStatus);
+                  }
+                },
               ),
+              const SizedBox(height: 12),
               const SizedBox(height: 4),
-              ...order.items!.map(
-                (item) => _buildCopyableText(
-                  '- ${item['name'] ?? ''} x${item['quantity'] ?? 1} '
-                  '(${((item['price'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} د.ع)',
-                  '${item['name'] ?? ''} x${item['quantity'] ?? 1} '
-                  '(${((item['price'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} د.ع)',
-                  style: const TextStyle(fontSize: 12),
+              // Customer info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCopyableText(
+                      'العميل: ${order.customerName}',
+                      order.customerName,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildCopyableText(
+                      'الهاتف: ${order.customerPhone}',
+                      order.customerPhone,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildCopyableText(
+                      'العنوان: ${order.customerAddress}',
+                      order.customerAddress,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    if (order.customerLandmark.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      _buildCopyableText(
+                        'أقرب نقطة دالة: ${order.customerLandmark}',
+                        order.customerLandmark,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    _buildCopyableText(
+                      'التوصيل: ${order.deliveryAreaArabic}',
+                      order.deliveryAreaArabic,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildCopyableText(
+                      'أجور التوصيل: ${order.deliveryFee.toStringAsFixed(0)} د.ع',
+                      '${order.deliveryFee.toStringAsFixed(0)} د.ع',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildCopyableText(
+                      'الدفع: ${order.paymentMethodArabic}',
+                      order.paymentMethodArabic,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    if (order.receiptNumber != null &&
+                        order.receiptNumber!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      _buildCopyableText(
+                        'رقم الوصل: ${order.receiptNumber}',
+                        order.receiptNumber!,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-            ],
-            // Total amount
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'إجمالي الطلب:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+              if (order.items != null && order.items!.isNotEmpty) ...[
+                const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'المواد المطلوبة:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                 ),
-                _buildCopyableText(
-                  '${order.totalAmount.toStringAsFixed(0)} د.ع',
-                  '${order.totalAmount.toStringAsFixed(0)} د.ع',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                const SizedBox(height: 4),
+                ...order.items!.map(
+                  (item) => _buildCopyableText(
+                    '- ${item['name'] ?? ''} x${item['quantity'] ?? 1} '
+                        '(${((item['price'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} د.ع)',
+                    '${item['name'] ?? ''} x${item['quantity'] ?? 1} '
+                        '(${((item['price'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} د.ع)',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              // Total amount
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'إجمالي الطلب:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  _buildCopyableText(
+                    '${order.totalAmount.toStringAsFixed(0)} د.ع',
+                    '${order.totalAmount.toStringAsFixed(0)} د.ع',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              if (order.notes != null && order.notes!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _buildCopyableText(
+                    'ملاحظات: ${order.notes}',
+                    order.notes!,
+                    style: TextStyle(color: Colors.blue.shade900, fontSize: 12),
                   ),
                 ),
               ],
-            ),
-            if (order.notes != null && order.notes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: _buildCopyableText(
-                  'ملاحظات: ${order.notes}',
-                  order.notes!,
-                  style: TextStyle(color: Colors.blue.shade900, fontSize: 12),
-                ),
-              ),
-            ],
             ],
           ),
         ),
@@ -491,11 +715,7 @@ class _CustomerOrdersTrackingPageState
       children: [
         Flexible(
           fit: FlexFit.loose,
-          child: Text(
-            displayText,
-            softWrap: softWrap,
-            style: style,
-          ),
+          child: Text(displayText, softWrap: softWrap, style: style),
         ),
         IconButton(
           tooltip: 'نسخ',
@@ -512,9 +732,9 @@ class _CustomerOrdersTrackingPageState
   Future<void> _copyOrderText(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم نسخ المعلومات')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم نسخ المعلومات')));
   }
 
   String _itemsToText(CustomerOrderModel order) {
@@ -565,26 +785,35 @@ class _CustomerOrdersTrackingPageState
                   children: [
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'اسم الزبون'),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      decoration: const InputDecoration(
+                        labelText: 'اسم الزبون',
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل اسم الزبون'
                           : null,
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: phoneController,
-                      decoration: const InputDecoration(labelText: 'رقم التلفون'),
+                      decoration: const InputDecoration(
+                        labelText: 'رقم التلفون',
+                      ),
                       keyboardType: TextInputType.phone,
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل رقم التلفون'
                           : null,
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: addressController,
-                      decoration: const InputDecoration(labelText: 'عنوان الزبون'),
+                      decoration: const InputDecoration(
+                        labelText: 'عنوان الزبون',
+                      ),
                       maxLines: 2,
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل العنوان'
                           : null,
                     ),
@@ -594,7 +823,8 @@ class _CustomerOrdersTrackingPageState
                       decoration: const InputDecoration(
                         labelText: 'أقرب نقطة دالة',
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل أقرب نقطة دالة'
                           : null,
                     ),
@@ -745,8 +975,7 @@ class _CustomerOrdersTrackingPageState
             sum + (item['quantity'] as int) * (item['price'] as double),
       );
       try {
-        final orderNumber =
-            'MAN-${DateTime.now().millisecondsSinceEpoch}';
+        final orderNumber = 'MAN-${DateTime.now().millisecondsSinceEpoch}';
         await _ordersService.insertOrder(
           CustomerOrderModel(
             orderNumber: orderNumber,
@@ -755,8 +984,8 @@ class _CustomerOrdersTrackingPageState
             customerAddress: addressController.text.trim(),
             customerLandmark: landmarkController.text.trim(),
             receiptNumber: receiptController.text.trim().isEmpty
-              ? null
-              : receiptController.text.trim(),
+                ? null
+                : receiptController.text.trim(),
             totalAmount: totalAmount,
             notes: notesController.text.trim().isEmpty
                 ? null
@@ -773,13 +1002,12 @@ class _CustomerOrdersTrackingPageState
         }
       } catch (error) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('تعذر حفظ الطلب: $error')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('تعذر حفظ الطلب: $error')));
         }
       }
     }
-
   }
 
   Future<void> _showEditOrderDialog(CustomerOrderModel order) async {
@@ -818,26 +1046,32 @@ class _CustomerOrdersTrackingPageState
                     _buildOrderDetail('رقم الطلب', order.orderNumber),
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'اسم الزبون'),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      decoration: const InputDecoration(
+                        labelText: 'اسم الزبون',
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل اسم الزبون'
                           : null,
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: phoneController,
-                      decoration: const InputDecoration(labelText: 'رقم التلفون'),
+                      decoration: const InputDecoration(
+                        labelText: 'رقم التلفون',
+                      ),
                       keyboardType: TextInputType.phone,
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'أدخل رقم التلفون'
                           : null,
                     ),
                     const SizedBox(height: 10),
+                    _buildOrderDetail('طريقة الدفع', order.paymentMethodArabic),
                     _buildOrderDetail(
-                      'طريقة الدفع',
-                      order.paymentMethodArabic,
+                      'منطقة التوصيل',
+                      order.deliveryAreaArabic,
                     ),
-                    _buildOrderDetail('منطقة التوصيل', order.deliveryAreaArabic),
                     _buildOrderDetail(
                       'أجور التوصيل',
                       '${order.deliveryFee.toStringAsFixed(0)} د.ع',
@@ -932,7 +1166,9 @@ class _CustomerOrdersTrackingPageState
     if (order.orderNumber.trim().isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر تعديل الطلب: رقم الطلب غير موجود')),
+          const SnackBar(
+            content: Text('تعذر تعديل الطلب: رقم الطلب غير موجود'),
+          ),
         );
       }
       return;
@@ -983,5 +1219,4 @@ class _CustomerOrdersTrackingPageState
       ),
     );
   }
-
 }
