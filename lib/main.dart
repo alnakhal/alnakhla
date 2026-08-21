@@ -13,7 +13,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
-import 'pages/order_tracking_public_page.dart';
 import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
@@ -174,8 +173,8 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
 
   if (path == '/track-order' || path == '/order-tracking') {
     return MaterialPageRoute(
-      builder: (_) => OrderTrackingPublicPage(
-        orderNumber: uri.queryParameters['order_number'],
+      builder: (_) => customer_orders_tracking.CustomerOrdersTrackingPage(
+        loginPageBuilder: (_) => const LoginPage(),
       ),
     );
   }
@@ -231,7 +230,6 @@ enum SettingsAction {
   login,
   storeSettings,
   customerOrdersTracking,
-  publicOrderTracking,
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -274,11 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
               loginPageBuilder: (_) => const LoginPage(),
             ),
           ),
-        );
-        break;
-      case SettingsAction.publicOrderTracking:
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const OrderTrackingPublicPage()),
         );
         break;
     }
@@ -380,10 +373,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text('متابعة طلباتي'),
                   ),
                   PopupMenuItem(
-                    value: SettingsAction.publicOrderTracking,
-                    child: Text('تتبع طلب برقم الطلب'),
-                  ),
-                  PopupMenuItem(
                     value: SettingsAction.logout,
                     child: Text('تسجيل الخروج'),
                   ),
@@ -393,10 +382,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 PopupMenuItem(
                   value: SettingsAction.customerOrdersTracking,
                   child: Text('متابعة طلباتي'),
-                ),
-                PopupMenuItem(
-                  value: SettingsAction.publicOrderTracking,
-                  child: Text('تتبع طلب برقم الطلب'),
                 ),
                 PopupMenuItem(
                   value: SettingsAction.register,

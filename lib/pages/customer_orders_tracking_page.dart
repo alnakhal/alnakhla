@@ -18,8 +18,6 @@ class _CustomerOrdersTrackingPageState
     extends State<CustomerOrdersTrackingPage> {
   late Future<List<CustomerOrderModel>> _ordersFuture;
   final _ordersService = CustomerOrdersSupabaseService();
-  String _filterStatus =
-      'all'; // all, pending, confirmed, shipped, delivered, cancelled
   String _searchQuery = '';
 
   @override
@@ -42,65 +40,6 @@ class _CustomerOrdersTrackingPageState
       MaterialPageRoute(builder: loginPageBuilder),
     );
     if (mounted) setState(_loadOrders);
-  }
-
-  Future<void> _updateOrderStatus(int orderId, String newStatus) async {
-    try {
-      await _ordersService.updateOrderStatus(
-        orderId,
-        newStatus,
-      );
-      setState(() => _loadOrders());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم تحديث حالة الطلب إلى ${_getStatusArabic(newStatus)}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
-      }
-    }
-  }
-
-  String _getStatusArabic(String status) {
-    switch (status) {
-      case 'pending':
-        return 'قيد الانتظار';
-      case 'confirmed':
-        return 'مؤكد';
-      case 'shipped':
-        return 'قيد الشحن';
-      case 'delivered':
-        return 'تم التسليم';
-      case 'cancelled':
-        return 'ملغى';
-      default:
-        return status;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'confirmed':
-        return Colors.blue;
-      case 'shipped':
-        return Colors.purple;
-      case 'delivered':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 
   @override
@@ -147,21 +86,6 @@ class _CustomerOrdersTrackingPageState
               ),
             ),
           ),
-          // Filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                _buildFilterChip('all', 'الكل'),
-                _buildFilterChip('pending', 'قيد الانتظار'),
-                _buildFilterChip('confirmed', 'مؤكد'),
-                _buildFilterChip('shipped', 'قيد الشحن'),
-                _buildFilterChip('delivered', 'تم التسليم'),
-                _buildFilterChip('cancelled', 'ملغى'),
-              ],
-            ),
-          ),
           const Divider(height: 1),
           // Orders list
           Expanded(
@@ -184,32 +108,21 @@ class _CustomerOrdersTrackingPageState
                   return Center(child: Text('خطأ: ${snapshot.error}'));
                 }
                 final orders = snapshot.data ?? [];
-                final statusCounts = <String, int>{
-                  for (final status in orderStatuses)
-                    status: orders.where((order) => order.status == status).length,
-                };
                 final filteredOrders = orders.where((order) {
-                  final matchesStatus = _filterStatus == 'all' ||
-                      order.status == _filterStatus;
-                  if (_searchQuery.isEmpty) return matchesStatus;
-                  final matchesSearch =
-                      order.orderNumber.toLowerCase().contains(_searchQuery) ||
+                  if (_searchQuery.isEmpty) return true;
+                  return order.orderNumber.toLowerCase().contains(_searchQuery) ||
                       order.customerName.toLowerCase().contains(_searchQuery) ||
                       order.customerPhone.toLowerCase().contains(_searchQuery);
-                  return matchesStatus && matchesSearch;
                 }).toList();
                 return Column(
                   children: [
-                    _buildStatusSummary(statusCounts),
                     Expanded(
                       child: filteredOrders.isEmpty
                           ? Center(
                               child: Text(
                                 _searchQuery.isNotEmpty
                                     ? 'لا توجد نتائج مطابقة للبحث'
-                                    : _filterStatus == 'all'
-                                    ? 'لا توجد طلبات بعد'
-                                    : 'لا توجد طلبات بهذه الحالة',
+                                  : 'لا توجد طلبات بعد',
                               ),
                             )
                           : ListView.builder(
@@ -230,165 +143,8 @@ class _CustomerOrdersTrackingPageState
     );
   }
 
-  Widget _buildFilterChip(String status, String label) {
-    final isSelected = _filterStatus == status;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        selected: isSelected,
-        label: Text(label),
-        onSelected: (selected) {
-          setState(() {
-            _filterStatus = status;
-            _loadOrders();
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatusSummary(Map<String, int> counts) {
-    return SizedBox(
-      height: 76,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        children: [
-          _buildStatusCount('all', 'الكل', counts.values.fold(0, (sum, count) => sum + count)),
-          ...orderStatuses.map(
-            (status) => _buildStatusCount(
-              status,
-              _getStatusArabic(status),
-              counts[status] ?? 0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusCount(String status, String label, int count) {
-    final color = status == 'all' ? Colors.blueGrey : _getStatusColor(status);
-    return Container(
-      width: 108,
-      margin: const EdgeInsetsDirectional.only(end: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '$count',
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: color, fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderTimeline(String currentStatus) {
-    final statuses = currentStatus == 'cancelled'
-        ? const ['pending', 'cancelled']
-        : const ['pending', 'confirmed', 'shipped', 'delivered'];
-    final currentIndex = statuses.indexOf(currentStatus);
-    final activeIndex = currentIndex < 0 ? 0 : currentIndex;
-    final activeColor = _getStatusColor(currentStatus);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      decoration: BoxDecoration(
-        color: activeColor.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: activeColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          for (var index = 0; index < statuses.length; index++) ...[
-            Expanded(
-              child: _buildTimelineStep(
-                status: statuses[index],
-                isCompleted: index < activeIndex,
-                isCurrent: index == activeIndex,
-                color: activeColor,
-              ),
-            ),
-            if (index < statuses.length - 1)
-              Expanded(
-                child: Container(
-                  height: 2,
-                  margin: const EdgeInsets.only(bottom: 22),
-                  color: index < activeIndex
-                      ? activeColor
-                      : Colors.grey.shade300,
-                ),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineStep({
-    required String status,
-    required bool isCompleted,
-    required bool isCurrent,
-    required Color color,
-  }) {
-    final stepColor = isCompleted || isCurrent ? color : Colors.grey.shade400;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isCompleted || isCurrent ? stepColor : Colors.white,
-            border: Border.all(color: stepColor, width: 2),
-          ),
-          child: Icon(
-            isCompleted
-                ? Icons.check
-                : status == 'cancelled'
-                ? Icons.close
-                : Icons.circle,
-            size: isCompleted || status == 'cancelled' ? 16 : 9,
-            color: isCompleted || isCurrent ? Colors.white : stepColor,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _getStatusArabic(status),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: stepColor,
-            fontSize: 10,
-            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildOrderCard(CustomerOrderModel order) {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'ar');
-    final statusColor = _getStatusColor(order.status);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -435,51 +191,15 @@ class _CustomerOrdersTrackingPageState
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButton<String>(
-                      value: order.id == null ? null : order.status,
-                      hint: const Text('الحالة'),
-                      underline: const SizedBox.shrink(),
-                      isDense: true,
-                      icon: Icon(Icons.arrow_drop_down, color: statusColor),
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      items: orderStatuses
-                          .map(
-                            (status) => DropdownMenuItem<String>(
-                              value: status,
-                              child: Text(_getStatusArabic(status)),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: order.id == null
-                          ? null
-                          : (newStatus) {
-                              if (newStatus != null &&
-                                  newStatus != order.status) {
-                                _updateOrderStatus(order.id!, newStatus);
-                              }
-                            },
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      tooltip: 'إضافة أو تعديل تفاصيل الطلب',
-                      onPressed: order.id == null
-                          ? null
-                          : () => _showEditOrderDialog(order),
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                  ],
+                IconButton(
+                  tooltip: 'تعديل الطلب',
+                  onPressed: () => _showEditOrderDialog(order),
+                  icon: const Icon(Icons.edit_outlined),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _buildOrderTimeline(order.status),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             // Customer info
             Container(
               padding: const EdgeInsets.all(12),
@@ -524,11 +244,6 @@ class _CustomerOrdersTrackingPageState
                   const SizedBox(height: 4),
                   Text(
                     'الدفع: ${order.paymentMethodArabic}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'حالة التسليم: ${order.deliveryResultArabic}',
                     style: const TextStyle(fontSize: 12),
                   ),
                   if (order.receiptNumber != null &&
@@ -630,7 +345,6 @@ class _CustomerOrdersTrackingPageState
     final itemNameControllers = [TextEditingController()];
     final itemQuantityControllers = [TextEditingController(text: '1')];
     final itemPriceControllers = [TextEditingController()];
-    var deliveryResult = 'pending';
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -758,9 +472,6 @@ class _CustomerOrdersTrackingPageState
                                   ? null
                                   : () {
                                       setDialogState(() {
-                                        itemNameControllers[index].dispose();
-                                        itemQuantityControllers[index].dispose();
-                                        itemPriceControllers[index].dispose();
                                         itemNameControllers.removeAt(index);
                                         itemQuantityControllers.removeAt(index);
                                         itemPriceControllers.removeAt(index);
@@ -792,24 +503,6 @@ class _CustomerOrdersTrackingPageState
                       controller: notesController,
                       decoration: const InputDecoration(labelText: 'ملاحظات'),
                       maxLines: 2,
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      value: deliveryResult,
-                      decoration: const InputDecoration(labelText: 'حالة الطلب'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'pending',
-                          child: Text('غير محدد'),
-                        ),
-                        DropdownMenuItem(value: 'received', child: Text('واصل')),
-                        DropdownMenuItem(value: 'returned', child: Text('راجع')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => deliveryResult = value);
-                        }
-                      },
                     ),
                   ],
                 ),
@@ -862,7 +555,6 @@ class _CustomerOrdersTrackingPageState
               ? null
               : receiptController.text.trim(),
             totalAmount: totalAmount,
-            deliveryResult: deliveryResult,
             notes: notesController.text.trim().isEmpty
                 ? null
                 : notesController.text.trim(),
@@ -885,24 +577,12 @@ class _CustomerOrdersTrackingPageState
       }
     }
 
-    nameController.dispose();
-    phoneController.dispose();
-    addressController.dispose();
-    landmarkController.dispose();
-    receiptController.dispose();
-    notesController.dispose();
-    for (final controller in itemNameControllers) {
-      controller.dispose();
-    }
-    for (final controller in itemQuantityControllers) {
-      controller.dispose();
-    }
-    for (final controller in itemPriceControllers) {
-      controller.dispose();
-    }
   }
 
   Future<void> _showEditOrderDialog(CustomerOrderModel order) async {
+    final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'ar');
+    final nameController = TextEditingController(text: order.customerName);
+    final phoneController = TextEditingController(text: order.customerPhone);
     final addressController = TextEditingController(
       text: order.customerAddress,
     );
@@ -917,7 +597,6 @@ class _CustomerOrdersTrackingPageState
     final priceController = TextEditingController(
       text: order.totalAmount.toStringAsFixed(0),
     );
-    var deliveryResult = order.deliveryResult;
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -933,6 +612,43 @@ class _CustomerOrdersTrackingPageState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _buildOrderDetail('رقم الطلب', order.orderNumber),
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'اسم الزبون'),
+                      validator: (value) => value == null || value.trim().isEmpty
+                          ? 'أدخل اسم الزبون'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(labelText: 'رقم التلفون'),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) => value == null || value.trim().isEmpty
+                          ? 'أدخل رقم التلفون'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildOrderDetail(
+                      'طريقة الدفع',
+                      order.paymentMethodArabic,
+                    ),
+                    _buildOrderDetail('منطقة التوصيل', order.deliveryAreaArabic),
+                    _buildOrderDetail(
+                      'أجور التوصيل',
+                      '${order.deliveryFee.toStringAsFixed(0)} د.ع',
+                    ),
+                    _buildOrderDetail(
+                      'تاريخ الإنشاء',
+                      dateFmt.format(order.createdAt),
+                    ),
+                    if (order.updatedAt != null)
+                      _buildOrderDetail(
+                        'آخر تعديل',
+                        dateFmt.format(order.updatedAt!),
+                      ),
+                    const Divider(height: 24),
                     TextFormField(
                       controller: addressController,
                       decoration: const InputDecoration(labelText: 'العنوان'),
@@ -984,32 +700,6 @@ class _CustomerOrdersTrackingPageState
                           ? 'أدخل سعرًا صحيحًا'
                           : null,
                     ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      value: deliveryResult,
-                      decoration: const InputDecoration(
-                        labelText: 'حالة التسليم',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'pending',
-                          child: Text('غير محدد'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'received',
-                          child: Text('واصل'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'returned',
-                          child: Text('راجع'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => deliveryResult = value);
-                        }
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -1033,26 +723,30 @@ class _CustomerOrdersTrackingPageState
       ),
     );
 
-    if (saved != true || order.id == null) {
-      addressController.dispose();
-      landmarkController.dispose();
-      notesController.dispose();
-      receiptController.dispose();
-      itemsController.dispose();
-      priceController.dispose();
+    if (saved != true) {
+      return;
+    }
+    if (order.orderNumber.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تعديل الطلب: رقم الطلب غير موجود')),
+        );
+      }
       return;
     }
 
     try {
       await _ordersService.updateOrderDetails(
-        id: order.id!,
+        orderNumber: order.orderNumber,
+        customerName: nameController.text.trim(),
+        customerPhone: phoneController.text.trim(),
         address: addressController.text.trim(),
         landmark: landmarkController.text.trim(),
         notes: notesController.text.trim(),
         receiptNumber: receiptController.text.trim(),
         items: _itemsFromText(itemsController.text),
         totalAmount: double.parse(priceController.text.trim()),
-        deliveryResult: deliveryResult,
+        deliveryResult: order.deliveryResult,
       );
       if (!mounted) return;
       setState(_loadOrders);
@@ -1065,14 +759,26 @@ class _CustomerOrdersTrackingPageState
           SnackBar(content: Text('تعذر حفظ تفاصيل الطلب: $error')),
         );
       }
-    } finally {
-      addressController.dispose();
-      landmarkController.dispose();
-      notesController.dispose();
-      receiptController.dispose();
-      itemsController.dispose();
-      priceController.dispose();
     }
+  }
+
+  Widget _buildOrderDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 
 }

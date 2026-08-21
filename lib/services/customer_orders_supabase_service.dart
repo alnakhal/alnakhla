@@ -83,7 +83,9 @@ class CustomerOrdersSupabaseService {
   }
 
   Future<void> updateOrderDetails({
-    required int id,
+    required String orderNumber,
+    required String customerName,
+    required String customerPhone,
     required String address,
     required String landmark,
     required String notes,
@@ -99,6 +101,8 @@ class CustomerOrdersSupabaseService {
     final updatedRows = await _client
         .from('customer_orders')
         .update({
+          'customer_name': customerName,
+          'customer_phone': customerPhone,
           'customer_address': address,
           'customer_landmark': landmark,
           'notes': notes.isEmpty ? null : notes,
@@ -108,7 +112,7 @@ class CustomerOrdersSupabaseService {
           'delivery_result': deliveryResult,
           'updated_at': DateTime.now().toIso8601String(),
         })
-        .eq('id', id)
+        .eq('order_number', orderNumber)
         .eq('user_id', user.id)
         .select('id');
     if (updatedRows.isEmpty) {
