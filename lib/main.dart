@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/customer_orders_page.dart';
-import 'pages/customer_orders_tracking_page.dart';
+import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
 import 'pages/order_tracking_public_page.dart';
 import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
@@ -1115,7 +1115,11 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
             ),
             action: SnackBarAction(
               label: 'عرض الطلبات',
-              onPressed: () => _open(const CustomerOrdersTrackingPage()),
+              onPressed: () => _open(
+                customer_orders_tracking.CustomerOrdersTrackingPage(
+                  loginPageBuilder: (_) => const LoginPage(),
+                ),
+              ),
             ),
           ),
         );
@@ -1151,7 +1155,11 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
-                    onPressed: () => _open(const CustomerOrdersTrackingPage()),
+                    onPressed: () => _open(
+                      customer_orders_tracking.CustomerOrdersTrackingPage(
+                        loginPageBuilder: (_) => const LoginPage(),
+                      ),
+                    ),
                     icon: const Icon(Icons.notifications_outlined),
                     tooltip: 'الطلبات الجديدة',
                   ),
@@ -1316,7 +1324,11 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                     icon: Icons.local_shipping_outlined,
                     title: 'إدارة الطلبات',
                     subtitle: 'مراجعة الطلبات وتحديث حالتها',
-                    onTap: () => _open(const CustomerOrdersTrackingPage())),
+                    onTap: () => _open(
+                      customer_orders_tracking.CustomerOrdersTrackingPage(
+                        loginPageBuilder: (_) => const LoginPage(),
+                      ),
+                    )),
                 _DashboardAction(
                     icon: Icons.receipt_long_outlined,
                     title: 'الفواتير',

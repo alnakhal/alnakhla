@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
+import '../models/customer_order.dart';
 import '../models/customer_order_model.dart';
 
 class CustomerOrdersSupabaseService {
@@ -7,6 +9,26 @@ class CustomerOrdersSupabaseService {
       : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
+
+  Future<List<CustomerOrder>> fetchOrders() async {
+    try {
+      final response = await _client
+          .from('customer_orders')
+          .select()
+          .order('created_at', ascending: false);
+
+      return (response as List)
+          .map(
+            (row) => CustomerOrder.fromJson(
+              Map<String, dynamic>.from(row as Map),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      debugPrint('خطأ في جلب الطلبات: $e');
+      return [];
+    }
+  }
 
   User _requireUser() {
     final user = _client.auth.currentUser;
@@ -57,6 +79,7 @@ class CustomerOrdersSupabaseService {
 
   Future<void> updateOrderDetails({
     required int id,
+    required String status,
     required String address,
     required String landmark,
     required String notes,
@@ -65,6 +88,9 @@ class CustomerOrdersSupabaseService {
     required double totalAmount,
     required String deliveryResult,
   }) async {
+    if (!orderStatuses.contains(status)) {
+      throw ArgumentError('حالة طلب غير صالحة: $status');
+    }
     if (!['pending', 'received', 'returned'].contains(deliveryResult)) {
       throw ArgumentError('نتيجة تسليم غير صالحة: $deliveryResult');
     }
@@ -72,6 +98,7 @@ class CustomerOrdersSupabaseService {
     await _client
         .from('customer_orders')
         .update({
+          'status': status,
           'customer_address': address,
           'customer_landmark': landmark,
           'notes': notes.isEmpty ? null : notes,

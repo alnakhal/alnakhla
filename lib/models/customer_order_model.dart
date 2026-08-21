@@ -63,9 +63,15 @@ class CustomerOrderModel {
     'updated_at': updatedAt?.toIso8601String(),
   };
 
+  Map<String, dynamic> toJson() => toMap();
+
+  factory CustomerOrderModel.fromJson(Map<String, dynamic> json) {
+    return CustomerOrderModel.fromMap(json);
+  }
+
   factory CustomerOrderModel.fromMap(Map<String, dynamic> map) {
     return CustomerOrderModel(
-      id: map['id'] as int?,
+      id: int.tryParse(map['id']?.toString() ?? ''),
       userId: map['user_id']?.toString(),
       storeUserId: map['store_user_id']?.toString(),
       orderNumber: map['order_number']?.toString() ?? '',

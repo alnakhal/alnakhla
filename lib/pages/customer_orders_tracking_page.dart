@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
-import '../main.dart' show LoginPage;
 
 class CustomerOrdersTrackingPage extends StatefulWidget {
-  const CustomerOrdersTrackingPage({super.key});
+  const CustomerOrdersTrackingPage({super.key, this.loginPageBuilder});
+
+  final WidgetBuilder? loginPageBuilder;
 
   @override
   State<CustomerOrdersTrackingPage> createState() =>
@@ -36,8 +37,10 @@ class _CustomerOrdersTrackingPageState
 
   Future<void> _requireLogin() async {
     if (_supabase.auth.currentUser != null) return;
+    final loginPageBuilder = widget.loginPageBuilder;
+    if (loginPageBuilder == null) return;
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      MaterialPageRoute(builder: loginPageBuilder),
     );
     if (mounted) setState(_loadOrders);
   }
@@ -217,25 +220,39 @@ class _CustomerOrdersTrackingPageState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'رقم الطلب: ${order.orderNumber}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'رقم الطلب: ${order.orderNumber}',
+                        softWrap: true,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateFmt.format(order.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
+                      const SizedBox(height: 4),
+                      Text(
+                        dateFmt.format(order.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
+                      if (order.updatedAt != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'تم التعديل ${dateFmt.format(order.updatedAt!)}',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -386,22 +403,23 @@ class _CustomerOrdersTrackingPageState
             ],
             const SizedBox(height: 12),
             // Status update buttons
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (order.status != 'pending')
-                  _buildStatusButton('pending', 'قيد الانتظار', order.id!),
-                if (order.status != 'confirmed')
-                  _buildStatusButton('confirmed', 'مؤكد', order.id!),
-                if (order.status != 'shipped')
-                  _buildStatusButton('shipped', 'قيد الشحن', order.id!),
-                if (order.status != 'delivered')
-                  _buildStatusButton('delivered', 'تم التسليم', order.id!),
-                if (order.status != 'cancelled')
-                  _buildStatusButton('cancelled', 'ملغى', order.id!),
-              ],
-            ),
+            if (order.id != null)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (order.status != 'pending')
+                    _buildStatusButton('pending', 'قيد الانتظار', order.id!),
+                  if (order.status != 'confirmed')
+                    _buildStatusButton('confirmed', 'مؤكد', order.id!),
+                  if (order.status != 'shipped')
+                    _buildStatusButton('shipped', 'قيد الشحن', order.id!),
+                  if (order.status != 'delivered')
+                    _buildStatusButton('delivered', 'تم التسليم', order.id!),
+                  if (order.status != 'cancelled')
+                    _buildStatusButton('cancelled', 'ملغى', order.id!),
+                ],
+              ),
           ],
         ),
       ),
@@ -726,6 +744,7 @@ class _CustomerOrdersTrackingPageState
     final priceController = TextEditingController(
       text: order.totalAmount.toStringAsFixed(0),
     );
+    var orderStatus = order.status;
     var deliveryResult = order.deliveryResult;
     final formKey = GlobalKey<FormState>();
 
@@ -795,6 +814,40 @@ class _CustomerOrdersTrackingPageState
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
+                      value: orderStatus,
+                      decoration: const InputDecoration(
+                        labelText: 'حالة الطلب',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'pending',
+                          child: Text('قيد الانتظار'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'confirmed',
+                          child: Text('مؤكد'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'shipped',
+                          child: Text('قيد الشحن'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'delivered',
+                          child: Text('تم التسليم'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'cancelled',
+                          child: Text('ملغى'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => orderStatus = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
                       value: deliveryResult,
                       decoration: const InputDecoration(
                         labelText: 'حالة التسليم',
@@ -855,6 +908,7 @@ class _CustomerOrdersTrackingPageState
     try {
       await _ordersService.updateOrderDetails(
         id: order.id!,
+        status: orderStatus,
         address: addressController.text.trim(),
         landmark: landmarkController.text.trim(),
         notes: notesController.text.trim(),

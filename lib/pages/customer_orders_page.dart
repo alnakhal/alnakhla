@@ -15,7 +15,7 @@ import '../services/data_service.dart';
 import '../services/customer_orders_supabase_service.dart';
 import 'photo_viewer_page.dart';
 import 'slider_images_settings_page.dart';
-import 'customer_orders_tracking_page.dart';
+import 'customer_orders_tracking_page.dart' as customer_orders_tracking;
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
@@ -1530,7 +1530,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) =>
-                                              const CustomerOrdersTrackingPage(),
+                                                customer_orders_tracking
+                                                  .CustomerOrdersTrackingPage(
+                                                    loginPageBuilder: (_) =>
+                                                        const LoginPage(),
+                                                  ),
                                         ),
                                       );
                                     },
