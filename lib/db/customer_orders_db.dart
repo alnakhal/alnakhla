@@ -26,18 +26,6 @@ class CustomerOrdersDatabase {
     return await _orderStore.add(db, order.toMap());
   }
 
-  Future<void> updateOrderStatus(int id, String newStatus) async {
-    if (!orderStatuses.contains(newStatus)) {
-      throw ArgumentError('حالة طلب غير صالحة: $newStatus');
-    }
-    final db = await database;
-    final updatedMap = {
-      'updated_at': DateTime.now().toIso8601String(),
-      'status': newStatus,
-    };
-    await _orderStore.record(id).update(db, updatedMap);
-  }
-
   Future<void> updateOrderDetails({
     required int id,
     required String address,

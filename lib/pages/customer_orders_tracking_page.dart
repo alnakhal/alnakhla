@@ -9,6 +9,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
 
+const _publicTrackingBaseUrl = 'https://alnakhal.github.io/alnakhla';
+
 class CustomerOrdersTrackingPage extends StatefulWidget {
   const CustomerOrdersTrackingPage({super.key, this.loginPageBuilder});
 
@@ -57,15 +59,13 @@ class _CustomerOrdersTrackingPageState
       if (!mounted) return;
       setState(_loadOrders);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}'),
-        ),
+        SnackBar(content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}')),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
+      );
     }
   }
 
@@ -87,6 +87,18 @@ class _CustomerOrdersTrackingPageState
       default:
         return status;
     }
+  }
+
+  String _trackingUrl(String orderNumber) {
+    return '$_publicTrackingBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}';
+  }
+
+  Future<void> _copyTrackingLink(String orderNumber) async {
+    await Clipboard.setData(ClipboardData(text: _trackingUrl(orderNumber)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ رابط تتبع الطلب')),
+    );
   }
 
   Future<void> _shareOrderAsImage(CustomerOrderModel order) async {
@@ -545,6 +557,11 @@ class _CustomerOrdersTrackingPageState
                     tooltip: 'مشاركة الطلب كصورة',
                     onPressed: () => _shareOrderAsImage(order),
                     icon: const Icon(Icons.share_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'نسخ رابط التتبع',
+                    onPressed: () => _copyTrackingLink(order.orderNumber),
+                    icon: const Icon(Icons.link_outlined),
                   ),
                   IconButton(
                     tooltip: 'تعديل الطلب',

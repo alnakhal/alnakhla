@@ -14,6 +14,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
+import 'pages/public_order_tracking_page.dart';
 import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
@@ -156,10 +157,21 @@ class MyApp extends StatelessWidget {
 
 Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   final name = settings.name ?? '/';
-  final uri = Uri.parse(name);
+  var uri = Uri.parse(name);
+  if ((uri.path == '/' || uri.path.isEmpty) && uri.fragment.isNotEmpty) {
+    uri = Uri.parse(uri.fragment);
+  }
   final path = uri.path;
   final slug = uri.queryParameters['slug'];
   final userId = uri.queryParameters['user_id'];
+  final orderNumber = uri.queryParameters['order'];
+
+  if ((path == '/track-order' || path == '/order-tracking') &&
+      orderNumber != null) {
+    return MaterialPageRoute(
+      builder: (_) => PublicOrderTrackingPage(initialOrderNumber: orderNumber),
+    );
+  }
 
   if (path == '/' || path.isEmpty) {
     if (slug != null || userId != null) {
@@ -179,9 +191,7 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
 
   if (path == '/track-order' || path == '/order-tracking') {
     return MaterialPageRoute(
-      builder: (_) => customer_orders_tracking.CustomerOrdersTrackingPage(
-        loginPageBuilder: (_) => const LoginPage(),
-      ),
+      builder: (_) => const PublicOrderTrackingPage(),
     );
   }
 
@@ -5429,6 +5439,7 @@ class _OrdersTabState extends State<OrdersTab> {
                                 if (order.customerName != null &&
                                     order.customerName!.isNotEmpty)
                                   Text('العميل: ${order.customerName}'),
+                                Text('الحالة: ${_statusArabic(order.status)}'),
                                 Text(
                                   'العدد: ${order.items.length} • المجموع: ${order.total.toStringAsFixed(0)}',
                                 ),
@@ -5446,8 +5457,18 @@ class _OrdersTabState extends State<OrdersTab> {
                                           OrderDetailsPage(order: order),
                                     ),
                                   )
-                                  .then((_) {
+                                  .then((result) {
                                     if (mounted) {
+                                      if (result is Order) {
+                                        final orderIndex = _orders.indexWhere(
+                                          (item) => item.id == result.id,
+                                        );
+                                        if (orderIndex != -1) {
+                                          setState(() {
+                                            _orders[orderIndex] = result;
+                                          });
+                                        }
+                                      }
                                       _refreshOrders();
                                     }
                                   });
@@ -5461,6 +5482,21 @@ class _OrdersTabState extends State<OrdersTab> {
         ),
       ),
     );
+  }
+
+  String _statusArabic(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'قيد الانتظار';
+      case 'in_delivery':
+        return 'قيد التوصيل';
+      case 'completed':
+        return 'مكتمل';
+      case 'cancelled':
+        return 'ملغي';
+      default:
+        return status;
+    }
   }
 }
 
@@ -5519,22 +5555,35 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   Future<void> _updateOrderStatus(String newStatus) async {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
+    if (newStatus == _currentOrder.status) return;
+    if (supabase.auth.currentUser == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
+      );
       return;
     }
 
     setState(() => _isUpdating = true);
     try {
-      // تحديث جميع صفوف الطلب بالحالة الجديدة
-      await supabase
+      var updatedRows = await supabase
           .from('orders')
           .update({'status': newStatus})
-          .eq('order_id', _currentOrder.id.toString());
+          .eq('order_id', _currentOrder.id.toString())
+          .select('id')
+          .timeout(const Duration(seconds: 15));
+
+      if (updatedRows.isEmpty) {
+        updatedRows = await supabase
+            .from('orders')
+            .update({'status': newStatus})
+            .eq('id', _currentOrder.id)
+            .select('id')
+            .timeout(const Duration(seconds: 15));
+      }
+      if (updatedRows.isEmpty) {
+        throw StateError('لم يتم العثور على الطلب لتحديث حالته');
+      }
 
       if (!mounted) return;
       setState(() {
@@ -5549,21 +5598,17 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           notes: _currentOrder.notes,
         );
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم تحديث حالة الطلب بنجاح')),
       );
-      // أغلق الصفحة وارجع لصفحة القائمة لتحديثها
-      if (mounted) Navigator.of(context).pop(true);
-    } catch (e) {
+      Navigator.of(context).pop(_currentOrder);
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('خطأ في تحديث حالة الطلب: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
+      if (mounted) setState(() => _isUpdating = false);
     }
   }
 
@@ -5855,63 +5900,28 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'تحديث حالة الطلب',
+              'تحديث حالة الطلب يدويًا',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton(
-                  onPressed: _isUpdating
-                      ? null
-                      : () => _updateOrderStatus('pending'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor:
-                        _currentOrder.status.toLowerCase() == 'pending'
-                        ? Colors.orange
-                        : Colors.orange.withOpacity(0.6),
-                  ),
-                  child: const Text('قيد الانتظار'),
-                ),
-                FilledButton(
-                  onPressed: _isUpdating
-                      ? null
-                      : () => _updateOrderStatus('in_delivery'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor:
-                        _currentOrder.status.toLowerCase() == 'in_delivery'
-                        ? Colors.blue
-                        : Colors.blue.withOpacity(0.6),
-                  ),
-                  child: const Text('قيد التوصيل'),
-                ),
-                FilledButton(
-                  onPressed: _isUpdating
-                      ? null
-                      : () => _updateOrderStatus('completed'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor:
-                        _currentOrder.status.toLowerCase() == 'completed'
-                        ? Colors.green
-                        : Colors.green.withOpacity(0.6),
-                  ),
-                  child: const Text('مكتمل'),
-                ),
-                FilledButton(
-                  onPressed: _isUpdating
-                      ? null
-                      : () => _updateOrderStatus('cancelled'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor:
-                        _currentOrder.status.toLowerCase() == 'cancelled'
-                        ? Colors.red
-                        : Colors.red.withOpacity(0.6),
-                  ),
-                  child: const Text('ملغي'),
-                ),
+            DropdownButtonFormField<String>(
+              initialValue: _currentOrder.status,
+              decoration: const InputDecoration(
+                labelText: 'الحالة الجديدة',
+                prefixIcon: Icon(Icons.local_shipping_outlined),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'pending', child: Text('قيد الانتظار')),
+                DropdownMenuItem(value: 'in_delivery', child: Text('قيد التوصيل')),
+                DropdownMenuItem(value: 'completed', child: Text('مكتمل')),
+                DropdownMenuItem(value: 'cancelled', child: Text('ملغي')),
               ],
+              onChanged: _isUpdating
+                  ? null
+                  : (newStatus) {
+                      if (newStatus != null) _updateOrderStatus(newStatus);
+                    },
             ),
             const SizedBox(height: 20),
             Row(

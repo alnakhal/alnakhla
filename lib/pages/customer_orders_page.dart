@@ -7,7 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../main.dart' show LoginPage, OwnerDashboardPage, ProductManagementPage;
+import '../main.dart'
+  show LoginPage, OwnerDashboardPage, ProductManagementPage, storeShareBaseUrl;
 import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
@@ -701,10 +702,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         text.writeln('ملاحظات: $orderNote');
       }
       text.writeln('');
-      text.writeln('📱 يمكنك متابعة حالة طلبك من التطبيق:');
-      text.writeln('- اضغط على أيقونة "متابعة" في الصفحة الرئيسية');
-      text.writeln('- أدخل رقم الطلب: $orderNumber');
-      text.writeln('- ستشاهد جميع مراحل معالجة طلبك');
+        final trackingUrl =
+          '$storeShareBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}';
+        text.writeln('يمكنك متابعة حالة طلبك عبر الرابط:');
+        text.writeln(trackingUrl);
 
       final url = Uri.parse(
         'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}',

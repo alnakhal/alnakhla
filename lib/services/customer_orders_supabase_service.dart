@@ -64,11 +64,16 @@ class CustomerOrdersSupabaseService {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
-    _requireUser();
-    await _client.rpc(
-      'update_customer_order_status_with_inventory',
-      params: {'p_order_number': orderNumber, 'p_new_status': newStatus},
-    );
+    final user = _requireUser();
+    final rows = await _client
+        .from('customer_orders')
+        .update({'status': newStatus, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('order_number', orderNumber)
+        .eq('user_id', user.id)
+        .select('id');
+    if (rows.isEmpty) {
+      throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
+    }
   }
 
   Future<void> updateOrderDetails({
@@ -119,5 +124,19 @@ class CustomerOrdersSupabaseService {
         .maybeSingle();
     if (row == null) return null;
     return CustomerOrderModel.fromMap(Map<String, dynamic>.from(row));
+  }
+
+  Future<Map<String, dynamic>?> getPublicOrderTracking(
+    String orderNumber,
+  ) async {
+    final response = await _client.rpc(
+      'get_public_order_tracking',
+      params: {'p_order_number': orderNumber},
+    );
+    if (response is List && response.isNotEmpty) {
+      return Map<String, dynamic>.from(response.first as Map);
+    }
+    if (response is Map<String, dynamic>) return response;
+    return null;
   }
 }

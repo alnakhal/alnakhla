@@ -1,0 +1,1 @@
+drop function if exists public.update_customer_order_status_with_inventory(text, text);
