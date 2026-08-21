@@ -29,9 +29,7 @@ class _CustomerOrdersTrackingPageState
   }
 
   void _loadOrders() {
-    _ordersFuture = _ordersService.getMyOrders(
-      filterStatus: _filterStatus == 'all' ? null : _filterStatus,
-    );
+    _ordersFuture = _ordersService.getMyOrders();
   }
 
   SupabaseClient get _supabase => Supabase.instance.client;
@@ -186,30 +184,43 @@ class _CustomerOrdersTrackingPageState
                   return Center(child: Text('خطأ: ${snapshot.error}'));
                 }
                 final orders = snapshot.data ?? [];
+                final statusCounts = <String, int>{
+                  for (final status in orderStatuses)
+                    status: orders.where((order) => order.status == status).length,
+                };
                 final filteredOrders = orders.where((order) {
-                  if (_searchQuery.isEmpty) return true;
-                  return order.orderNumber.toLowerCase().contains(_searchQuery) ||
+                  final matchesStatus = _filterStatus == 'all' ||
+                      order.status == _filterStatus;
+                  if (_searchQuery.isEmpty) return matchesStatus;
+                  final matchesSearch =
+                      order.orderNumber.toLowerCase().contains(_searchQuery) ||
                       order.customerName.toLowerCase().contains(_searchQuery) ||
                       order.customerPhone.toLowerCase().contains(_searchQuery);
+                  return matchesStatus && matchesSearch;
                 }).toList();
-                if (filteredOrders.isEmpty) {
-                  return Center(
-                    child: Text(
-                      _searchQuery.isNotEmpty
-                          ? 'لا توجد نتائج مطابقة للبحث'
-                          : _filterStatus == 'all'
-                          ? 'لا توجد طلبات بعد'
-                          : 'لا توجد طلبات بهذه الحالة',
+                return Column(
+                  children: [
+                    _buildStatusSummary(statusCounts),
+                    Expanded(
+                      child: filteredOrders.isEmpty
+                          ? Center(
+                              child: Text(
+                                _searchQuery.isNotEmpty
+                                    ? 'لا توجد نتائج مطابقة للبحث'
+                                    : _filterStatus == 'all'
+                                    ? 'لا توجد طلبات بعد'
+                                    : 'لا توجد طلبات بهذه الحالة',
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: filteredOrders.length,
+                              itemBuilder: (context, index) {
+                                return _buildOrderCard(filteredOrders[index]);
+                              },
+                            ),
                     ),
-                  );
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: filteredOrders.length,
-                  itemBuilder: (context, index) {
-                    final order = filteredOrders[index];
-                    return _buildOrderCard(order);
-                  },
+                  ],
                 );
               },
             ),
@@ -232,6 +243,59 @@ class _CustomerOrdersTrackingPageState
             _loadOrders();
           });
         },
+      ),
+    );
+  }
+
+  Widget _buildStatusSummary(Map<String, int> counts) {
+    return SizedBox(
+      height: 76,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        children: [
+          _buildStatusCount('all', 'الكل', counts.values.fold(0, (sum, count) => sum + count)),
+          ...orderStatuses.map(
+            (status) => _buildStatusCount(
+              status,
+              _getStatusArabic(status),
+              counts[status] ?? 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCount(String status, String label, int count) {
+    final color = status == 'all' ? Colors.blueGrey : _getStatusColor(status);
+    return Container(
+      width: 108,
+      margin: const EdgeInsetsDirectional.only(end: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '$count',
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: color, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
