@@ -480,6 +480,16 @@ class _CustomerOrdersTrackingPageState
             const SizedBox(height: 12),
             _buildOrderTimeline(order.status),
             const SizedBox(height: 16),
+            if (order.id != null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showManualStatusDialog(order),
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('تعديل الحالة يدويًا'),
+                ),
+              ),
+            if (order.id != null) const SizedBox(height: 12),
             // Customer info
             Container(
               padding: const EdgeInsets.all(12),
@@ -616,6 +626,49 @@ class _CustomerOrdersTrackingPageState
         ),
       ),
     );
+  }
+
+  Future<void> _showManualStatusDialog(CustomerOrderModel order) async {
+    var selectedStatus = order.status;
+    final newStatus = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('تعديل حالة الطلب'),
+          content: DropdownButtonFormField<String>(
+            value: selectedStatus,
+            decoration: const InputDecoration(labelText: 'الحالة الجديدة'),
+            items: orderStatuses
+                .map(
+                  (status) => DropdownMenuItem<String>(
+                    value: status,
+                    child: Text(_getStatusArabic(status)),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setDialogState(() => selectedStatus = value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(selectedStatus),
+              child: const Text('حفظ الحالة'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (newStatus != null && newStatus != order.status && mounted) {
+      await _updateOrderStatus(order.id!, newStatus);
+    }
   }
 
   String _itemsToText(CustomerOrderModel order) {
