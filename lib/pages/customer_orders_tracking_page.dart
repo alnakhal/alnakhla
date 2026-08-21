@@ -205,6 +205,92 @@ class _CustomerOrdersTrackingPageState
     );
   }
 
+  Widget _buildOrderTimeline(String currentStatus) {
+    final statuses = currentStatus == 'cancelled'
+        ? const ['pending', 'cancelled']
+        : const ['pending', 'confirmed', 'shipped', 'delivered'];
+    final currentIndex = statuses.indexOf(currentStatus);
+    final activeIndex = currentIndex < 0 ? 0 : currentIndex;
+    final activeColor = _getStatusColor(currentStatus);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: activeColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: activeColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < statuses.length; index++) ...[
+            Expanded(
+              child: _buildTimelineStep(
+                status: statuses[index],
+                isCompleted: index < activeIndex,
+                isCurrent: index == activeIndex,
+                color: activeColor,
+              ),
+            ),
+            if (index < statuses.length - 1)
+              Expanded(
+                child: Container(
+                  height: 2,
+                  margin: const EdgeInsets.only(bottom: 22),
+                  color: index < activeIndex
+                      ? activeColor
+                      : Colors.grey.shade300,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep({
+    required String status,
+    required bool isCompleted,
+    required bool isCurrent,
+    required Color color,
+  }) {
+    final stepColor = isCompleted || isCurrent ? color : Colors.grey.shade400;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isCompleted || isCurrent ? stepColor : Colors.white,
+            border: Border.all(color: stepColor, width: 2),
+          ),
+          child: Icon(
+            isCompleted
+                ? Icons.check
+                : status == 'cancelled'
+                ? Icons.close
+                : Icons.circle,
+            size: isCompleted || status == 'cancelled' ? 16 : 9,
+            color: isCompleted || isCurrent ? Colors.white : stepColor,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _getStatusArabic(status),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: stepColor,
+            fontSize: 10,
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildOrderCard(CustomerOrderModel order) {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'ar');
     final statusColor = _getStatusColor(order.status);
@@ -297,6 +383,8 @@ class _CustomerOrdersTrackingPageState
               ],
             ),
             const SizedBox(height: 12),
+            _buildOrderTimeline(order.status),
+            const SizedBox(height: 16),
             // Customer info
             Container(
               padding: const EdgeInsets.all(12),
