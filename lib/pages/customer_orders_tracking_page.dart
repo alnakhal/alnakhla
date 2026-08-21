@@ -257,21 +257,38 @@ class _CustomerOrdersTrackingPageState
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: statusColor),
-                      ),
-                      child: Text(
-                        _getStatusArabic(order.status),
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.bold,
+                    PopupMenuButton<String>(
+                      enabled: order.id != null,
+                      tooltip: 'تعديل حالة الطلب',
+                      onSelected: (newStatus) {
+                        if (newStatus != order.status) {
+                          _updateOrderStatus(order.id!, newStatus);
+                        }
+                      },
+                      itemBuilder: (context) => orderStatuses
+                          .map(
+                            (status) => PopupMenuItem<String>(
+                              value: status,
+                              child: Text(_getStatusArabic(status)),
+                            ),
+                          )
+                          .toList(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor),
+                        ),
+                        child: Text(
+                          _getStatusArabic(order.status),
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
