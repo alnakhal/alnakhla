@@ -225,7 +225,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-enum SettingsAction { logout, register, login, storeSettings }
+enum SettingsAction {
+  logout,
+  register,
+  login,
+  storeSettings,
+  customerOrdersTracking,
+  publicOrderTracking,
+}
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
@@ -259,6 +266,20 @@ class _HomeScreenState extends State<HomeScreen> {
             .push(MaterialPageRoute(builder: (_) => const StoreSettingsPage()));
         if (!mounted) return;
         setState(() {});
+        break;
+      case SettingsAction.customerOrdersTracking:
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => customer_orders_tracking.CustomerOrdersTrackingPage(
+              loginPageBuilder: (_) => const LoginPage(),
+            ),
+          ),
+        );
+        break;
+      case SettingsAction.publicOrderTracking:
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const OrderTrackingPublicPage()),
+        );
         break;
     }
   }
@@ -355,12 +376,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text('إعدادات المتجر'),
                   ),
                   PopupMenuItem(
+                    value: SettingsAction.customerOrdersTracking,
+                    child: Text('متابعة طلباتي'),
+                  ),
+                  PopupMenuItem(
+                    value: SettingsAction.publicOrderTracking,
+                    child: Text('تتبع طلب برقم الطلب'),
+                  ),
+                  PopupMenuItem(
                     value: SettingsAction.logout,
                     child: Text('تسجيل الخروج'),
                   ),
                 ];
               }
               return const [
+                PopupMenuItem(
+                  value: SettingsAction.customerOrdersTracking,
+                  child: Text('متابعة طلباتي'),
+                ),
+                PopupMenuItem(
+                  value: SettingsAction.publicOrderTracking,
+                  child: Text('تتبع طلب برقم الطلب'),
+                ),
                 PopupMenuItem(
                   value: SettingsAction.register,
                   child: Text('سجل حساب جديد'),
