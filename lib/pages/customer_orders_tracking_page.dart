@@ -20,6 +20,7 @@ class _CustomerOrdersTrackingPageState
   final _ordersService = CustomerOrdersSupabaseService();
   String _filterStatus =
       'all'; // all, pending, confirmed, shipped, delivered, cancelled
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -126,6 +127,28 @@ class _CustomerOrdersTrackingPageState
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: TextField(
+              onChanged: (value) {
+                setState(() => _searchQuery = value.trim().toLowerCase());
+              },
+              decoration: InputDecoration(
+                labelText: 'بحث في الطلبات',
+                hintText: 'رقم الطلب أو اسم العميل أو رقم الهاتف',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'مسح البحث',
+                        onPressed: () => setState(() => _searchQuery = ''),
+                        icon: const Icon(Icons.clear),
+                      ),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
           // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -163,10 +186,18 @@ class _CustomerOrdersTrackingPageState
                   return Center(child: Text('خطأ: ${snapshot.error}'));
                 }
                 final orders = snapshot.data ?? [];
-                if (orders.isEmpty) {
+                final filteredOrders = orders.where((order) {
+                  if (_searchQuery.isEmpty) return true;
+                  return order.orderNumber.toLowerCase().contains(_searchQuery) ||
+                      order.customerName.toLowerCase().contains(_searchQuery) ||
+                      order.customerPhone.toLowerCase().contains(_searchQuery);
+                }).toList();
+                if (filteredOrders.isEmpty) {
                   return Center(
                     child: Text(
-                      _filterStatus == 'all'
+                      _searchQuery.isNotEmpty
+                          ? 'لا توجد نتائج مطابقة للبحث'
+                          : _filterStatus == 'all'
                           ? 'لا توجد طلبات بعد'
                           : 'لا توجد طلبات بهذه الحالة',
                     ),
@@ -174,9 +205,9 @@ class _CustomerOrdersTrackingPageState
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
-                  itemCount: orders.length,
+                  itemCount: filteredOrders.length,
                   itemBuilder: (context, index) {
-                    final order = orders[index];
+                    final order = filteredOrders[index];
                     return _buildOrderCard(order);
                   },
                 );
