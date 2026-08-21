@@ -67,14 +67,19 @@ class CustomerOrdersSupabaseService {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
-    _requireUser();
-    await _client
+    final user = _requireUser();
+    final updatedRows = await _client
         .from('customer_orders')
         .update({
           'status': newStatus,
           'updated_at': DateTime.now().toIso8601String(),
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('id');
+    if (updatedRows.isEmpty) {
+      throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
+    }
   }
 
   Future<void> updateOrderDetails({
@@ -94,8 +99,8 @@ class CustomerOrdersSupabaseService {
     if (!['pending', 'received', 'returned'].contains(deliveryResult)) {
       throw ArgumentError('نتيجة تسليم غير صالحة: $deliveryResult');
     }
-    _requireUser();
-    await _client
+    final user = _requireUser();
+    final updatedRows = await _client
         .from('customer_orders')
         .update({
           'status': status,
@@ -108,7 +113,12 @@ class CustomerOrdersSupabaseService {
           'delivery_result': deliveryResult,
           'updated_at': DateTime.now().toIso8601String(),
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('id');
+    if (updatedRows.isEmpty) {
+      throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
+    }
   }
 
   Future<CustomerOrderModel?> getMyOrderByNumber(String orderNumber) async {
