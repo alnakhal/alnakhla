@@ -257,40 +257,32 @@ class _CustomerOrdersTrackingPageState
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    PopupMenuButton<String>(
-                      enabled: order.id != null,
-                      tooltip: 'تعديل حالة الطلب',
-                      onSelected: (newStatus) {
-                        if (newStatus != order.status) {
-                          _updateOrderStatus(order.id!, newStatus);
-                        }
-                      },
-                      itemBuilder: (context) => orderStatuses
+                    DropdownButton<String>(
+                      value: order.id == null ? null : order.status,
+                      hint: const Text('الحالة'),
+                      underline: const SizedBox.shrink(),
+                      isDense: true,
+                      icon: Icon(Icons.arrow_drop_down, color: statusColor),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      items: orderStatuses
                           .map(
-                            (status) => PopupMenuItem<String>(
+                            (status) => DropdownMenuItem<String>(
                               value: status,
                               child: Text(_getStatusArabic(status)),
                             ),
                           )
                           .toList(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: statusColor),
-                        ),
-                        child: Text(
-                          _getStatusArabic(order.status),
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      onChanged: order.id == null
+                          ? null
+                          : (newStatus) {
+                              if (newStatus != null &&
+                                  newStatus != order.status) {
+                                _updateOrderStatus(order.id!, newStatus);
+                              }
+                            },
                     ),
                     const SizedBox(width: 4),
                     IconButton(
