@@ -63,7 +63,7 @@ class CustomerOrdersSupabaseService {
     await _client.from('customer_orders').insert(data);
   }
 
-  Future<void> updateOrderStatus(int id, String newStatus) async {
+  Future<void> updateOrderStatus(String orderNumber, String newStatus) async {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
@@ -74,7 +74,7 @@ class CustomerOrdersSupabaseService {
           'status': newStatus,
           'updated_at': DateTime.now().toIso8601String(),
         })
-        .eq('id', id)
+        .eq('order_number', orderNumber)
         .eq('user_id', user.id)
         .select('id');
     if (updatedRows.isEmpty) {
