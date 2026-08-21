@@ -80,7 +80,10 @@ class _CustomerOrdersTrackingPageState
       case 'delivered':
         return 'تم الاستلام';
       case 'cancelled':
-        return 'ملغى';
+      case 'cancelled_company':
+        return 'ملغي في الشركة';
+      case 'returned':
+        return 'راجع إلى المخزن';
       default:
         return status;
     }
@@ -173,7 +176,6 @@ class _CustomerOrdersTrackingPageState
                 _shareInfoRow('العنوان', order.customerAddress),
                 if (order.customerLandmark.isNotEmpty)
                   _shareInfoRow('أقرب نقطة دالة', order.customerLandmark),
-                _shareInfoRow('منطقة التوصيل', order.deliveryAreaArabic),
                 const SizedBox(height: 24),
                 const Text(
                   'المنتجات',
@@ -221,7 +223,6 @@ class _CustomerOrdersTrackingPageState
                   );
                 }),
                 const Divider(height: 28),
-                _shareTotalRow('أجور التوصيل', order.deliveryFee),
                 _shareTotalRow('الإجمالي الكلي', order.totalAmount, bold: true),
                 const SizedBox(height: 32),
                 Align(
@@ -480,6 +481,8 @@ class _CustomerOrdersTrackingPageState
       case 'delivered':
         return Colors.green.shade700;
       case 'cancelled':
+      case 'cancelled_company':
+      case 'returned':
         return Colors.red.shade700;
       default:
         return Colors.blueGrey;
@@ -611,24 +614,6 @@ class _CustomerOrdersTrackingPageState
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
-                    const SizedBox(height: 4),
-                    _buildCopyableText(
-                      'التوصيل: ${order.deliveryAreaArabic}',
-                      order.deliveryAreaArabic,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    _buildCopyableText(
-                      'أجور التوصيل: ${order.deliveryFee.toStringAsFixed(0)} د.ع',
-                      '${order.deliveryFee.toStringAsFixed(0)} د.ع',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    _buildCopyableText(
-                      'الدفع: ${order.paymentMethodArabic}',
-                      order.paymentMethodArabic,
-                      style: const TextStyle(fontSize: 12),
-                    ),
                     if (order.receiptNumber != null &&
                         order.receiptNumber!.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -1067,15 +1052,6 @@ class _CustomerOrdersTrackingPageState
                           : null,
                     ),
                     const SizedBox(height: 10),
-                    _buildOrderDetail('طريقة الدفع', order.paymentMethodArabic),
-                    _buildOrderDetail(
-                      'منطقة التوصيل',
-                      order.deliveryAreaArabic,
-                    ),
-                    _buildOrderDetail(
-                      'أجور التوصيل',
-                      '${order.deliveryFee.toStringAsFixed(0)} د.ع',
-                    ),
                     _buildOrderDetail(
                       'تاريخ الإنشاء',
                       dateFmt.format(order.createdAt),

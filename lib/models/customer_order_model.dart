@@ -8,7 +8,7 @@ class CustomerOrderModel {
   final String customerAddress;
   final String customerLandmark;
   final double totalAmount;
-  final String status; // pending, confirmed, shipped, delivered, cancelled
+  final String status;
   final String paymentMethod;
   final String deliveryArea;
   final double deliveryFee;
@@ -80,7 +80,7 @@ class CustomerOrderModel {
       customerAddress: map['customer_address']?.toString() ?? '',
       customerLandmark: map['customer_landmark']?.toString() ?? '',
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
-      status: map['status']?.toString() ?? 'pending',
+      status: _readStatus(map),
       paymentMethod: map['payment_method']?.toString() ?? 'cash_on_delivery',
       deliveryArea: map['delivery_area']?.toString() ?? 'baghdad',
       deliveryFee: (map['delivery_fee'] as num?)?.toDouble() ?? 0,
@@ -110,6 +110,14 @@ class CustomerOrderModel {
         .toList();
   }
 
+  static String _readStatus(Map<String, dynamic> map) {
+    final status = map['status']?.toString() ?? 'pending';
+    if (status == 'cancelled' || status == 'cancelled_warehouse') {
+      return 'cancelled_company';
+    }
+    return status;
+  }
+
   String get statusArabic {
     switch (status) {
       case 'pending':
@@ -121,7 +129,10 @@ class CustomerOrderModel {
       case 'delivered':
         return 'تم التسليم';
       case 'cancelled':
-        return 'ملغى';
+      case 'cancelled_company':
+        return 'ملغي في الشركة';
+      case 'returned':
+        return 'راجع إلى المخزن';
       default:
         return status;
     }
@@ -161,5 +172,6 @@ const orderStatuses = [
   'confirmed',
   'shipped',
   'delivered',
-  'cancelled',
+  'cancelled_company',
+  'returned',
 ];

@@ -6,7 +6,7 @@ import '../models/customer_order_model.dart';
 
 class CustomerOrdersSupabaseService {
   CustomerOrdersSupabaseService({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -19,9 +19,8 @@ class CustomerOrdersSupabaseService {
 
       return (response as List)
           .map(
-            (row) => CustomerOrder.fromJson(
-              Map<String, dynamic>.from(row as Map),
-            ),
+            (row) =>
+                CustomerOrder.fromJson(Map<String, dynamic>.from(row as Map)),
           )
           .toList();
     } catch (e) {
@@ -40,18 +39,16 @@ class CustomerOrdersSupabaseService {
 
   Future<List<CustomerOrderModel>> getMyOrders({String? filterStatus}) async {
     final user = _requireUser();
-    var query = _client
-        .from('customer_orders')
-        .select()
-        .eq('user_id', user.id);
+    var query = _client.from('customer_orders').select().eq('user_id', user.id);
     if (filterStatus != null) {
       query = query.eq('status', filterStatus);
     }
     final rows = await query.order('created_at', ascending: false);
     return (rows as List)
-        .map((row) => CustomerOrderModel.fromMap(
-              Map<String, dynamic>.from(row as Map),
-            ))
+        .map(
+          (row) =>
+              CustomerOrderModel.fromMap(Map<String, dynamic>.from(row as Map)),
+        )
         .toList();
   }
 
@@ -67,19 +64,11 @@ class CustomerOrdersSupabaseService {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
-    final user = _requireUser();
-    final updatedRows = await _client
-        .from('customer_orders')
-        .update({
-          'status': newStatus,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('order_number', orderNumber)
-        .eq('user_id', user.id)
-        .select('id');
-    if (updatedRows.isEmpty) {
-      throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
-    }
+    _requireUser();
+    await _client.rpc(
+      'update_customer_order_status_with_inventory',
+      params: {'p_order_number': orderNumber, 'p_new_status': newStatus},
+    );
   }
 
   Future<void> updateOrderDetails({

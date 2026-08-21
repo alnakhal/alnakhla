@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../main.dart' show LoginPage, OwnerDashboardPage;
+import '../main.dart' show LoginPage, OwnerDashboardPage, ProductManagementPage;
 import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
@@ -19,16 +19,6 @@ import 'customer_orders_tracking_page.dart' as customer_orders_tracking;
 
 const String whatsappTargetNumber = '+9647746582364';
 const String orderTrackingUrl = 'متابعة-الطلب';
-const Map<String, String> deliveryAreaLabels = {
-  'pickup': 'استلام من المتجر',
-  'baghdad': 'بغداد',
-  'other_governorates': 'باقي المحافظات',
-};
-const Map<String, double> deliveryAreaFees = {
-  'pickup': 0,
-  'baghdad': 5000,
-  'other_governorates': 10000,
-};
 
 class CustomerOrdersPage extends StatefulWidget {
   final String? storeSlug;
@@ -52,8 +42,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   final PageController _sliderPageController = PageController();
   final String _sortOption = 'الأحدث';
   String _selectedCategory = 'الكل';
-  String _selectedDeliveryArea = 'baghdad';
-  String _selectedPaymentMethod = 'cash_on_delivery';
   Set<int> _favoriteProductIds = <int>{};
   bool _showFavoritesOnly = false;
   static const List<String> _defaultSliderImages = [
@@ -121,8 +109,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       if (!mounted) return;
       if (images.isNotEmpty) {
         setState(() {
-          _sliderImageUrls =
-              images.map((img) => img['image_url'] as String).toList();
+          _sliderImageUrls = images
+              .map((img) => img['image_url'] as String)
+              .toList();
         });
       } else {
         setState(() {
@@ -149,8 +138,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         prefs.getStringList('favorite_products_$_preferencesKey') ?? <String>[];
     if (!mounted) return;
     setState(() {
-      _favoriteProductIds =
-          favorites.map(int.tryParse).whereType<int>().toSet();
+      _favoriteProductIds = favorites
+          .map(int.tryParse)
+          .whereType<int>()
+          .toSet();
       _customerNameController.text =
           prefs.getString('customer_name_$_preferencesKey') ?? '';
       _customerPhoneController.text =
@@ -167,11 +158,17 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       _favoriteProductIds.map((id) => id.toString()).toList(),
     );
     await prefs.setString(
-        'customer_name_$_preferencesKey', _customerNameController.text.trim());
-    await prefs.setString('customer_phone_$_preferencesKey',
-        _customerPhoneController.text.trim());
-    await prefs.setString('customer_address_$_preferencesKey',
-        _customerAddressController.text.trim());
+      'customer_name_$_preferencesKey',
+      _customerNameController.text.trim(),
+    );
+    await prefs.setString(
+      'customer_phone_$_preferencesKey',
+      _customerPhoneController.text.trim(),
+    );
+    await prefs.setString(
+      'customer_address_$_preferencesKey',
+      _customerAddressController.text.trim(),
+    );
   }
 
   Future<void> _toggleFavorite(Product product) async {
@@ -341,33 +338,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         return sum + quantity * _productPrice(productId);
       });
 
-  double get _selectedDeliveryTotal => _selectedQuantities.entries.fold(
-        0.0,
-        (sum, entry) {
-          final product = _lastProducts.firstWhere(
-            (item) => item.id == entry.key,
-            orElse: () => Product(
-              id: 0,
-              name: '',
-              description: '',
-              price: 0,
-              cost: 0,
-              wholesalePrice: 0,
-              minWholesaleQuantity: 0,
-              singlePrice: 0,
-              hasWholesale: false,
-              remainingQty: 0,
-            ),
-          );
-          return sum + (product.deliveryPrice ?? 0) * entry.value;
-        },
-      );
-
-  double get _selectedAreaDeliveryFee =>
-      deliveryAreaFees[_selectedDeliveryArea] ?? 0;
-
-  double get _selectedGrandTotal =>
-      _selectedTotal + _selectedDeliveryTotal + _selectedAreaDeliveryFee;
+  double get _selectedGrandTotal => _selectedTotal;
 
   double _productPrice(int productId) {
     return _lastProducts
@@ -568,12 +539,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              size: 80,
-                            ),
-                          ),
+                                color: Colors.grey.shade200,
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 80,
+                                ),
+                              ),
                         ),
                       ),
                     ),
@@ -647,8 +618,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     required String customerPhone,
     required String customerAddress,
     required String orderNote,
-    required String deliveryArea,
-    required String paymentMethod,
   }) async {
     if (_isSendingOrder) return;
     final authUser = Supabase.instance.client.auth.currentUser;
@@ -684,10 +653,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       await _saveCustomerPreferences();
 
       final outOfStockProduct = selectedProducts.cast<Product?>().firstWhere(
-            (product) =>
-                (_selectedQuantities[product!.id] ?? 0) > product.remainingQty,
-            orElse: () => null,
-          );
+        (product) =>
+            (_selectedQuantities[product!.id] ?? 0) > product.remainingQty,
+        orElse: () => null,
+      );
       if (outOfStockProduct != null) {
         await _showMessage(
           'الكمية المطلوبة من ${outOfStockProduct.name} أكبر من المتوفر حاليًا',
@@ -700,12 +669,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final qty = _selectedQuantities[product.id] ?? 0;
         return sum + qty * product.price;
       });
-      final deliveryTotal = selectedProducts.fold<double>(0, (sum, product) {
-        final qty = _selectedQuantities[product.id] ?? 0;
-        return sum + (product.deliveryPrice ?? 0) * qty;
-      });
-      final areaDeliveryFee = deliveryAreaFees[deliveryArea] ?? 0;
-      final grandTotal = total + deliveryTotal + areaDeliveryFee;
+      final grandTotal = total;
 
       final orderNumber = _generateOrderNumber();
       final text = StringBuffer();
@@ -722,10 +686,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       if (customerAddress.isNotEmpty) {
         text.writeln('عنوان العميل: $customerAddress');
       }
-      text.writeln('منطقة التوصيل: ${deliveryAreaLabels[deliveryArea]}');
-      text.writeln(
-        'طريقة الدفع: ${paymentMethod == 'cash_on_delivery' ? 'الدفع عند الاستلام' : 'دفع إلكتروني'}',
-      );
       text.writeln('---');
       for (var i = 0; i < selectedProducts.length; i++) {
         final product = selectedProducts[i];
@@ -736,10 +696,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       }
       text.writeln('---');
       text.writeln('مجموع المنتجات: ${total.toStringAsFixed(0)} د.ع');
-      text.writeln(
-        'توصيل المنتجات: ${deliveryTotal.toStringAsFixed(0)} د.ع',
-      );
-      text.writeln('أجور المنطقة: ${areaDeliveryFee.toStringAsFixed(0)} د.ع');
       text.writeln('الإجمالي النهائي: ${grandTotal.toStringAsFixed(0)} د.ع');
       if (orderNote.isNotEmpty) {
         text.writeln('ملاحظات: $orderNote');
@@ -779,9 +735,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           customerAddress: customerAddress,
           totalAmount: grandTotal,
           status: 'pending',
-          paymentMethod: paymentMethod,
-          deliveryArea: deliveryArea,
-          deliveryFee: deliveryTotal + areaDeliveryFee,
+          paymentMethod: 'cash_on_delivery',
+          deliveryArea: 'baghdad',
+          deliveryFee: 0,
           notes: orderNote.isNotEmpty ? orderNote : null,
           items: selectedProducts
               .map(
@@ -1030,32 +986,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                         ),
                       ],
                     ),
-                    if (_selectedDeliveryTotal > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('أجور التوصيل'),
-                          Text(
-                            '${_selectedDeliveryTotal.toStringAsFixed(0)} د.ع',
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (_selectedAreaDeliveryFee > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'توصيل ${deliveryAreaLabels[_selectedDeliveryArea]}',
-                          ),
-                          Text(
-                            '${_selectedAreaDeliveryFee.toStringAsFixed(0)} د.ع',
-                          ),
-                        ],
-                      ),
-                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1085,8 +1015,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     const SizedBox(height: 16),
                     TextField(
                       controller: _customerNameController,
-                      decoration:
-                          const InputDecoration(labelText: 'الاسم (مطلوب)'),
+                      decoration: const InputDecoration(
+                        labelText: 'الاسم (مطلوب)',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -1104,52 +1035,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       ),
                       minLines: 1,
                       maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedDeliveryArea,
-                      decoration: const InputDecoration(
-                        labelText: 'منطقة التوصيل',
-                        prefixIcon: Icon(Icons.local_shipping_outlined),
-                      ),
-                      items: deliveryAreaLabels.entries
-                          .map(
-                            (entry) => DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(
-                                '${entry.value}${deliveryAreaFees[entry.key]! > 0 ? ' - ${deliveryAreaFees[entry.key]!.toStringAsFixed(0)} د.ع' : ''}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setStateSheet(() => _selectedDeliveryArea = value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedPaymentMethod,
-                      decoration: const InputDecoration(
-                        labelText: 'طريقة الدفع',
-                        prefixIcon: Icon(Icons.payments_outlined),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'cash_on_delivery',
-                          child: Text('الدفع عند الاستلام'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'electronic',
-                          child: Text('دفع إلكتروني لاحقًا'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setStateSheet(() => _selectedPaymentMethod = value);
-                        }
-                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -1182,12 +1067,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                           : () async {
                               final sheetContext = context;
                               // validate required fields
-                              final phoneVal =
-                                  _customerPhoneController.text.trim();
-                              final nameVal =
-                                  _customerNameController.text.trim();
-                              final addressVal =
-                                  _customerAddressController.text.trim();
+                              final phoneVal = _customerPhoneController.text
+                                  .trim();
+                              final nameVal = _customerNameController.text
+                                  .trim();
+                              final addressVal = _customerAddressController.text
+                                  .trim();
                               if (nameVal.isEmpty) {
                                 await _showMessage('الرجاء إدخال اسم العميل');
                                 return;
@@ -1209,13 +1094,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                               if (!confirmed || !sheetContext.mounted) return;
 
                               await _sendOrderWhatsApp(
-                                customerName:
-                                    _customerNameController.text.trim(),
+                                customerName: _customerNameController.text
+                                    .trim(),
                                 customerPhone: phoneVal,
                                 customerAddress: addressVal,
                                 orderNote: _orderNoteController.text.trim(),
-                                deliveryArea: _selectedDeliveryArea,
-                                paymentMethod: _selectedPaymentMethod,
                               );
                               if (!sheetContext.mounted) return;
                               Navigator.of(sheetContext).pop();
@@ -1241,15 +1124,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     final pagePadding = width > 900
         ? 28.0
         : width > 650
-            ? 22.0
-            : 16.0;
+        ? 22.0
+        : 16.0;
     final cardSpacing = width > 900 ? 18.0 : 12.0;
     final appBarHeight = width > 600 ? 82.0 : 70.0;
     final productCardAspectRatio = width >= 1100
         ? 1.1
         : width >= 720
-            ? 0.95
-            : 0.85;
+        ? 0.95
+        : 0.85;
 
     return Scaffold(
       appBar: AppBar(
@@ -1318,9 +1201,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
 
               if (value == 'manage_products') {
                 await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const OwnerDashboardPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const OwnerDashboardPage()),
                 );
                 if (mounted) await _refreshProducts();
               }
@@ -1355,8 +1236,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
               children: [
                 IconButton(
                   icon: const Icon(Icons.shopping_cart),
-                  onPressed:
-                      _selectedCount > 0 ? _showOrderSummaryDialog : null,
+                  onPressed: _selectedCount > 0
+                      ? _showOrderSummaryDialog
+                      : null,
                   tooltip: 'سلة الطلبات',
                 ),
                 if (_selectedCount > 0)
@@ -1403,7 +1285,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           _lastProducts = products;
           final authUser = Supabase.instance.client.auth.currentUser;
           if (products.isEmpty) {
-            final noStoreLink = widget.storeSlug == null &&
+            final noStoreLink =
+                widget.storeSlug == null &&
                 widget.storeUserId == null &&
                 authUser == null;
             return Center(
@@ -1413,8 +1296,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   noStoreLink
                       ? 'استخدم رابط المتجر المخصص لعرض المنتجات، أو سجّل دخول صاحب المتجر.'
                       : authUser == null
-                          ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
-                          : 'لا يوجد منتجات في المتجر حالياً.',
+                      ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
+                      : 'لا يوجد منتجات في المتجر حالياً.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),
@@ -1424,10 +1307,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
 
           final query = _searchController.text.trim().toLowerCase();
           final filtered = products.where((product) {
-            final matchesQuery = query.isEmpty ||
+            final matchesQuery =
+                query.isEmpty ||
                 product.name.toLowerCase().contains(query) ||
                 product.description.toLowerCase().contains(query);
-            final matchesCategory = _selectedCategory == 'الكل' ||
+            final matchesCategory =
+                _selectedCategory == 'الكل' ||
                 (product.category ?? 'غير مصنف') == _selectedCategory;
             final matchesFavorites =
                 !_showFavoritesOnly || _favoriteProductIds.contains(product.id);
@@ -1530,17 +1415,32 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
                                           builder: (_) =>
-                                                customer_orders_tracking
-                                                  .CustomerOrdersTrackingPage(
-                                                    loginPageBuilder: (_) =>
-                                                        const LoginPage(),
-                                                  ),
+                                              customer_orders_tracking.CustomerOrdersTrackingPage(
+                                                loginPageBuilder: (_) =>
+                                                    const LoginPage(),
+                                              ),
                                         ),
                                       );
                                     },
-                                    icon:
-                                        const Icon(Icons.receipt_long_outlined),
+                                    icon: const Icon(
+                                      Icons.receipt_long_outlined,
+                                    ),
                                     label: const Text('الطلبات'),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ProductManagementPage(),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.inventory_2_outlined,
+                                    ),
+                                    label: const Text('المخزن'),
                                   ),
                                 ],
                               ),
@@ -1660,10 +1560,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [
-                          'غير مصنف',
-                          ...productCategories,
-                        ]
+                        children: ['غير مصنف', ...productCategories]
                             .map(
                               (category) => Padding(
                                 padding: const EdgeInsetsDirectional.only(
@@ -1705,19 +1602,20 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final sortedProducts = _sortProducts(filtered);
-                          final crossAxisCount =
-                              constraints.maxWidth > 500 ? 2 : 1;
+                          final crossAxisCount = constraints.maxWidth > 500
+                              ? 2
+                              : 1;
                           return GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             padding: EdgeInsets.zero,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: cardSpacing,
-                              mainAxisSpacing: cardSpacing,
-                              childAspectRatio: productCardAspectRatio,
-                            ),
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: cardSpacing,
+                                  mainAxisSpacing: cardSpacing,
+                                  childAspectRatio: productCardAspectRatio,
+                                ),
                             itemCount: sortedProducts.length,
                             itemBuilder: (context, index) {
                               final product = sortedProducts[index];
@@ -1739,36 +1637,42 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                             ? Image.network(
                                                 product.imageUrl!,
                                                 fit: BoxFit.cover,
-                                                loadingBuilder: (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null) {
-                                                    return child;
-                                                  }
-                                                  return Container(
-                                                    color: Colors.grey.shade200,
-                                                    child: const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
+                                                loadingBuilder:
+                                                    (
+                                                      context,
+                                                      child,
+                                                      loadingProgress,
+                                                    ) {
+                                                      if (loadingProgress ==
+                                                          null) {
+                                                        return child;
+                                                      }
+                                                      return Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade200,
+                                                        child: const Center(
+                                                          child:
+                                                              CircularProgressIndicator(),
+                                                        ),
+                                                      );
+                                                    },
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => Container(
+                                                      color:
+                                                          Colors.grey.shade200,
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons
+                                                              .image_not_supported,
+                                                          size: 60,
+                                                        ),
+                                                      ),
                                                     ),
-                                                  );
-                                                },
-                                                errorBuilder: (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) =>
-                                                    Container(
-                                                  color: Colors.grey.shade200,
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons.image_not_supported,
-                                                      size: 60,
-                                                    ),
-                                                  ),
-                                                ),
                                               )
                                             : Container(
                                                 color: Colors.grey.shade200,
@@ -1808,15 +1712,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           decoration: BoxDecoration(
                                             color: available > 0
                                                 ? available <= 5
-                                                    ? colorScheme.errorContainer
-                                                        .withValues(
-                                                        alpha: 0.9,
-                                                      )
-                                                    : colorScheme
-                                                        .primaryContainer
-                                                        .withValues(
-                                                        alpha: 0.9,
-                                                      )
+                                                      ? colorScheme
+                                                            .errorContainer
+                                                            .withValues(
+                                                              alpha: 0.9,
+                                                            )
+                                                      : colorScheme
+                                                            .primaryContainer
+                                                            .withValues(
+                                                              alpha: 0.9,
+                                                            )
                                                 : colorScheme.error.withValues(
                                                     alpha: 0.85,
                                                   ),
@@ -1827,14 +1732,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           child: Text(
                                             available > 0
                                                 ? available <= 5
-                                                    ? 'كمية محدودة'
-                                                    : 'متوفر'
+                                                      ? 'كمية محدودة'
+                                                      : 'متوفر'
                                                 : 'منفد',
-                                            style:
-                                                textTheme.labelSmall?.copyWith(
-                                              color: colorScheme.onPrimary,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                            style: textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colorScheme.onPrimary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -1847,17 +1752,22 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           ),
                                           shape: const CircleBorder(),
                                           child: IconButton(
-                                            tooltip: _favoriteProductIds
-                                                    .contains(product.id)
+                                            tooltip:
+                                                _favoriteProductIds.contains(
+                                                  product.id,
+                                                )
                                                 ? 'إزالة من المفضلة'
                                                 : 'إضافة إلى المفضلة',
                                             icon: Icon(
-                                              _favoriteProductIds
-                                                      .contains(product.id)
+                                              _favoriteProductIds.contains(
+                                                    product.id,
+                                                  )
                                                   ? Icons.favorite
                                                   : Icons.favorite_border,
-                                              color: _favoriteProductIds
-                                                      .contains(product.id)
+                                              color:
+                                                  _favoriteProductIds.contains(
+                                                    product.id,
+                                                  )
                                                   ? Colors.redAccent
                                                   : Colors.white,
                                             ),
@@ -1927,10 +1837,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                         style: textTheme
                                                             .bodySmall
                                                             ?.copyWith(
-                                                          color: colorScheme
-                                                              .onSurfaceVariant,
-                                                          fontSize: 11,
-                                                        ),
+                                                              color: colorScheme
+                                                                  .onSurfaceVariant,
+                                                              fontSize: 11,
+                                                            ),
                                                       ),
                                                     ],
                                                   ),
@@ -1939,17 +1849,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                         _addButtonAnimationController,
                                                     builder: (context, child) {
                                                       return DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient: available >
-                                                                  0
+                                                        decoration: BoxDecoration(
+                                                          gradient:
+                                                              available > 0
                                                               ? LinearGradient(
                                                                   begin: Alignment
                                                                       .topLeft,
                                                                   end: Alignment
                                                                       .bottomRight,
-                                                                  transform:
-                                                                      GradientRotation(
+                                                                  transform: GradientRotation(
                                                                     _addButtonAnimationController
                                                                             .value *
                                                                         math.pi *
@@ -1975,45 +1883,42 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                               ? null
                                                               : Colors.grey,
                                                           borderRadius:
-                                                              BorderRadius
-                                                                  .circular(
-                                                            14,
-                                                          ),
+                                                              BorderRadius.circular(
+                                                                14,
+                                                              ),
                                                           boxShadow:
                                                               available > 0
-                                                                  ? [
-                                                                      BoxShadow(
-                                                                        color: Colors
-                                                                            .deepOrange
-                                                                            .withValues(
+                                                              ? [
+                                                                  BoxShadow(
+                                                                    color: Colors
+                                                                        .deepOrange
+                                                                        .withValues(
                                                                           alpha:
                                                                               0.42,
                                                                         ),
-                                                                        blurRadius:
-                                                                            10,
-                                                                        spreadRadius:
-                                                                            1,
-                                                                      ),
-                                                                    ]
-                                                                  : null,
+                                                                    blurRadius:
+                                                                        10,
+                                                                    spreadRadius:
+                                                                        1,
+                                                                  ),
+                                                                ]
+                                                              : null,
                                                         ),
-                                                        child:
-                                                            FilledButton.icon(
+                                                        child: FilledButton.icon(
                                                           onPressed:
                                                               available > 0
-                                                                  ? () {
-                                                                      setState(
-                                                                          () {
-                                                                        final next =
-                                                                            quantity +
-                                                                                1;
-                                                                        _selectedQuantities[product.id] =
-                                                                            next;
-                                                                      });
-                                                                    }
-                                                                  : null,
-                                                          style: FilledButton
-                                                              .styleFrom(
+                                                              ? () {
+                                                                  setState(() {
+                                                                    final next =
+                                                                        quantity +
+                                                                        1;
+                                                                    _selectedQuantities[product
+                                                                            .id] =
+                                                                        next;
+                                                                  });
+                                                                }
+                                                              : null,
+                                                          style: FilledButton.styleFrom(
                                                             backgroundColor:
                                                                 Colors
                                                                     .transparent,
@@ -2031,21 +1936,20 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                             elevation: 0,
                                                             shadowColor: Colors
                                                                 .transparent,
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                              horizontal:
-                                                                  width > 700
+                                                            padding:
+                                                                EdgeInsets.symmetric(
+                                                                  horizontal:
+                                                                      width >
+                                                                          700
                                                                       ? 20
                                                                       : 16,
-                                                              vertical: 11,
-                                                            ),
-                                                            shape:
-                                                                RoundedRectangleBorder(
+                                                                  vertical: 11,
+                                                                ),
+                                                            shape: RoundedRectangleBorder(
                                                               borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                14,
-                                                              ),
+                                                                  BorderRadius.circular(
+                                                                    14,
+                                                                  ),
                                                             ),
                                                           ),
                                                           icon: Icon(
@@ -2060,14 +1964,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                             style: textTheme
                                                                 .labelLarge
                                                                 ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize:
-                                                                  width > 700
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize:
+                                                                      width >
+                                                                          700
                                                                       ? 16
                                                                       : 15,
-                                                            ),
+                                                                ),
                                                           ),
                                                         ),
                                                       );

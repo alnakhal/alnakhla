@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -11,6 +11,7 @@ import 'utils/share_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
 import 'pages/invoices_page.dart';
@@ -30,10 +31,7 @@ const storeShareBaseUrl = 'https://alnakhal.github.io/alnakhla';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ar', null);
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   runApp(const MyApp());
 }
 
@@ -94,39 +92,46 @@ class MyApp extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF4B39EF),
             foregroundColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            textStyle:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFF4B39EF),
             side: const BorderSide(color: Color(0x4D4B39EF)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            textStyle:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF4B39EF),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF4B39EF)),
         ),
         cardTheme: CardThemeData(
           elevation: 4,
           color: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           margin: const EdgeInsets.symmetric(vertical: 8),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -137,8 +142,9 @@ class MyApp extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.grey.shade900,
           contentTextStyle: const TextStyle(color: Colors.white),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         iconTheme: const IconThemeData(color: Color(0xFF4B39EF)),
       ),
@@ -182,13 +188,15 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   if (path.startsWith('/store/')) {
     final storeSlug = path.substring('/store/'.length);
     return MaterialPageRoute(
-        builder: (_) => CustomerOrdersPage(storeSlug: storeSlug));
+      builder: (_) => CustomerOrdersPage(storeSlug: storeSlug),
+    );
   }
 
   if (path.startsWith('/customer-orders/')) {
     final storeSlug = path.substring('/customer-orders/'.length);
     return MaterialPageRoute(
-        builder: (_) => CustomerOrdersPage(storeSlug: storeSlug));
+      builder: (_) => CustomerOrdersPage(storeSlug: storeSlug),
+    );
   }
 
   return MaterialPageRoute(builder: (_) => const HomeScreen());
@@ -211,8 +219,11 @@ class DebugHome extends StatelessWidget {
     return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-          child: Text('Debug home: app renders OK',
-              style: TextStyle(fontSize: 18))),
+        child: Text(
+          'Debug home: app renders OK',
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
     );
   }
 }
@@ -243,25 +254,28 @@ class _HomeScreenState extends State<HomeScreen> {
         await supabase.auth.signOut();
         if (!mounted) return;
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تسجيل الخروج بنجاح')));
         break;
       case SettingsAction.register:
-        await Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const RegisterPage()));
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const RegisterPage()));
         if (!mounted) return;
         setState(() {});
         break;
       case SettingsAction.login:
-        await Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const LoginPage()));
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
         if (!mounted) return;
         setState(() {});
         break;
       case SettingsAction.storeSettings:
-        await Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const StoreSettingsPage()));
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const StoreSettingsPage()));
         if (!mounted) return;
         setState(() {});
         break;
@@ -281,8 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = supabase.auth.currentUser;
     if (user == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')));
       return;
     }
 
@@ -313,16 +328,18 @@ class _HomeScreenState extends State<HomeScreen> {
               Clipboard.setData(ClipboardData(text: displayLink));
               Navigator.of(ctx).pop();
               if (mounted)
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم نسخ الرابط')));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('تم نسخ الرابط')));
             },
             child: const Text('نسخ'),
           ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const StorePage()));
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const StorePage()));
             },
             child: const Text('فتح صفحة المتجر'),
           ),
@@ -402,11 +419,17 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: _onItemTapped,
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.storefront), label: 'الرئيسية'),
+            icon: Icon(Icons.storefront),
+            label: 'الرئيسية',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.inventory_2), label: 'المنتجات'),
+            icon: Icon(Icons.inventory_2),
+            label: 'المنتجات',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.shopping_cart), label: 'الطلبات'),
+            icon: Icon(Icons.shopping_cart),
+            label: 'الطلبات',
+          ),
           NavigationDestination(icon: Icon(Icons.more_horiz), label: 'المزيد'),
         ],
       ),
@@ -444,8 +467,10 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
 
   Future<void> _pickInvoiceLogo() async {
     final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() => _invoiceLogoBytes = bytes);
@@ -458,12 +483,15 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     await prefs.setString('store_phone', _storePhoneController.text.trim());
     if (_invoiceLogoBytes != null) {
       await prefs.setString(
-          'invoice_logo_base64', base64Encode(_invoiceLogoBytes!));
+        'invoice_logo_base64',
+        base64Encode(_invoiceLogoBytes!),
+      );
     }
     if (!mounted) return;
     setState(() => _isSaving = false);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات المتجر')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات المتجر')));
   }
 
   @override
@@ -477,30 +505,39 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
           children: [
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('إعدادات فاتورة المتجر',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'إعدادات فاتورة المتجر',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _storePhoneController,
                       keyboardType: TextInputType.phone,
-                      decoration:
-                          const InputDecoration(labelText: 'رقم المتجر'),
+                      decoration: const InputDecoration(
+                        labelText: 'رقم المتجر',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     if (_invoiceLogoBytes != null) ...[
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.memory(_invoiceLogoBytes!,
-                            height: 120, fit: BoxFit.contain),
+                        child: Image.memory(
+                          _invoiceLogoBytes!,
+                          height: 120,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -517,7 +554,9 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('حفظ إعدادات المتجر'),
                     ),
@@ -555,17 +594,19 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (response.session == null) {
         throw AuthException(
-            'فشل تسجيل الدخول، تأكد من البريد الإلكتروني وكلمة المرور');
+          'فشل تسجيل الدخول، تأكد من البريد الإلكتروني وكلمة المرور',
+        );
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تسجيل الدخول بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تسجيل الدخول بنجاح')));
       Navigator.of(context).pop();
     } on AuthException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -591,8 +632,9 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration:
-                    const InputDecoration(labelText: 'البريد الإلكتروني'),
+                decoration: const InputDecoration(
+                  labelText: 'البريد الإلكتروني',
+                ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -690,8 +732,10 @@ class _RegisterPageState extends State<RegisterPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'تم إنشاء الحساب، تحقق من بريدك الإلكتروني لتأكيد الحساب')),
+          content: Text(
+            'تم إنشاء الحساب، تحقق من بريدك الإلكتروني لتأكيد الحساب',
+          ),
+        ),
       );
 
       // عرض رابط المتجر الذي تم إنشاؤه (slug) إن وُجد
@@ -741,8 +785,9 @@ class _RegisterPageState extends State<RegisterPage> {
       Navigator.of(context).pop();
     } on AuthException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -768,8 +813,9 @@ class _RegisterPageState extends State<RegisterPage> {
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration:
-                    const InputDecoration(labelText: 'البريد الإلكتروني'),
+                decoration: const InputDecoration(
+                  labelText: 'البريد الإلكتروني',
+                ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -796,8 +842,9 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _confirmPasswordController,
-                decoration:
-                    const InputDecoration(labelText: 'تأكيد كلمة المرور'),
+                decoration: const InputDecoration(
+                  labelText: 'تأكيد كلمة المرور',
+                ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -898,8 +945,8 @@ class _HomeTabState extends State<HomeTab> {
     final displayLink = _slug != null
         ? '$storeShareBaseUrl/store/$_slug'
         : _storeUserId != null
-            ? '$storeShareBaseUrl/store?user_id=$_storeUserId'
-            : null;
+        ? '$storeShareBaseUrl/store?user_id=$_storeUserId'
+        : null;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -911,8 +958,9 @@ class _HomeTabState extends State<HomeTab> {
           ),
           const SizedBox(height: 12),
           Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
             elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -927,8 +975,9 @@ class _HomeTabState extends State<HomeTab> {
                     SelectableText(
                       displayLink,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -938,8 +987,11 @@ class _HomeTabState extends State<HomeTab> {
                             icon: const Icon(Icons.open_in_new),
                             label: const Text('عرض المتجر'),
                             onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => const StorePage()));
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const StorePage(),
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -950,12 +1002,15 @@ class _HomeTabState extends State<HomeTab> {
                             label: const Text('نسخ الرابط'),
                             onPressed: () async {
                               await Clipboard.setData(
-                                  ClipboardData(text: displayLink));
+                                ClipboardData(text: displayLink),
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text(
-                                          'تم نسخ رابط المتجر إلى الحافظة')),
+                                    content: Text(
+                                      'تم نسخ رابط المتجر إلى الحافظة',
+                                    ),
+                                  ),
                                 );
                               }
                             },
@@ -965,7 +1020,8 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                   ] else if (!_loading) ...[
                     const Text(
-                        'لا يوجد رابط متجر حالي. سجّل الدخول أو تأكد من وجود سجل متجر في قاعدة البيانات.'),
+                      'لا يوجد رابط متجر حالي. سجّل الدخول أو تأكد من وجود سجل متجر في قاعدة البيانات.',
+                    ),
                   ],
                 ],
               ),
@@ -978,8 +1034,9 @@ class _HomeTabState extends State<HomeTab> {
           ),
           const SizedBox(height: 12),
           Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
             elevation: 3,
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -992,8 +1049,11 @@ class _HomeTabState extends State<HomeTab> {
                     icon: const Icon(Icons.add),
                     label: const Text('إضافة منتج'),
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const AddProductPage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AddProductPage(),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1001,8 +1061,11 @@ class _HomeTabState extends State<HomeTab> {
                     icon: const Icon(Icons.receipt_long),
                     label: const Text('إنشاء فاتورة'),
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const CreateInvoicePage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CreateInvoicePage(),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1010,8 +1073,11 @@ class _HomeTabState extends State<HomeTab> {
                     icon: const Icon(Icons.menu_book),
                     label: const Text('جميع الفواتير'),
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const AllInvoicesPage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AllInvoicesPage(),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1019,8 +1085,11 @@ class _HomeTabState extends State<HomeTab> {
                     icon: const Icon(Icons.photo_library),
                     label: const Text('تعديل صور العرض'),
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const SliderImagesSettingsPage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SliderImagesSettingsPage(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -1080,10 +1149,12 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final monthStart = DateTime(now.year, now.month);
-    final todayOrders =
-        orders.where((order) => !order.createdAt.isBefore(today));
-    final monthOrders =
-        orders.where((order) => !order.createdAt.isBefore(monthStart));
+    final todayOrders = orders.where(
+      (order) => !order.createdAt.isBefore(today),
+    );
+    final monthOrders = orders.where(
+      (order) => !order.createdAt.isBefore(monthStart),
+    );
     final productQuantities = <String, int>{};
     for (final order in orders) {
       for (final item in order.items ?? const <Map<String, dynamic>>[]) {
@@ -1098,26 +1169,42 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       ..sort((a, b) => b.value.compareTo(a.value));
     final stats = _DashboardStats(
       productCount: products.length,
-      lowStockCount:
-          products.where((product) => product.remainingQty <= 5).length,
-      stockUnits:
-          products.fold(0, (sum, product) => sum + product.remainingQty),
+      lowStockCount: products
+          .where((product) => product.remainingQty <= 5)
+          .length,
+      stockUnits: products.fold(
+        0,
+        (sum, product) => sum + product.remainingQty,
+      ),
       orderCount: orders.length,
-      pendingOrderCount:
-          orders.where((order) => order.status == 'pending').length,
+      pendingOrderCount: orders
+          .where((order) => order.status == 'pending')
+          .length,
       orderTotal: orders.fold(0.0, (sum, order) => sum + order.totalAmount),
-      todaySales:
-          todayOrders.fold(0.0, (sum, order) => sum + order.totalAmount),
-      monthSales:
-          monthOrders.fold(0.0, (sum, order) => sum + order.totalAmount),
-      confirmedOrderCount:
-          orders.where((order) => order.status == 'confirmed').length,
-      shippedOrderCount:
-          orders.where((order) => order.status == 'shipped').length,
-      deliveredOrderCount:
-          orders.where((order) => order.status == 'delivered').length,
-      cancelledOrderCount:
-          orders.where((order) => order.status == 'cancelled').length,
+      todaySales: todayOrders.fold(
+        0.0,
+        (sum, order) => sum + order.totalAmount,
+      ),
+      monthSales: monthOrders.fold(
+        0.0,
+        (sum, order) => sum + order.totalAmount,
+      ),
+      confirmedOrderCount: orders
+          .where((order) => order.status == 'confirmed')
+          .length,
+      shippedOrderCount: orders
+          .where((order) => order.status == 'shipped')
+          .length,
+      deliveredOrderCount: orders
+          .where((order) => order.status == 'delivered')
+          .length,
+      cancelledOrderCount: orders
+          .where(
+            (order) =>
+                order.status == 'cancelled' ||
+                order.status == 'cancelled_company',
+          )
+          .length,
       topProducts: topProducts
           .take(5)
           .map((entry) => '${entry.key} (${entry.value})')
@@ -1156,9 +1243,9 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
   }
 
   void _open(Widget page) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => page))
-        .then((_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)).then((
+      _,
+    ) {
       if (mounted) _refresh();
     });
   }
@@ -1192,7 +1279,9 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                       child: Container(
                         constraints: const BoxConstraints(minWidth: 18),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 2),
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.redAccent,
                           borderRadius: BorderRadius.circular(10),
@@ -1202,9 +1291,10 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                           pendingCount > 99 ? '99+' : pendingCount.toString(),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -1227,7 +1317,8 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           }
           if (snapshot.hasError) {
             return Center(
-                child: Text('تعذر تحميل بيانات اللوحة: ${snapshot.error}'));
+              child: Text('تعذر تحميل بيانات اللوحة: ${snapshot.error}'),
+            );
           }
           final stats = snapshot.data ?? const _DashboardStats.empty();
           return RefreshIndicator(
@@ -1237,18 +1328,20 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
               children: [
                 Text(
                   'نظرة سريعة على متجرك',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                Text('تابع المنتجات والطلبات من مكان واحد.',
-                    style: TextStyle(color: Colors.grey.shade700)),
+                Text(
+                  'تابع المنتجات والطلبات من مكان واحد.',
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
                 const SizedBox(height: 20),
                 GridView.count(
-                  crossAxisCount:
-                      MediaQuery.sizeOf(context).width > 650 ? 4 : 2,
+                  crossAxisCount: MediaQuery.sizeOf(context).width > 650
+                      ? 4
+                      : 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.35,
@@ -1256,39 +1349,49 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _DashboardStatCard(
-                        title: 'المنتجات',
-                        value: stats.productCount.toString(),
-                        icon: Icons.inventory_2_outlined,
-                        color: Colors.indigo),
+                      title: 'المنتجات',
+                      value: stats.productCount.toString(),
+                      icon: Icons.inventory_2_outlined,
+                      color: Colors.indigo,
+                    ),
                     _DashboardStatCard(
-                        title: 'مخزون منخفض',
-                        value: stats.lowStockCount.toString(),
-                        icon: Icons.warning_amber_rounded,
-                        color: Colors.orange),
+                      title: 'مخزون منخفض',
+                      value: stats.lowStockCount.toString(),
+                      icon: Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                    ),
                     _DashboardStatCard(
-                        title: 'كل الطلبات',
-                        value: stats.orderCount.toString(),
-                        icon: Icons.shopping_bag_outlined,
-                        color: Colors.teal),
+                      title: 'كل الطلبات',
+                      value: stats.orderCount.toString(),
+                      icon: Icons.shopping_bag_outlined,
+                      color: Colors.teal,
+                    ),
                     _DashboardStatCard(
-                        title: 'طلبات جديدة',
-                        value: stats.pendingOrderCount.toString(),
-                        icon: Icons.notifications_active_outlined,
-                        color: Colors.redAccent),
+                      title: 'طلبات جديدة',
+                      value: stats.pendingOrderCount.toString(),
+                      icon: Icons.notifications_active_outlined,
+                      color: Colors.redAccent,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Card(
                   child: ListTile(
                     leading: const CircleAvatar(
-                        backgroundColor: Color(0xFFE8EAF6),
-                        child: Icon(Icons.payments_outlined,
-                            color: Colors.indigo)),
+                      backgroundColor: Color(0xFFE8EAF6),
+                      child: Icon(
+                        Icons.payments_outlined,
+                        color: Colors.indigo,
+                      ),
+                    ),
                     title: const Text('إجمالي قيمة الطلبات'),
-                    subtitle:
-                        Text('${stats.orderTotal.toStringAsFixed(0)} د.ع'),
-                    trailing: Text('${stats.stockUnits} وحدة\nفي المخزون',
-                        textAlign: TextAlign.center),
+                    subtitle: Text(
+                      '${stats.orderTotal.toStringAsFixed(0)} د.ع',
+                    ),
+                    trailing: Text(
+                      '${stats.stockUnits} وحدة\nفي المخزون',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1298,17 +1401,21 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text('المبيعات',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text(
+                          'المبيعات',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 12),
                         Wrap(
                           spacing: 24,
                           runSpacing: 12,
                           children: [
                             Text(
-                                'اليوم: ${stats.todaySales.toStringAsFixed(0)} د.ع'),
+                              'اليوم: ${stats.todaySales.toStringAsFixed(0)} د.ع',
+                            ),
                             Text(
-                                'هذا الشهر: ${stats.monthSales.toStringAsFixed(0)} د.ع'),
+                              'هذا الشهر: ${stats.monthSales.toStringAsFixed(0)} د.ع',
+                            ),
                             Text('مؤكد: ${stats.confirmedOrderCount}'),
                             Text('قيد الشحن: ${stats.shippedOrderCount}'),
                             Text('مكتمل: ${stats.deliveredOrderCount}'),
@@ -1317,20 +1424,22 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                         ),
                         if (stats.topProducts.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Text('الأكثر طلبًا',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            'الأكثر طلبًا',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 8),
                           ...stats.topProducts.asMap().entries.map(
-                                (entry) => ListTile(
-                                  dense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    radius: 14,
-                                    child: Text('${entry.key + 1}'),
-                                  ),
-                                  title: Text(entry.value),
-                                ),
+                            (entry) => ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                radius: 14,
+                                child: Text('${entry.key + 1}'),
                               ),
+                              title: Text(entry.value),
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -1338,29 +1447,33 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                 ),
                 const SizedBox(height: 12),
                 _DashboardAction(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'إدارة المنتجات',
-                    subtitle: 'إضافة المنتجات وتعديل الأسعار والمخزون',
-                    onTap: () => _open(const ProductManagementPage())),
+                  icon: Icons.inventory_2_outlined,
+                  title: 'إدارة المنتجات',
+                  subtitle: 'إضافة المنتجات وتعديل الأسعار والمخزون',
+                  onTap: () => _open(const ProductManagementPage()),
+                ),
                 _DashboardAction(
-                    icon: Icons.local_shipping_outlined,
-                    title: 'إدارة الطلبات',
-                    subtitle: 'مراجعة الطلبات وتحديث حالتها',
-                    onTap: () => _open(
-                      customer_orders_tracking.CustomerOrdersTrackingPage(
-                        loginPageBuilder: (_) => const LoginPage(),
-                      ),
-                    )),
+                  icon: Icons.local_shipping_outlined,
+                  title: 'إدارة الطلبات',
+                  subtitle: 'مراجعة الطلبات وتحديث حالتها',
+                  onTap: () => _open(
+                    customer_orders_tracking.CustomerOrdersTrackingPage(
+                      loginPageBuilder: (_) => const LoginPage(),
+                    ),
+                  ),
+                ),
                 _DashboardAction(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'الفواتير',
-                    subtitle: 'إنشاء ومراجعة الفواتير',
-                    onTap: () => _open(const InvoicesPage())),
+                  icon: Icons.receipt_long_outlined,
+                  title: 'الفواتير',
+                  subtitle: 'إنشاء ومراجعة الفواتير',
+                  onTap: () => _open(const InvoicesPage()),
+                ),
                 _DashboardAction(
-                    icon: Icons.photo_library_outlined,
-                    title: 'صور العرض',
-                    subtitle: 'تحديث الصور الظاهرة أعلى المتجر',
-                    onTap: () => _open(const SliderImagesSettingsPage())),
+                  icon: Icons.photo_library_outlined,
+                  title: 'صور العرض',
+                  subtitle: 'تحديث الصور الظاهرة أعلى المتجر',
+                  onTap: () => _open(const SliderImagesSettingsPage()),
+                ),
               ],
             ),
           );
@@ -1371,35 +1484,36 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
 }
 
 class _DashboardStats {
-  const _DashboardStats(
-      {required this.productCount,
-      required this.lowStockCount,
-      required this.stockUnits,
-      required this.orderCount,
-      required this.pendingOrderCount,
-      required this.orderTotal,
-      required this.todaySales,
-      required this.monthSales,
-      required this.confirmedOrderCount,
-      required this.shippedOrderCount,
-      required this.deliveredOrderCount,
-      required this.cancelledOrderCount,
-      required this.topProducts});
+  const _DashboardStats({
+    required this.productCount,
+    required this.lowStockCount,
+    required this.stockUnits,
+    required this.orderCount,
+    required this.pendingOrderCount,
+    required this.orderTotal,
+    required this.todaySales,
+    required this.monthSales,
+    required this.confirmedOrderCount,
+    required this.shippedOrderCount,
+    required this.deliveredOrderCount,
+    required this.cancelledOrderCount,
+    required this.topProducts,
+  });
 
   const _DashboardStats.empty()
-      : productCount = 0,
-        lowStockCount = 0,
-        stockUnits = 0,
-        orderCount = 0,
-        pendingOrderCount = 0,
-        orderTotal = 0,
-        todaySales = 0,
-        monthSales = 0,
-        confirmedOrderCount = 0,
-        shippedOrderCount = 0,
-        deliveredOrderCount = 0,
-        cancelledOrderCount = 0,
-        topProducts = const [];
+    : productCount = 0,
+      lowStockCount = 0,
+      stockUnits = 0,
+      orderCount = 0,
+      pendingOrderCount = 0,
+      orderTotal = 0,
+      todaySales = 0,
+      monthSales = 0,
+      confirmedOrderCount = 0,
+      shippedOrderCount = 0,
+      deliveredOrderCount = 0,
+      cancelledOrderCount = 0,
+      topProducts = const [];
 
   final int productCount;
   final int lowStockCount;
@@ -1417,11 +1531,12 @@ class _DashboardStats {
 }
 
 class _DashboardStatCard extends StatelessWidget {
-  const _DashboardStatCard(
-      {required this.title,
-      required this.value,
-      required this.icon,
-      required this.color});
+  const _DashboardStatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   final String title;
   final String value;
@@ -1439,9 +1554,14 @@ class _DashboardStatCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(icon, color: color),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
@@ -1451,11 +1571,12 @@ class _DashboardStatCard extends StatelessWidget {
 }
 
 class _DashboardAction extends StatelessWidget {
-  const _DashboardAction(
-      {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
+  const _DashboardAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String title;
@@ -1485,9 +1606,223 @@ class ProductManagementPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('إدارة المنشورات')),
-      body: ProductsTab(),
+      body: const DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            TabBar(
+              tabs: [
+                Tab(icon: Icon(Icons.inventory_2_outlined), text: 'المخزن'),
+                Tab(
+                  icon: Icon(Icons.assessment_outlined),
+                  text: 'الجرد الشهري',
+                ),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [ProductsTab(), InventoryReportTab()],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
+
+class InventoryReportTab extends StatefulWidget {
+  const InventoryReportTab({super.key});
+
+  @override
+  State<InventoryReportTab> createState() => _InventoryReportTabState();
+}
+
+class _InventoryReportTabState extends State<InventoryReportTab> {
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  late Future<_InventoryReport> _reportFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _reportFuture = _loadReport();
+  }
+
+  Future<_InventoryReport> _loadReport() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return const _InventoryReport.empty();
+    final nextMonth = DateTime(_month.year, _month.month + 1);
+    final start = _month.toIso8601String();
+    final end = nextMonth.toIso8601String();
+    final orders = await supabase
+        .from('customer_orders')
+        .select('total_amount, status, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', start)
+        .lt('created_at', end);
+    final movements = await supabase
+        .from('inventory_movements')
+        .select('quantity_delta, unit_price, unit_cost')
+        .eq('user_id', user.id)
+        .gte('created_at', start)
+        .lt('created_at', end);
+    final orderRows = (orders as List).cast<Map>();
+    final movementRows = (movements as List).cast<Map>();
+    final total = orderRows.fold<double>(
+      0,
+      (sum, row) => sum + ((row['total_amount'] as num?)?.toDouble() ?? 0),
+    );
+    final profit = movementRows.fold<double>(0, (sum, row) {
+      final delta = (row['quantity_delta'] as num?)?.toDouble() ?? 0;
+      final price = (row['unit_price'] as num?)?.toDouble() ?? 0;
+      final cost = (row['unit_cost'] as num?)?.toDouble() ?? 0;
+      return sum + delta * (price - cost);
+    });
+    return _InventoryReport(
+      orderCount: orderRows.length,
+      totalAmount: total,
+      profit: profit,
+      shippedCount: orderRows.where((row) => row['status'] == 'shipped').length,
+      returnedCount: orderRows
+          .where((row) => row['status'] == 'returned')
+          .length,
+    );
+  }
+
+  void _changeMonth(int offset) {
+    setState(() {
+      _month = DateTime(_month.year, _month.month + offset);
+      _reportFuture = _loadReport();
+    });
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _reportFuture = _loadReport());
+    await _reportFuture;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final monthLabel = DateFormat('MMMM yyyy', 'ar').format(_month);
+    return FutureBuilder<_InventoryReport>(
+      future: _reportFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('تعذر تحميل الجرد: ${snapshot.error}'));
+        }
+        final report = snapshot.data ?? const _InventoryReport.empty();
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () => _changeMonth(-1),
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: 'الشهر السابق',
+                  ),
+                  Text(
+                    monthLabel,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _changeMonth(1),
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: 'الشهر التالي',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _reportCard(
+                'عدد الطلبات',
+                '${report.orderCount}',
+                Icons.receipt_long,
+              ),
+              _reportCard(
+                'المبلغ الكلي',
+                '${report.totalAmount.toStringAsFixed(0)} د.ع',
+                Icons.payments_outlined,
+              ),
+              _reportCard(
+                'الربح الكلي',
+                '${report.profit.toStringAsFixed(0)} د.ع',
+                Icons.trending_up,
+                color: Colors.green,
+              ),
+              const SizedBox(height: 8),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.local_shipping_outlined),
+                  title: Text('مشحون: ${report.shippedCount}'),
+                  subtitle: Text('راجع إلى المخزن: ${report.returnedCount}'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'الربح محسوب من سعر البيع ناقص تكلفة المنتج، بناءً على حركات الشحن والإرجاع المسجلة.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _reportCard(
+    String title,
+    String value,
+    IconData icon, {
+    Color? color,
+  }) {
+    final cardColor = color ?? Theme.of(context).colorScheme.primary;
+    return Card(
+      child: ListTile(
+        leading: Icon(icon, color: cardColor),
+        title: Text(title),
+        trailing: Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: cardColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InventoryReport {
+  const _InventoryReport({
+    required this.orderCount,
+    required this.totalAmount,
+    required this.profit,
+    required this.shippedCount,
+    required this.returnedCount,
+  });
+
+  const _InventoryReport.empty()
+    : orderCount = 0,
+      totalAmount = 0,
+      profit = 0,
+      shippedCount = 0,
+      returnedCount = 0;
+
+  final int orderCount;
+  final double totalAmount;
+  final double profit;
+  final int shippedCount;
+  final int returnedCount;
 }
 
 class ProductsTab extends StatefulWidget {
@@ -1607,10 +1942,7 @@ class _ProductsTabState extends State<ProductsTab> {
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -1622,11 +1954,13 @@ class _ProductsTabState extends State<ProductsTab> {
         content: const Text('هل تريد حذف هذا المنتج نهائيًا؟'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('حذف')),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف'),
+          ),
         ],
       ),
     );
@@ -1639,14 +1973,16 @@ class _ProductsTabState extends State<ProductsTab> {
       _refreshProducts();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل حذف المنتج: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل حذف المنتج: $e')));
     }
   }
 
   Future<void> _setProductQuantity(Product product) async {
-    final controller =
-        TextEditingController(text: product.remainingQty.toString());
+    final controller = TextEditingController(
+      text: product.remainingQty.toString(),
+    );
     final result = await showDialog<int?>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1658,8 +1994,9 @@ class _ProductsTabState extends State<ProductsTab> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -1675,14 +2012,16 @@ class _ProductsTabState extends State<ProductsTab> {
     try {
       await supabase
           .from('products')
-          .update({'remaining_qty': result}).eq('id', product.id);
+          .update({'remaining_qty': result})
+          .eq('id', product.id);
       if (!mounted) return;
       _showMessage('تم تحديث الكمية');
       _refreshProducts();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل تحديث الكمية: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل تحديث الكمية: $e')));
     }
   }
 
@@ -1691,7 +2030,8 @@ class _ProductsTabState extends State<ProductsTab> {
     try {
       await supabase
           .from('products')
-          .update({'is_hidden': isHidden}).eq('id', product.id);
+          .update({'is_hidden': isHidden})
+          .eq('id', product.id);
       if (!mounted) return;
       _showMessage(isHidden ? 'تم إخفاء المنشور' : 'تم إظهار المنشور');
       await _refreshProducts();
@@ -1706,16 +2046,19 @@ class _ProductsTabState extends State<ProductsTab> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
-          .where((product) =>
-              product.name.toLowerCase().contains(query) ||
-              product.description.toLowerCase().contains(query))
+          .where(
+            (product) =>
+                product.name.toLowerCase().contains(query) ||
+                product.description.toLowerCase().contains(query),
+          )
           .toList();
     }
 
     if (_selectedCategory != 'الكل') {
       filtered = filtered
-          .where((product) =>
-              (product.category ?? 'غير مصنف') == _selectedCategory)
+          .where(
+            (product) => (product.category ?? 'غير مصنف') == _selectedCategory,
+          )
           .toList();
     }
 
@@ -1760,10 +2103,10 @@ class _ProductsTabState extends State<ProductsTab> {
             prefixIcon: Icon(Icons.category_outlined),
           ),
           items: ['الكل', 'غير مصنف', ...productCategories]
-              .map((category) => DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  ))
+              .map(
+                (category) =>
+                    DropdownMenuItem(value: category, child: Text(category)),
+              )
               .toList(),
           onChanged: (value) {
             if (value != null) setState(() => _selectedCategory = value);
@@ -1787,12 +2130,13 @@ class _ProductsTabState extends State<ProductsTab> {
             onPressed: () {
               Navigator.of(context)
                   .push(
-                      MaterialPageRoute(builder: (_) => const AddProductPage()))
+                    MaterialPageRoute(builder: (_) => const AddProductPage()),
+                  )
                   .then((_) {
-                if (mounted) {
-                  _refreshProducts();
-                }
-              });
+                    if (mounted) {
+                      _refreshProducts();
+                    }
+                  });
             },
           ),
           const SizedBox(height: 20),
@@ -1818,8 +2162,9 @@ class _ProductsTabState extends State<ProductsTab> {
           _buildFilterChips(),
           const SizedBox(height: 14),
           Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -1827,16 +2172,24 @@ class _ProductsTabState extends State<ProductsTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                      'عدد المنتجات: ${filteredProducts.length} من ${_products.length}'),
+                    'عدد المنتجات: ${filteredProducts.length} من ${_products.length}',
+                  ),
                   Text(
-                      'الفلتر: ${_selectedFilter == ProductFilter.all ? 'الكل' : _selectedFilter == ProductFilter.lowStock ? 'مخزون منخفض' : 'جملة'}'),
+                    'الفلتر: ${_selectedFilter == ProductFilter.all
+                        ? 'الكل'
+                        : _selectedFilter == ProductFilter.lowStock
+                        ? 'مخزون منخفض'
+                        : 'جملة'}',
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text('جميع المنتجات',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text(
+            'جميع المنتجات',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           if (_isLoading && _products.isNotEmpty)
             const Padding(
@@ -1857,15 +2210,21 @@ class _ProductsTabState extends State<ProductsTab> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.error_outline,
-                                    size: 48, color: Colors.redAccent),
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.redAccent,
+                                ),
                                 const SizedBox(height: 12),
-                                Text('خطأ في تحميل المنتجات: $_errorMessage',
-                                    textAlign: TextAlign.center),
+                                Text(
+                                  'خطأ في تحميل المنتجات: $_errorMessage',
+                                  textAlign: TextAlign.center,
+                                ),
                                 const SizedBox(height: 12),
                                 FilledButton(
-                                    onPressed: _refreshProducts,
-                                    child: const Text('إعادة المحاولة')),
+                                  onPressed: _refreshProducts,
+                                  child: const Text('إعادة المحاولة'),
+                                ),
                               ],
                             ),
                           ),
@@ -1873,179 +2232,201 @@ class _ProductsTabState extends State<ProductsTab> {
                       ),
                     )
                   : filteredProducts.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.6,
-                            child: Center(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _products.isEmpty
-                                          ? Icons.inventory_2_outlined
-                                          : Icons.search_off,
-                                      size: 64,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                    const SizedBox(height: 18),
-                                    Text(
-                                      _products.isEmpty
-                                          ? 'لم تضف أي منتج بعد. اضغط على زر إضافة منتج لبدء البيع.'
-                                          : 'لم يتم العثور على منتجات تطابق البحث أو الفلتر. جرّب تعديل الكلمات أو تغيير الفلتر.',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    const SizedBox(height: 18),
-                                    if (_products.isNotEmpty)
-                                      FilledButton(
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          setState(() {});
-                                        },
-                                        child: const Text('إبطال البحث'),
-                                      ),
-                                  ],
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _products.isEmpty
+                                      ? Icons.inventory_2_outlined
+                                      : Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey.shade500,
                                 ),
-                              ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  _products.isEmpty
+                                      ? 'لم تضف أي منتج بعد. اضغط على زر إضافة منتج لبدء البيع.'
+                                      : 'لم يتم العثور على منتجات تطابق البحث أو الفلتر. جرّب تعديل الكلمات أو تغيير الفلتر.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 18),
+                                if (_products.isNotEmpty)
+                                  FilledButton(
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {});
+                                    },
+                                    child: const Text('إبطال البحث'),
+                                  ),
+                              ],
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount:
-                              filteredProducts.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= filteredProducts.length) {
-                              if (_isLoading) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24),
-                                  child: Center(
-                                      child: CircularProgressIndicator()),
-                                );
-                              }
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                child: Center(
-                                  child: FilledButton(
-                                    onPressed: _loadNextPage,
-                                    child: const Text('تحميل المزيد'),
-                                  ),
-                                ),
-                              );
-                            }
-                            final product = filteredProducts[index];
-                            return Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              margin: const EdgeInsets.only(bottom: 14),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(12),
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: product.imageUrl != null
-                                      ? Image.network(product.imageUrl!,
-                                          width: 72,
-                                          height: 72,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error,
-                                                  stackTrace) =>
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: filteredProducts.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= filteredProducts.length) {
+                          if (_isLoading) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: FilledButton(
+                                onPressed: _loadNextPage,
+                                child: const Text('تحميل المزيد'),
+                              ),
+                            ),
+                          );
+                        }
+                        final product = filteredProducts[index];
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 14),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: product.imageUrl != null
+                                  ? Image.network(
+                                      product.imageUrl!,
+                                      width: 72,
+                                      height: 72,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
                                               Container(
-                                                  width: 72,
-                                                  height: 72,
-                                                  color: Colors.grey.shade200,
-                                                  child: const Icon(Icons
-                                                      .image_not_supported)))
-                                      : Container(
-                                          width: 72,
-                                          height: 72,
-                                          color: Colors.grey.shade200,
-                                          child: const Icon(
-                                              Icons.image_not_supported)),
+                                                width: 72,
+                                                height: 72,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.image_not_supported,
+                                                ),
+                                              ),
+                                    )
+                                  : Container(
+                                      width: 72,
+                                      height: 72,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                      ),
+                                    ),
+                            ),
+                            title: Text(
+                              product.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(
+                                  'السعر: ${product.price.toStringAsFixed(0)}',
                                 ),
-                                title: Text(product.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 8),
-                                    Text(
-                                        'السعر: ${product.price.toStringAsFixed(0)}'),
-                                    Text(
-                                        'المخزون: ${product.remainingQty} قطعة'),
-                                    if (product.category != null)
-                                      Text('التصنيف: ${product.category}'),
-                                    if (product.hasWholesale)
-                                      Text(
-                                          'جملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع'),
-                                    if (product.singlePrice > 0)
-                                      Text(
-                                          'سعر المفرد: ${product.singlePrice.toStringAsFixed(0)}'),
-                                  ],
-                                ),
-                                trailing: PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert),
-                                  onSelected: (value) {
-                                    switch (value) {
-                                      case 'edit':
-                                        Navigator.of(context)
-                                            .push(MaterialPageRoute(
-                                                builder: (_) => EditProductPage(
-                                                    product: product)))
-                                            .then((_) {
+                                Text('المخزون: ${product.remainingQty} قطعة'),
+                                if (product.category != null)
+                                  Text('التصنيف: ${product.category}'),
+                                if (product.hasWholesale)
+                                  Text(
+                                    'جملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطع',
+                                  ),
+                                if (product.singlePrice > 0)
+                                  Text(
+                                    'سعر المفرد: ${product.singlePrice.toStringAsFixed(0)}',
+                                  ),
+                              ],
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert),
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'edit':
+                                    Navigator.of(context)
+                                        .push(
+                                          MaterialPageRoute(
+                                            builder: (_) => EditProductPage(
+                                              product: product,
+                                            ),
+                                          ),
+                                        )
+                                        .then((_) {
                                           if (mounted) {
                                             _refreshProducts();
                                           }
                                         });
-                                        break;
-                                      case 'delete':
-                                        _deleteProduct(product);
-                                        break;
-                                      case 'stock':
-                                        _setProductQuantity(product);
-                                        break;
-                                      case 'visibility':
-                                        _toggleProductVisibility(product);
-                                        break;
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                        value: 'edit', child: Text('تعديل')),
-                                    const PopupMenuItem(
-                                        value: 'stock',
-                                        child: Text('تعديل الكمية')),
-                                    PopupMenuItem(
-                                      value: 'visibility',
-                                      child: Text(product.isHidden
-                                          ? 'إظهار المنشور'
-                                          : 'إخفاء المنشور'),
-                                    ),
-                                    const PopupMenuItem(
-                                        value: 'delete', child: Text('حذف')),
-                                  ],
+                                    break;
+                                  case 'delete':
+                                    _deleteProduct(product);
+                                    break;
+                                  case 'stock':
+                                    _setProductQuantity(product);
+                                    break;
+                                  case 'visibility':
+                                    _toggleProductVisibility(product);
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('تعديل'),
                                 ),
-                                onTap: () {
-                                  Navigator.of(context)
-                                      .push(MaterialPageRoute(
-                                          builder: (_) => ProductDetailsPage(
-                                              product: product)))
-                                      .then((_) {
+                                const PopupMenuItem(
+                                  value: 'stock',
+                                  child: Text('تعديل الكمية'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'visibility',
+                                  child: Text(
+                                    product.isHidden
+                                        ? 'إظهار المنشور'
+                                        : 'إخفاء المنشور',
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('حذف'),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.of(context)
+                                  .push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          ProductDetailsPage(product: product),
+                                    ),
+                                  )
+                                  .then((_) {
                                     if (mounted) {
                                       _refreshProducts();
                                     }
                                   });
-                                },
-                              ),
-                            );
-                          },
-                        ),
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
           ),
         ],
@@ -2105,14 +2486,17 @@ class _ProductPreviewListState extends State<ProductPreviewList> {
           }
           if (snapshot.hasError) {
             return Center(
-                child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'));
+              child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'),
+            );
           }
           final products = snapshot.data ?? [];
           if (products.isEmpty) {
             return const Center(
-                child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text('لا يوجد منتجات بعد.')));
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text('لا يوجد منتجات بعد.'),
+              ),
+            );
           }
           return ListView(
             shrinkWrap: true,
@@ -2120,34 +2504,44 @@ class _ProductPreviewListState extends State<ProductPreviewList> {
             children: products.take(4).map((product) {
               return Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: product.imageUrl != null
-                        ? Image.network(product.imageUrl!,
+                        ? Image.network(
+                            product.imageUrl!,
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
                                 Container(
-                                    width: 60,
-                                    height: 60,
-                                    color: Colors.grey.shade200,
-                                    child: const Icon(Icons.image_not_supported,
-                                        color: Colors.grey)))
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                          )
                         : Container(
                             width: 60,
                             height: 60,
                             color: Colors.grey.shade200,
-                            child: const Icon(Icons.image_not_supported,
-                                color: Colors.grey)),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
                   title: Text(product.name),
                   subtitle: Text(
-                      'السعر: ${product.price.toStringAsFixed(0)}\nالمخزون: ${product.remainingQty} قطعة'),
+                    'السعر: ${product.price.toStringAsFixed(0)}\nالمخزون: ${product.remainingQty} قطعة',
+                  ),
                 ),
               );
             }).toList(),
@@ -2184,8 +2578,10 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final result =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final result = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (result != null) {
       final bytes = await result.readAsBytes();
       setState(() {
@@ -2211,9 +2607,9 @@ class _AddProductPageState extends State<AddProductPage> {
     } catch (e) {
       debugPrint('Image upload error: $e');
       if (!mounted) return null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في رفع الصورة: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في رفع الصورة: $e')));
       return null;
     }
   }
@@ -2292,15 +2688,17 @@ class _AddProductPageState extends State<AddProductPage> {
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('خطأ أثناء حفظ المنتج: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ أثناء حفظ المنتج: $e')));
       return;
     }
     setState(() => _isSaving = false);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('تم إضافة المنتج بنجاح')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم إضافة المنتج بنجاح')));
     Navigator.of(context).pop();
   }
 
@@ -2326,8 +2724,9 @@ class _AddProductPageState extends State<AddProductPage> {
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(labelText: 'سعر البيع'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'يرجى كتابة سعر البيع';
@@ -2343,18 +2742,21 @@ class _AddProductPageState extends State<AddProductPage> {
               TextFormField(
                 controller: _costController,
                 decoration: const InputDecoration(labelText: 'تكلفة المنتج'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _category,
                 decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
                 items: productCategories
-                    .map((category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ))
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) {
                   if (value != null) setState(() => _category = value);
@@ -2370,24 +2772,28 @@ class _AddProductPageState extends State<AddProductPage> {
                 TextFormField(
                   controller: _wholesalePriceController,
                   decoration: const InputDecoration(labelText: 'سعر الجملة'),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _minWholesaleController,
-                  decoration:
-                      const InputDecoration(labelText: 'أقل عدد للجملة'),
+                  decoration: const InputDecoration(
+                    labelText: 'أقل عدد للجملة',
+                  ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
               ],
               TextFormField(
                 controller: _singlePriceController,
-                decoration:
-                    const InputDecoration(labelText: 'سعر المفرد (اختياري)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'سعر المفرد (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -2398,10 +2804,12 @@ class _AddProductPageState extends State<AddProductPage> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _deliveryPriceController,
-                decoration:
-                    const InputDecoration(labelText: 'سعر التوصيل (اختياري)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'سعر التوصيل (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -2419,8 +2827,11 @@ class _AddProductPageState extends State<AddProductPage> {
                 const SizedBox(height: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(_pickedImageBytes!,
-                      height: 180, fit: BoxFit.cover),
+                  child: Image.memory(
+                    _pickedImageBytes!,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ],
               const SizedBox(height: 24),
@@ -2483,8 +2894,10 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
 
   void _onDraftChanged() {
     _autosaveTimer?.cancel();
-    _autosaveTimer =
-        Timer(const Duration(seconds: 1), () => _saveDraft(showSnack: false));
+    _autosaveTimer = Timer(
+      const Duration(seconds: 1),
+      () => _saveDraft(showSnack: false),
+    );
   }
 
   String _buildInvoiceNumber() {
@@ -2502,22 +2915,26 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         'invoiceNotes': _invoiceNotesController.text.trim(),
         'discount': _discountController.text.trim(),
         'items': _invoiceItems
-            .map((it) => {
-                  'name': it.name,
-                  'price': it.price,
-                  'quantity': it.quantity,
-                  'note': it.note
-                })
+            .map(
+              (it) => {
+                'name': it.name,
+                'price': it.price,
+                'quantity': it.quantity,
+                'note': it.note,
+              },
+            )
             .toList(),
-        'invoiceLogoBase64':
-            _invoiceLogoBytes != null ? base64Encode(_invoiceLogoBytes!) : null,
+        'invoiceLogoBase64': _invoiceLogoBytes != null
+            ? base64Encode(_invoiceLogoBytes!)
+            : null,
         'updatedAt': DateTime.now().toIso8601String(),
       };
       await prefs.setString(_draftPrefsKey, jsonEncode(draft));
       debugPrint('Draft saved');
       if (showSnack && mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تم حفظ المسودة')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم حفظ المسودة')));
     } catch (e) {
       debugPrint('save draft failed: $e');
     }
@@ -2546,19 +2963,23 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
             final qty = (m['quantity'] is num)
                 ? (m['quantity'] as num).toInt()
                 : int.tryParse(m['quantity']?.toString() ?? '') ?? 0;
-            _invoiceItems.add(OrderItem(
+            _invoiceItems.add(
+              OrderItem(
                 name: m['name'] ?? '',
                 price: price,
                 quantity: qty,
-                note: m['note']?.toString() ?? ''));
+                note: m['note']?.toString() ?? '',
+              ),
+            );
           } catch (_) {}
         }
         final logoB64 = map['invoiceLogoBase64'] as String?;
         if (logoB64 != null) _invoiceLogoBytes = base64Decode(logoB64);
       });
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تم تحميل المسودة')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تحميل المسودة')));
     } catch (e) {
       debugPrint('load draft failed: $e');
     }
@@ -2570,8 +2991,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
       await prefs.remove(_draftPrefsKey);
       debugPrint('Draft cleared');
       if (showSnack && mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تم حذف المسودة')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم حذف المسودة')));
     } catch (e) {
       debugPrint('clear draft failed: $e');
     }
@@ -2627,17 +3049,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
     if (name.isEmpty || price <= 0 || quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('يرجى تعبئة اسم المنتج والسعر والكمية بشكل صحيح')),
+          content: Text('يرجى تعبئة اسم المنتج والسعر والكمية بشكل صحيح'),
+        ),
       );
       return;
     }
 
     setState(() {
-      _invoiceItems.add(OrderItem(
+      _invoiceItems.add(
+        OrderItem(
           name: name,
           price: price,
           quantity: quantity,
-          note: _productNoteController.text.trim()));
+          note: _productNoteController.text.trim(),
+        ),
+      );
       _productNameController.clear();
       _productPriceController.clear();
       _productQuantityController.text = '1';
@@ -2648,8 +3074,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
   Future<void> _showEditInvoiceItemDialog(int index) async {
     final item = _invoiceItems[index];
     final nameController = TextEditingController(text: item.name);
-    final priceController =
-        TextEditingController(text: item.price.toStringAsFixed(0));
+    final priceController = TextEditingController(
+      text: item.price.toStringAsFixed(0),
+    );
     final qtyController = TextEditingController(text: item.quantity.toString());
     final noteController = TextEditingController(text: item.note ?? '');
 
@@ -2685,8 +3112,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () {
               final newName = nameController.text.trim();
@@ -2701,10 +3129,11 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
               }
               setState(() {
                 _invoiceItems[index] = OrderItem(
-                    name: newName,
-                    price: newPrice,
-                    quantity: newQuantity,
-                    note: noteController.text.trim());
+                  name: newName,
+                  price: newPrice,
+                  quantity: newQuantity,
+                  note: noteController.text.trim(),
+                );
               });
               Navigator.of(ctx).pop();
             },
@@ -2828,18 +3257,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم حفظ الفاتورة في سوبيس بنجاح')));
+        const SnackBar(content: Text('تم حفظ الفاتورة في سوبيس بنجاح')),
+      );
       savedInvoices.add(savedInvoice);
       Navigator.of(context).push(
         MaterialPageRoute(
-            builder: (_) => InvoiceDetailPage(invoice: savedInvoice)),
+          builder: (_) => InvoiceDetailPage(invoice: savedInvoice),
+        ),
       );
       _clearInvoice();
       await _clearDraft(showSnack: false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل حفظ الفاتورة: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل حفظ الفاتورة: $e')));
     } finally {
       if (!mounted) return;
       setState(() => _isSavingInvoice = false);
@@ -2857,38 +3289,47 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
           children: [
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('تفاصيل الفاتورة المحاسبية',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'تفاصيل الفاتورة المحاسبية',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     const Text(
-                        'أكمل بيانات العميل والمتجر لإنشاء فاتورة احترافية جاهزة للمحاسبة.',
-                        style: TextStyle(color: Colors.black54)),
+                      'أكمل بيانات العميل والمتجر لإنشاء فاتورة احترافية جاهزة للمحاسبة.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _customerNameController,
-                      decoration:
-                          const InputDecoration(labelText: 'اسم الزبون'),
+                      decoration: const InputDecoration(
+                        labelText: 'اسم الزبون',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _customerPhoneController,
-                      decoration:
-                          const InputDecoration(labelText: 'رقم الزبون'),
+                      decoration: const InputDecoration(
+                        labelText: 'رقم الزبون',
+                      ),
                       keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _customerAddressController,
-                      decoration:
-                          const InputDecoration(labelText: 'عنوان الزبون'),
+                      decoration: const InputDecoration(
+                        labelText: 'عنوان الزبون',
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 12),
@@ -2901,8 +3342,10 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    Text('تاريخ الفاتورة: $_invoiceDate',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'تاريخ الفاتورة: $_invoiceDate',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
@@ -2910,16 +3353,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
             // بطاقة إدخال عنصر فاتورة جديد (خلايا شبيهة بإكسل)
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('إضافة عنصر للفاتورة',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'إضافة عنصر للفاتورة',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -2933,19 +3381,30 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                 hintText: 'اسم المنتج',
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 8),
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
                                 border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                        color: Colors.grey, width: 1)),
+                                  borderRadius: BorderRadius.zero,
+                                  borderSide: BorderSide(
+                                    color: Colors.grey,
+                                    width: 1,
+                                  ),
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                        color: Colors.grey, width: 1)),
+                                  borderRadius: BorderRadius.zero,
+                                  borderSide: BorderSide(
+                                    color: Colors.grey,
+                                    width: 1,
+                                  ),
+                                ),
                                 focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                        color: Colors.blue, width: 1.5)),
+                                  borderRadius: BorderRadius.zero,
+                                  borderSide: BorderSide(
+                                    color: Colors.blue,
+                                    width: 1.5,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -2961,19 +3420,30 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                               hintText: 'الكمية',
                               isDense: true,
                               contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide:
-                                      BorderSide(color: Colors.grey, width: 1)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
                               enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide:
-                                      BorderSide(color: Colors.grey, width: 1)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
                               focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                      color: Colors.blue, width: 1.5)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.blue,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -2983,25 +3453,37 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                           height: 36,
                           child: TextField(
                             controller: _productPriceController,
-                            keyboardType:
-                                TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               hintText: 'السعر',
                               isDense: true,
                               contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide:
-                                      BorderSide(color: Colors.grey, width: 1)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
                               enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide:
-                                      BorderSide(color: Colors.grey, width: 1)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
                               focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                      color: Colors.blue, width: 1.5)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.blue,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -3013,12 +3495,14 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                       decoration: const InputDecoration(
                         hintText: 'ملاحظات للبند',
                         isDense: true,
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.zero,
-                            borderSide:
-                                BorderSide(color: Colors.grey, width: 1)),
+                          borderRadius: BorderRadius.zero,
+                          borderSide: BorderSide(color: Colors.grey, width: 1),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -3030,7 +3514,8 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                             label: const Text('أضف'),
                             onPressed: _addInvoiceItem,
                             style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48)),
+                              minimumSize: const Size.fromHeight(48),
+                            ),
                           ),
                         ),
                       ],
@@ -3043,16 +3528,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
             if (_invoiceItems.isNotEmpty) ...[
               Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('المنتجات المضافة',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'المنتجات المضافة',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       ListView.separated(
                         shrinkWrap: true,
@@ -3077,15 +3567,18 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                           isDense: true,
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                  horizontal: 8, vertical: 8),
+                                                horizontal: 8,
+                                                vertical: 8,
+                                              ),
                                         ),
                                         onChanged: (v) {
                                           setState(() {
                                             _invoiceItems[index] = OrderItem(
-                                                name: v,
-                                                price: item.price,
-                                                quantity: item.quantity,
-                                                note: item.note);
+                                              name: v,
+                                              price: item.price,
+                                              quantity: item.quantity,
+                                              note: item.note,
+                                            );
                                           });
                                         },
                                       ),
@@ -3094,25 +3587,29 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                     SizedBox(
                                       width: 100,
                                       child: TextFormField(
-                                        initialValue:
-                                            item.price.toStringAsFixed(0),
-                                        keyboardType: const TextInputType
-                                            .numberWithOptions(decimal: true),
+                                        initialValue: item.price
+                                            .toStringAsFixed(0),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
                                         decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 8)),
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                        ),
                                         onChanged: (v) {
                                           final p =
                                               _parseDouble(v) ?? item.price;
                                           setState(() {
                                             _invoiceItems[index] = OrderItem(
-                                                name: item.name,
-                                                price: p,
-                                                quantity: item.quantity,
-                                                note: item.note);
+                                              name: item.name,
+                                              price: p,
+                                              quantity: item.quantity,
+                                              note: item.note,
+                                            );
                                           });
                                         },
                                       ),
@@ -3124,33 +3621,39 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                                         initialValue: item.quantity.toString(),
                                         keyboardType: TextInputType.number,
                                         decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 8)),
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                        ),
                                         onChanged: (v) {
                                           final q =
                                               _parseInt(v) ?? item.quantity;
                                           setState(() {
                                             _invoiceItems[index] = OrderItem(
-                                                name: item.name,
-                                                price: item.price,
-                                                quantity: q,
-                                                note: item.note);
+                                              name: item.name,
+                                              price: item.price,
+                                              quantity: q,
+                                              note: item.note,
+                                            );
                                           });
                                         },
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     SizedBox(
-                                        width: 60,
-                                        child: Text(
-                                            item.total.toStringAsFixed(0),
-                                            textAlign: TextAlign.center)),
+                                      width: 60,
+                                      child: Text(
+                                        item.total.toStringAsFixed(0),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red),
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
                                       onPressed: () =>
                                           _removeInvoiceItem(index),
                                     ),
@@ -3169,16 +3672,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
             ],
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('حساب الفاتورة',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'حساب الفاتورة',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3198,15 +3706,21 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                             controller: _discountController,
                             textAlign: TextAlign.right,
                             keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               isDense: true,
                               contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide:
-                                      BorderSide(color: Colors.grey, width: 1)),
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 1,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -3216,25 +3730,35 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                       Center(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(_invoiceLogoBytes!,
-                              height: 120, fit: BoxFit.contain),
+                          child: Image.memory(
+                            _invoiceLogoBytes!,
+                            height: 120,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
                     ] else ...[
                       const Text(
-                          'لا يوجد شعار فاتورة حالياً. يمكنك إضافته من الإعدادات.',
-                          style: TextStyle(color: Colors.black54)),
+                        'لا يوجد شعار فاتورة حالياً. يمكنك إضافته من الإعدادات.',
+                        style: TextStyle(color: Colors.black54),
+                      ),
                       const SizedBox(height: 12),
                     ],
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('الإجمالي الكلي',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(_invoiceTotal.toStringAsFixed(0),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 18)),
+                        const Text(
+                          'الإجمالي الكلي',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          _invoiceTotal.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -3247,7 +3771,9 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('حفظ الفاتورة'),
                     ),
@@ -3287,11 +3813,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         content: const Text('هل تريد حذف هذا المنتج نهائيًا؟'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('حذف')),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف'),
+          ),
         ],
       ),
     );
@@ -3301,20 +3829,23 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     try {
       await supabase.from('products').delete().eq('id', widget.product.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('تم حذف المنتج')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حذف المنتج')));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل حذف المنتج: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل حذف المنتج: $e')));
       setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _updateQuantity() async {
-    final controller =
-        TextEditingController(text: widget.product.remainingQty.toString());
+    final controller = TextEditingController(
+      text: widget.product.remainingQty.toString(),
+    );
     final result = await showDialog<int?>(
       context: context,
       builder: (context) => AlertDialog(
@@ -3326,8 +3857,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -3344,15 +3876,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     try {
       await supabase
           .from('products')
-          .update({'remaining_qty': result}).eq('id', widget.product.id);
+          .update({'remaining_qty': result})
+          .eq('id', widget.product.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('تم تحديث الكمية')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تحديث الكمية')));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل تحديث الكمية: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل تحديث الكمية: $e')));
       setState(() => _isProcessing = false);
     }
   }
@@ -3385,8 +3920,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     await Clipboard.setData(ClipboardData(text: productLink));
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('تم نسخ رابط المنتج')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم نسخ رابط المنتج')));
     }
   }
 
@@ -3394,9 +3930,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Widget build(BuildContext context) {
     final product = widget.product;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تفاصيل المنتج'),
-      ),
+      appBar: AppBar(title: const Text('تفاصيل المنتج')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -3427,11 +3961,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
-                            height: 300,
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.image_not_supported,
-                                size: 100),
-                          ),
+                                height: 300,
+                                color: Colors.grey.shade200,
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 100,
+                                ),
+                              ),
                         ),
                         Positioned(
                           bottom: 12,
@@ -3442,8 +3978,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               color: Colors.black.withOpacity(0.7),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.zoom_in,
-                                color: Colors.white, size: 24),
+                            child: const Icon(
+                              Icons.zoom_in,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ],
@@ -3470,9 +4009,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                Chip(
-                  label: Text('رمز المنتج: ${product.id}'),
-                ),
+                Chip(label: Text('رمز المنتج: ${product.id}')),
                 Chip(
                   label: Text(product.remainingQty > 0 ? 'متوفر' : 'غير متوفر'),
                   backgroundColor: product.remainingQty > 0
@@ -3480,34 +4017,42 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       : Colors.red.shade100,
                 ),
                 Chip(
-                  label: Text(product.hasWholesale
-                      ? 'متاح بالجملة'
-                      : 'متاح للبيع المفرد'),
+                  label: Text(
+                    product.hasWholesale ? 'متاح بالجملة' : 'متاح للبيع المفرد',
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('معلومات الأسعار',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'معلومات الأسعار',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('سعر البيع:'),
-                        Text(product.price.toStringAsFixed(0),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple)),
+                        Text(
+                          product.price.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -3533,17 +4078,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       const SizedBox(height: 12),
                       const Divider(),
                       const SizedBox(height: 12),
-                      const Text('معلومات الجملة',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'معلومات الجملة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('سعر الجملة:'),
-                          Text(product.wholesalePrice.toStringAsFixed(0),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            product.wholesalePrice.toStringAsFixed(0),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -3563,16 +4113,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('سعر التوصيل:',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green)),
+                          const Text(
+                            'سعر التوصيل:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
                           Text(
-                              '${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                  fontSize: 16)),
+                            '${product.deliveryPrice!.toStringAsFixed(0)} د.ع',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                              fontSize: 16,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -3583,16 +4138,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             const SizedBox(height: 16),
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 2,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('المخزون',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'المخزون',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3617,16 +4177,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               const SizedBox(height: 16),
               Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('الوصف',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'الوصف',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Text(product.description),
                     ],
@@ -3640,14 +4205,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               label: const Text('تعديل المعلومات'),
               onPressed: () {
                 Navigator.of(context)
-                    .push(MaterialPageRoute(
-                        builder: (_) => EditProductPage(product: product)))
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => EditProductPage(product: product),
+                      ),
+                    )
                     .then((result) {
-                  if (!mounted) return;
-                  if (result == true) {
-                    Navigator.of(context).pop(true);
-                  }
-                });
+                      if (!mounted) return;
+                      if (result == true) {
+                        Navigator.of(context).pop(true);
+                      }
+                    });
               },
             ),
             const SizedBox(height: 12),
@@ -3655,8 +4223,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               icon: const Icon(Icons.open_in_new),
               label: const Text('عرض المنتج في المتجر'),
               onPressed: () {
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const StorePage()));
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const StorePage()));
               },
             ),
             const SizedBox(height: 12),
@@ -3715,22 +4284,30 @@ class _EditProductPageState extends State<EditProductPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product.name);
-    _priceController =
-        TextEditingController(text: widget.product.price.toString());
-    _costController =
-        TextEditingController(text: widget.product.cost.toString());
-    _wholesalePriceController =
-        TextEditingController(text: widget.product.wholesalePrice.toString());
+    _priceController = TextEditingController(
+      text: widget.product.price.toString(),
+    );
+    _costController = TextEditingController(
+      text: widget.product.cost.toString(),
+    );
+    _wholesalePriceController = TextEditingController(
+      text: widget.product.wholesalePrice.toString(),
+    );
     _minWholesaleController = TextEditingController(
-        text: widget.product.minWholesaleQuantity.toString());
-    _singlePriceController =
-        TextEditingController(text: widget.product.singlePrice.toString());
-    _remainingQtyController =
-        TextEditingController(text: widget.product.remainingQty.toString());
+      text: widget.product.minWholesaleQuantity.toString(),
+    );
+    _singlePriceController = TextEditingController(
+      text: widget.product.singlePrice.toString(),
+    );
+    _remainingQtyController = TextEditingController(
+      text: widget.product.remainingQty.toString(),
+    );
     _deliveryPriceController = TextEditingController(
-        text: (widget.product.deliveryPrice ?? 0).toString());
-    _descriptionController =
-        TextEditingController(text: widget.product.description);
+      text: (widget.product.deliveryPrice ?? 0).toString(),
+    );
+    _descriptionController = TextEditingController(
+      text: widget.product.description,
+    );
     _hasWholesale = widget.product.hasWholesale;
     _category = productCategories.contains(widget.product.category)
         ? widget.product.category!
@@ -3753,8 +4330,10 @@ class _EditProductPageState extends State<EditProductPage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final result =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final result = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (result != null) {
       final bytes = await result.readAsBytes();
       setState(() {
@@ -3780,9 +4359,9 @@ class _EditProductPageState extends State<EditProductPage> {
     } catch (e) {
       debugPrint('Image upload error: $e');
       if (!mounted) return null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في رفع الصورة: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في رفع الصورة: $e')));
       return null;
     }
   }
@@ -3851,15 +4430,17 @@ class _EditProductPageState extends State<EditProductPage> {
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('خطأ أثناء تحديث المنتج: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ أثناء تحديث المنتج: $e')));
       return;
     }
     setState(() => _isSaving = false);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('تم تحديث المنتج بنجاح')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم تحديث المنتج بنجاح')));
     Navigator.of(context).pop(true);
   }
 
@@ -3885,8 +4466,9 @@ class _EditProductPageState extends State<EditProductPage> {
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(labelText: 'سعر البيع'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'يرجى كتابة سعر البيع';
@@ -3902,18 +4484,21 @@ class _EditProductPageState extends State<EditProductPage> {
               TextFormField(
                 controller: _costController,
                 decoration: const InputDecoration(labelText: 'تكلفة المنتج'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _category,
                 decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
                 items: productCategories
-                    .map((category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ))
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) {
                   if (value != null) setState(() => _category = value);
@@ -3929,24 +4514,28 @@ class _EditProductPageState extends State<EditProductPage> {
                 TextFormField(
                   controller: _wholesalePriceController,
                   decoration: const InputDecoration(labelText: 'سعر الجملة'),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _minWholesaleController,
-                  decoration:
-                      const InputDecoration(labelText: 'أقل عدد للجملة'),
+                  decoration: const InputDecoration(
+                    labelText: 'أقل عدد للجملة',
+                  ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
               ],
               TextFormField(
                 controller: _singlePriceController,
-                decoration:
-                    const InputDecoration(labelText: 'سعر المفرد (اختياري)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'سعر المفرد (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -3957,10 +4546,12 @@ class _EditProductPageState extends State<EditProductPage> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _deliveryPriceController,
-                decoration:
-                    const InputDecoration(labelText: 'سعر التوصيل (اختياري)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'سعر التوصيل (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -3970,13 +4561,18 @@ class _EditProductPageState extends State<EditProductPage> {
               ),
               const SizedBox(height: 16),
               if (widget.product.imageUrl != null) ...[
-                const Text('الصورة الحالية:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'الصورة الحالية:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(widget.product.imageUrl!,
-                      height: 150, fit: BoxFit.cover),
+                  child: Image.network(
+                    widget.product.imageUrl!,
+                    height: 150,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -3987,13 +4583,18 @@ class _EditProductPageState extends State<EditProductPage> {
               ),
               if (_pickedImageBytes != null) ...[
                 const SizedBox(height: 16),
-                const Text('الصورة الجديدة:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'الصورة الجديدة:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(_pickedImageBytes!,
-                      height: 180, fit: BoxFit.cover),
+                  child: Image.memory(
+                    _pickedImageBytes!,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ],
               const SizedBox(height: 24),
@@ -4112,9 +4713,11 @@ class _StorePageState extends State<StorePage> {
         }
       });
       if (_products.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content:
-                Text('تعذر تحديث المنتجات، عرض البيانات المحفوظة محليًا')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تعذر تحديث المنتجات، عرض البيانات المحفوظة محليًا'),
+          ),
+        );
       }
     } finally {
       if (!mounted) return;
@@ -4140,38 +4743,50 @@ class _StorePageState extends State<StorePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(product.name,
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              product.name,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             if (product.imageUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(product.imageUrl!,
-                    height: 180, fit: BoxFit.cover),
+                child: Image.network(
+                  product.imageUrl!,
+                  height: 180,
+                  fit: BoxFit.cover,
+                ),
               ),
             const SizedBox(height: 12),
-            Text(product.description.isNotEmpty
-                ? product.description
-                : 'لا يوجد وصف لهذا المنتج بعد.'),
+            Text(
+              product.description.isNotEmpty
+                  ? product.description
+                  : 'لا يوجد وصف لهذا المنتج بعد.',
+            ),
             const SizedBox(height: 12),
-            Text('السعر: ${product.price.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'السعر: ${product.price.toStringAsFixed(0)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             if (product.hasWholesale)
               Text(
-                  'الجملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطعة'),
+                'الجملة: ${product.wholesalePrice.toStringAsFixed(0)} من ${product.minWholesaleQuantity} قطعة',
+              ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 Navigator.of(context)
-                    .push(MaterialPageRoute(
-                        builder: (_) => ProductDetailsPage(product: product)))
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => ProductDetailsPage(product: product),
+                      ),
+                    )
                     .then((_) {
-                  if (mounted) {
-                    _refreshProducts();
-                  }
-                });
+                      if (mounted) {
+                        _refreshProducts();
+                      }
+                    });
               },
               child: const Text('عرض التفاصيل'),
             ),
@@ -4198,15 +4813,21 @@ class _StorePageState extends State<StorePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.error_outline,
-                              size: 48, color: Colors.redAccent),
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.redAccent,
+                          ),
                           const SizedBox(height: 12),
-                          Text('حدث خطأ: $_errorMessage',
-                              textAlign: TextAlign.center),
+                          Text(
+                            'حدث خطأ: $_errorMessage',
+                            textAlign: TextAlign.center,
+                          ),
                           const SizedBox(height: 12),
                           FilledButton(
-                              onPressed: _refreshProducts,
-                              child: const Text('إعادة المحاولة')),
+                            onPressed: _refreshProducts,
+                            child: const Text('إعادة المحاولة'),
+                          ),
                         ],
                       ),
                     ),
@@ -4230,8 +4851,9 @@ class _StorePageState extends State<StorePage> {
                     }
                     return Center(
                       child: FilledButton(
-                          onPressed: _loadNextPage,
-                          child: const Text('تحميل المزيد')),
+                        onPressed: _loadNextPage,
+                        child: const Text('تحميل المزيد'),
+                      ),
                     );
                   }
                   final product = _products[index];
@@ -4239,7 +4861,8 @@ class _StorePageState extends State<StorePage> {
                     onTap: () => _showQuickView(product),
                     child: Card(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18)),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       elevation: 4,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4247,24 +4870,31 @@ class _StorePageState extends State<StorePage> {
                           Expanded(
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(18)),
+                                top: Radius.circular(18),
+                              ),
                               child: Hero(
                                 tag: 'product-image-${product.id}',
                                 child: product.imageUrl != null
-                                    ? Image.network(product.imageUrl!,
+                                    ? Image.network(
+                                        product.imageUrl!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error,
-                                                stackTrace) =>
-                                            Container(
-                                                color: Colors.grey.shade200,
-                                                child: const Icon(
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  color: Colors.grey.shade200,
+                                                  child: const Icon(
                                                     Icons.image_not_supported,
-                                                    size: 40)))
+                                                    size: 40,
+                                                  ),
+                                                ),
+                                      )
                                     : Container(
                                         color: Colors.grey.shade200,
                                         child: const Icon(
-                                            Icons.image_not_supported,
-                                            size: 40)),
+                                          Icons.image_not_supported,
+                                          size: 40,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
@@ -4273,33 +4903,46 @@ class _StorePageState extends State<StorePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(product.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
+                                Text(
+                                  product.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 Text(
-                                    'السعر: ${product.price.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                        color: Colors.deepPurple,
-                                        fontWeight: FontWeight.bold)),
+                                  'السعر: ${product.price.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    color: Colors.deepPurple,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 const SizedBox(height: 6),
-                                Text('الكمية: ${product.remainingQty}',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.black54)),
+                                Text(
+                                  'الكمية: ${product.remainingQty}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
                                 FilledButton(
                                   onPressed: () {
                                     Navigator.of(context)
-                                        .push(MaterialPageRoute(
+                                        .push(
+                                          MaterialPageRoute(
                                             builder: (_) => ProductDetailsPage(
-                                                product: product)))
+                                              product: product,
+                                            ),
+                                          ),
+                                        )
                                         .then((_) {
-                                      if (mounted) {
-                                        _refreshProducts();
-                                      }
-                                    });
+                                          if (mounted) {
+                                            _refreshProducts();
+                                          }
+                                        });
                                   },
                                   child: const Text('عرض المنتج'),
                                 ),
@@ -4440,7 +5083,8 @@ class _OrdersTabState extends State<OrdersTab> {
           allOrders.add(Order.fromMap(firstRow));
         } catch (e, st) {
           debugPrint(
-              'Error creating Order from grouped rows (skipping): $e\n$st');
+            'Error creating Order from grouped rows (skipping): $e\n$st',
+          );
         }
       }
 
@@ -4470,9 +5114,13 @@ class _OrdersTabState extends State<OrdersTab> {
         }
       });
       if (_orders.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-                'تعذر تحميل المزيد من الطلبات، عرض البيانات المحفوظة محليًا')));
+              'تعذر تحميل المزيد من الطلبات، عرض البيانات المحفوظة محليًا',
+            ),
+          ),
+        );
       }
     } finally {
       if (!mounted) return;
@@ -4485,7 +5133,8 @@ class _OrdersTabState extends State<OrdersTab> {
   List<Order> _applyFilters(List<Order> orders) {
     final query = _searchController.text.trim().toLowerCase();
     return orders.where((order) {
-      final matchesSearch = query.isEmpty ||
+      final matchesSearch =
+          query.isEmpty ||
           order.id.toString().contains(query) ||
           (order.customerName?.toLowerCase().contains(query) ?? false) ||
           order.items.any((item) => item.name.toLowerCase().contains(query));
@@ -4516,8 +5165,9 @@ class _OrdersTabState extends State<OrdersTab> {
     }).toList();
     final dailyCount = todaysOrders.length;
     final dailySales = todaysOrders.fold<double>(0, (sum, o) => sum + o.total);
-    final pendingCount =
-        _orders.where((o) => o.status.toLowerCase() == 'pending').length;
+    final pendingCount = _orders
+        .where((o) => o.status.toLowerCase() == 'pending')
+        .length;
     final filteredOrders = _applyFilters(_orders);
 
     return RefreshIndicator(
@@ -4532,18 +5182,23 @@ class _OrdersTabState extends State<OrdersTab> {
               label: const Text('إنشاء طلب جديد'),
               onPressed: () {
                 Navigator.of(context)
-                    .push(MaterialPageRoute(
-                        builder: (_) => const CreateOrderPage()))
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => const CreateOrderPage(),
+                      ),
+                    )
                     .then((_) {
-                  if (mounted) {
-                    _refreshOrders();
-                  }
-                });
+                      if (mounted) {
+                        _refreshOrders();
+                      }
+                    });
               },
             ),
             const SizedBox(height: 20),
-            const Text('قائمة الطلبات',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(
+              'قائمة الطلبات',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _searchController,
@@ -4602,15 +5257,21 @@ class _OrdersTabState extends State<OrdersTab> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.error_outline,
-                                    size: 48, color: Colors.redAccent),
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.redAccent,
+                                ),
                                 const SizedBox(height: 12),
-                                Text('خطأ في تحميل الطلبات: $_errorMessage',
-                                    textAlign: TextAlign.center),
+                                Text(
+                                  'خطأ في تحميل الطلبات: $_errorMessage',
+                                  textAlign: TextAlign.center,
+                                ),
                                 const SizedBox(height: 12),
                                 FilledButton(
-                                    onPressed: _refreshOrders,
-                                    child: const Text('إعادة المحاولة')),
+                                  onPressed: _refreshOrders,
+                                  child: const Text('إعادة المحاولة'),
+                                ),
                               ],
                             ),
                           ),
@@ -4618,176 +5279,183 @@ class _OrdersTabState extends State<OrdersTab> {
                       ),
                     )
                   : _orders.isEmpty && _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : filteredOrders.isEmpty
-                          ? SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.6,
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: Text(
-                                      'لا توجد طلبات تطابق البحث أو الفلتر.',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 16),
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredOrders.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'لا توجد طلبات تطابق البحث أو الفلتر.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: 1 + filteredOrders.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 2,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'الطلبات اليوم',
+                                            style: TextStyle(
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            '$dailyCount',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: 1 +
-                                  filteredOrders.length +
-                                  (_hasMore ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == 0) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Card(
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                            elevation: 2,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text('الطلبات اليوم',
-                                                      style: TextStyle(
-                                                          color:
-                                                              Colors.black54)),
-                                                  const SizedBox(height: 8),
-                                                  Text('$dailyCount',
-                                                      style: const TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Card(
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                            elevation: 2,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text(
-                                                      'إجمالي المبيعات اليوم',
-                                                      style: TextStyle(
-                                                          color:
-                                                              Colors.black54)),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                      dailySales
-                                                          .toStringAsFixed(0),
-                                                      style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors
-                                                              .deepPurple)),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Card(
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                            elevation: 2,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text(
-                                                      'طلبات قيد الانتظار',
-                                                      style: TextStyle(
-                                                          color:
-                                                              Colors.black54)),
-                                                  const SizedBox(height: 8),
-                                                  Text('$pendingCount',
-                                                      style: const TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  );
-                                }
-
-                                if (index == 1 + filteredOrders.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 24),
-                                    child: Center(
-                                        child: CircularProgressIndicator()),
-                                  );
-                                }
-
-                                final order = filteredOrders[index - 1];
-                                return Card(
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16)),
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: ListTile(
-                                    title: Text('طلب رقم ${order.id}'),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (order.customerName != null &&
-                                            order.customerName!.isNotEmpty)
-                                          Text('العميل: ${order.customerName}'),
-                                        Text(
-                                            'العدد: ${order.items.length} • المجموع: ${order.total.toStringAsFixed(0)}'),
-                                      ],
+                                    elevation: 2,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'إجمالي المبيعات اليوم',
+                                            style: TextStyle(
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            dailySales.toStringAsFixed(0),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.deepPurple,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    trailing: const Icon(
-                                        Icons.arrow_forward_ios,
-                                        size: 18),
-                                    onTap: () {
-                                      Navigator.of(context)
-                                          .push(MaterialPageRoute(
-                                              builder: (_) => OrderDetailsPage(
-                                                  order: order)))
-                                          .then((_) {
-                                        if (mounted) {
-                                          _refreshOrders();
-                                        }
-                                      });
-                                    },
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 2,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'طلبات قيد الانتظار',
+                                            style: TextStyle(
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            '$pendingCount',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                          );
+                        }
+
+                        if (index == 1 + filteredOrders.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final order = filteredOrders[index - 1];
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            title: Text('طلب رقم ${order.id}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (order.customerName != null &&
+                                    order.customerName!.isNotEmpty)
+                                  Text('العميل: ${order.customerName}'),
+                                Text(
+                                  'العدد: ${order.items.length} • المجموع: ${order.total.toStringAsFixed(0)}',
+                                ),
+                              ],
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 18,
+                            ),
+                            onTap: () {
+                              Navigator.of(context)
+                                  .push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          OrderDetailsPage(order: order),
+                                    ),
+                                  )
+                                  .then((_) {
+                                    if (mounted) {
+                                      _refreshOrders();
+                                    }
+                                  });
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -4854,17 +5522,19 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     final user = supabase.auth.currentUser;
     if (user == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')));
       return;
     }
 
     setState(() => _isUpdating = true);
     try {
       // تحديث جميع صفوف الطلب بالحالة الجديدة
-      await supabase.from('orders').update({'status': newStatus}).eq(
-          'order_id', _currentOrder.id.toString());
+      await supabase
+          .from('orders')
+          .update({'status': newStatus})
+          .eq('order_id', _currentOrder.id.toString());
 
       if (!mounted) return;
       setState(() {
@@ -4887,9 +5557,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في تحديث حالة الطلب: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في تحديث حالة الطلب: $e')));
     } finally {
       if (mounted) {
         setState(() => _isUpdating = false);
@@ -4898,8 +5568,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   }
 
   void _updateCurrentOrderItems(List<OrderItem> updatedItems) {
-    final newTotal =
-        updatedItems.fold<double>(0, (sum, item) => sum + item.total);
+    final newTotal = updatedItems.fold<double>(
+      0,
+      (sum, item) => sum + item.total,
+    );
     setState(() {
       _currentOrder = Order(
         id: _currentOrder.id,
@@ -4916,10 +5588,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   Future<void> _showEditItemDialog(int index) async {
     final item = _currentOrder.items[index];
-    final priceController =
-        TextEditingController(text: item.price.toStringAsFixed(0));
-    final quantityController =
-        TextEditingController(text: item.quantity.toString());
+    final priceController = TextEditingController(
+      text: item.price.toStringAsFixed(0),
+    );
+    final quantityController = TextEditingController(
+      text: item.quantity.toString(),
+    );
 
     await showDialog<void>(
       context: context,
@@ -4943,8 +5617,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () {
               final newPrice =
@@ -4962,7 +5637,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text('تم تحديث بيانات المنتج داخل الفاتورة')),
+                  content: Text('تم تحديث بيانات المنتج داخل الفاتورة'),
+                ),
               );
             },
             child: const Text('حفظ'),
@@ -4993,9 +5669,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('تفاصيل فاتورة الطلب',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'تفاصيل فاتورة الطلب',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.of(context).pop(),
@@ -5013,10 +5693,13 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                           return ListTile(
                             title: Text(item.name),
                             subtitle: Text(
-                                'السعر: ${item.price.toStringAsFixed(0)} • الكمية: ${item.quantity} • المجموع: ${item.total.toStringAsFixed(0)}'),
+                              'السعر: ${item.price.toStringAsFixed(0)} • الكمية: ${item.quantity} • المجموع: ${item.total.toStringAsFixed(0)}',
+                            ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.edit,
-                                  color: Colors.deepPurple),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.deepPurple,
+                              ),
                               onPressed: () async {
                                 Navigator.of(context).pop();
                                 await _showEditItemDialog(index);
@@ -5035,16 +5718,18 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                            'الاجمالي الجديد: ${_currentOrder.total.toStringAsFixed(0)}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
+                          'الاجمالي الجديد: ${_currentOrder.total.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         FilledButton(
                           onPressed: () {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text(
-                                      'تم حفظ التغييرات محليًا في تفاصيل الطلب')),
+                                content: Text(
+                                  'تم حفظ التغييرات محليًا في تفاصيل الطلب',
+                                ),
+                              ),
                             );
                           },
                           child: const Text('حفظ الفاتورة'),
@@ -5073,25 +5758,34 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
           children: [
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 3,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('تاريخ الطلب',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'تاريخ الطلب',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 6),
-                    Text(_formattedDate,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      _formattedDate,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 16),
-                    const Text('حالة الطلب',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'حالة الطلب',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: _statusColor.withOpacity(0.2),
                         border: Border.all(color: _statusColor),
@@ -5100,62 +5794,84 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                       child: Text(
                         _statusLabel,
                         style: TextStyle(
-                            fontWeight: FontWeight.bold, color: _statusColor),
+                          fontWeight: FontWeight.bold,
+                          color: _statusColor,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     if (_currentOrder.customerName != null &&
                         _currentOrder.customerName!.isNotEmpty) ...[
-                      const Text('اسم العميل',
-                          style: TextStyle(color: Colors.grey)),
+                      const Text(
+                        'اسم العميل',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       const SizedBox(height: 6),
-                      Text(_currentOrder.customerName!,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        _currentOrder.customerName!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (_currentOrder.customerPhone != null &&
                         _currentOrder.customerPhone!.isNotEmpty) ...[
-                      const Text('رقم الهاتف',
-                          style: TextStyle(color: Colors.grey)),
+                      const Text(
+                        'رقم الهاتف',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       const SizedBox(height: 6),
-                      Text(_currentOrder.customerPhone!,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        _currentOrder.customerPhone!,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 16),
                     ],
-                    const Text('عدد العناصر',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'عدد العناصر',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 6),
-                    Text('${_currentOrder.items.length}',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      '${_currentOrder.items.length}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 16),
-                    const Text('إجمالي الطلب',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'إجمالي الطلب',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 6),
-                    Text(_currentOrder.total.toStringAsFixed(0),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.deepPurple)),
+                    Text(
+                      _currentOrder.total.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.deepPurple,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text('تحديث حالة الطلب',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              'تحديث حالة الطلب',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 FilledButton(
-                  onPressed:
-                      _isUpdating ? null : () => _updateOrderStatus('pending'),
+                  onPressed: _isUpdating
+                      ? null
+                      : () => _updateOrderStatus('pending'),
                   style: FilledButton.styleFrom(
                     backgroundColor:
                         _currentOrder.status.toLowerCase() == 'pending'
-                            ? Colors.orange
-                            : Colors.orange.withOpacity(0.6),
+                        ? Colors.orange
+                        : Colors.orange.withOpacity(0.6),
                   ),
                   child: const Text('قيد الانتظار'),
                 ),
@@ -5166,8 +5882,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor:
                         _currentOrder.status.toLowerCase() == 'in_delivery'
-                            ? Colors.blue
-                            : Colors.blue.withOpacity(0.6),
+                        ? Colors.blue
+                        : Colors.blue.withOpacity(0.6),
                   ),
                   child: const Text('قيد التوصيل'),
                 ),
@@ -5178,8 +5894,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor:
                         _currentOrder.status.toLowerCase() == 'completed'
-                            ? Colors.green
-                            : Colors.green.withOpacity(0.6),
+                        ? Colors.green
+                        : Colors.green.withOpacity(0.6),
                   ),
                   child: const Text('مكتمل'),
                 ),
@@ -5190,8 +5906,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor:
                         _currentOrder.status.toLowerCase() == 'cancelled'
-                            ? Colors.red
-                            : Colors.red.withOpacity(0.6),
+                        ? Colors.red
+                        : Colors.red.withOpacity(0.6),
                   ),
                   child: const Text('ملغي'),
                 ),
@@ -5201,9 +5917,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('تفاصيل العناصر',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  'تفاصيل العناصر',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 FilledButton.icon(
                   onPressed: _showOrderItemsDialog,
                   icon: const Icon(Icons.list),
@@ -5230,49 +5947,62 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                             children: [
                               TableRow(
                                 decoration: BoxDecoration(
-                                    color: Colors.deepPurple[100]),
+                                  color: Colors.deepPurple[100],
+                                ),
                                 children: const [
                                   Padding(
                                     padding: EdgeInsets.all(12),
-                                    child: Text('المنتج',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
+                                    child: Text(
+                                      'المنتج',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                   Padding(
                                     padding: EdgeInsets.all(12),
-                                    child: Text('السعر',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
+                                    child: Text(
+                                      'السعر',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                   Padding(
                                     padding: EdgeInsets.all(12),
-                                    child: Text('الكمية',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
+                                    child: Text(
+                                      'الكمية',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                   Padding(
                                     padding: EdgeInsets.all(12),
-                                    child: Text('المجموع',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
+                                    child: Text(
+                                      'المجموع',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              ..._currentOrder.items
-                                  .asMap()
-                                  .entries
-                                  .map((entry) {
+                              ..._currentOrder.items.asMap().entries.map((
+                                entry,
+                              ) {
                                 final index = entry.key;
                                 final item = entry.value;
                                 return TableRow(
                                   decoration: BoxDecoration(
-                                      color: index.isOdd
-                                          ? Colors.grey[50]
-                                          : Colors.white),
+                                    color: index.isOdd
+                                        ? Colors.grey[50]
+                                        : Colors.white,
+                                  ),
                                   children: [
                                     TableCell(
                                       verticalAlignment:
@@ -5281,9 +6011,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                         onTap: _showOrderItemsDialog,
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
-                                          child: Text(item.name,
-                                              style: const TextStyle(
-                                                  fontSize: 13)),
+                                          child: Text(
+                                            item.name,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -5295,22 +6028,11 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
                                           child: Text(
-                                              item.price.toStringAsFixed(0),
-                                              style: const TextStyle(
-                                                  fontSize: 13)),
-                                        ),
-                                      ),
-                                    ),
-                                    TableCell(
-                                      verticalAlignment:
-                                          TableCellVerticalAlignment.middle,
-                                      child: InkWell(
-                                        onTap: _showOrderItemsDialog,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Text('${item.quantity}',
-                                              style: const TextStyle(
-                                                  fontSize: 13)),
+                                            item.price.toStringAsFixed(0),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -5322,11 +6044,29 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                         child: Padding(
                                           padding: const EdgeInsets.all(12),
                                           child: Text(
-                                              item.total.toStringAsFixed(0),
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  color: Colors.deepPurple)),
+                                            '${item.quantity}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    TableCell(
+                                      verticalAlignment:
+                                          TableCellVerticalAlignment.middle,
+                                      child: InkWell(
+                                        onTap: _showOrderItemsDialog,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Text(
+                                            item.total.toStringAsFixed(0),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.deepPurple,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -5365,18 +6105,22 @@ class MoreTab extends StatelessWidget {
           children: [
             const Icon(Icons.storefront, size: 80, color: Colors.deepPurple),
             const SizedBox(height: 16),
-            const Text('مرحبًا بك في لوحة التحكم',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text(
+              'مرحبًا بك في لوحة التحكم',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             const Text(
-                'في هذا القسم يمكنك الإطلاع على حالة المتجر، إدارة المنتجات، والطلبات بسهولة.'),
+              'في هذا القسم يمكنك الإطلاع على حالة المتجر، إدارة المنتجات، والطلبات بسهولة.',
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               icon: const Icon(Icons.shopping_bag),
               label: const Text('طلبات الزبائن'),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const CustomerOrdersPage()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CustomerOrdersPage()),
+                );
               },
             ),
             const SizedBox(height: 12),
@@ -5384,8 +6128,9 @@ class MoreTab extends StatelessWidget {
               icon: const Icon(Icons.receipt_long),
               label: const Text('الفواتير'),
               onPressed: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const InvoicesPage()));
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const InvoicesPage()));
               },
             ),
           ],
@@ -5410,8 +6155,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   final TextEditingController _customerPhoneController =
       TextEditingController();
   final TextEditingController _orderNotesController = TextEditingController();
-  final TextEditingController _orderDiscountController =
-      TextEditingController(text: '0');
+  final TextEditingController _orderDiscountController = TextEditingController(
+    text: '0',
+  );
   final GlobalKey _orderShareKey = GlobalKey();
   bool _isSharingOrder = false;
   late final Future<List<Product>> _productsFuture;
@@ -5449,35 +6195,42 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       if (currentContext == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('خطأ: لم يتم تحميل تفاصيل الطلب')));
+          const SnackBar(content: Text('خطأ: لم يتم تحميل تفاصيل الطلب')),
+        );
         return;
       }
       final renderObject = currentContext.findRenderObject();
       if (renderObject == null || renderObject is! RenderRepaintBoundary) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('خطأ: فشل إنشاء الصورة')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('خطأ: فشل إنشاء الصورة')));
         return;
       }
       final ui.Image image = await (renderObject).toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('خطأ: فشل تحويل الصورة')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('خطأ: فشل تحويل الصورة')));
         return;
       }
       final pngBytes = byteData.buffer.asUint8List();
-      await shareImageBytes(pngBytes,
-          filename: 'طلب_${DateTime.now().millisecondsSinceEpoch}.png',
-          text: 'طلب جديد - العميل: ${_customerNameController.text.trim()}');
+      await shareImageBytes(
+        pngBytes,
+        filename: 'طلب_${DateTime.now().millisecondsSinceEpoch}.png',
+        text: 'طلب جديد - العميل: ${_customerNameController.text.trim()}',
+      );
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('تم مشاركة الطلب كصورة')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم مشاركة الطلب كصورة')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('خطأ في المشاركة: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في المشاركة: $e')));
     } finally {
       if (mounted) setState(() => _isSharingOrder = false);
     }
@@ -5486,11 +6239,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   Future<List<Product>> _fetchProducts() async {
     final user = supabase.auth.currentUser;
     if (user == null) return [];
-    final response = await supabase
-        .from('products')
-        .select()
-        .eq('user_id', user.id)
-        .order('created_at', ascending: false) as List<dynamic>;
+    final response =
+        await supabase
+                .from('products')
+                .select()
+                .eq('user_id', user.id)
+                .order('created_at', ascending: false)
+            as List<dynamic>;
     return response
         .map((item) => Product.fromMap(item as Map<String, dynamic>))
         .toList();
@@ -5505,7 +6260,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('يرجى تسجيل الدخول أولاً قبل إنشاء الطلب')),
+          content: Text('يرجى تسجيل الدخول أولاً قبل إنشاء الطلب'),
+        ),
       );
       return;
     }
@@ -5527,7 +6283,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     }
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى اختيار منتج واحد على الأقل')));
+        const SnackBar(content: Text('يرجى اختيار منتج واحد على الأقل')),
+      );
       return;
     }
 
@@ -5543,9 +6300,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final requested = qtyMap[product.id] ?? 0;
       if (requested > 0 && requested > product.remainingQty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(
-                'الكمية المطلوبة من "${product.name}" ($requested) تتجاوز المتوفر (${product.remainingQty})')));
+              'الكمية المطلوبة من "${product.name}" ($requested) تتجاوز المتوفر (${product.remainingQty})',
+            ),
+          ),
+        );
         return;
       }
     }
@@ -5554,24 +6315,29 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     try {
       final createdAt = DateTime.now().toIso8601String();
       final discount = _parseAmount(_orderDiscountController.text).clamp(
+        0,
+        selectedItems.fold<double>(
           0,
-          selectedItems.fold<double>(
-              0, (sum, item) => sum + (item['total'] as num).toDouble()));
+          (sum, item) => sum + (item['total'] as num).toDouble(),
+        ),
+      );
 
       final rows = selectedItems
-          .map((item) => {
-                'user_id': user.id,
-                'name': item['name'],
-                'price': item['price'],
-                'quantity': item['quantity'],
-                'total': item['total'],
-                'discount': discount,
-                'status': 'pending',
-                'customer_name': _customerNameController.text.trim(),
-                'customer_phone': _customerPhoneController.text.trim(),
-                'notes': _orderNotesController.text.trim(),
-                'created_at': createdAt,
-              })
+          .map(
+            (item) => {
+              'user_id': user.id,
+              'name': item['name'],
+              'price': item['price'],
+              'quantity': item['quantity'],
+              'total': item['total'],
+              'discount': discount,
+              'status': 'pending',
+              'customer_name': _customerNameController.text.trim(),
+              'customer_phone': _customerPhoneController.text.trim(),
+              'notes': _orderNotesController.text.trim(),
+              'created_at': createdAt,
+            },
+          )
           .toList();
 
       debugPrint('Order insert rows: $rows');
@@ -5585,12 +6351,17 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         try {
           await supabase
               .from('products')
-              .update({'remaining_qty': newQty}).eq('id', product.id);
+              .update({'remaining_qty': newQty})
+              .eq('id', product.id);
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
                 content: Text(
-                    'تم إنشاء الطلب ولكن فشل تحديث مخزون "${product.name}": $e')));
+                  'تم إنشاء الطلب ولكن فشل تحديث مخزون "${product.name}": $e',
+                ),
+              ),
+            );
           }
         }
       }
@@ -5598,14 +6369,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       setState(() => _isSaving = false);
       debugPrint('Order insert error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('خطأ أثناء إنشاء الطلب: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ أثناء إنشاء الطلب: $e')));
       return;
     }
     setState(() => _isSaving = false);
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('تم إنشاء الطلب بنجاح')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم إنشاء الطلب بنجاح')));
     Navigator.of(context).pop();
   }
 
@@ -5622,23 +6395,28 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'اسم المنتج')),
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'اسم المنتج'),
+            ),
             TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: 'السعر'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true)),
+              controller: priceController,
+              decoration: const InputDecoration(labelText: 'السعر'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
             TextField(
-                controller: quantityController,
-                decoration: const InputDecoration(labelText: 'العدد'),
-                keyboardType: TextInputType.number),
+              controller: quantityController,
+              decoration: const InputDecoration(labelText: 'العدد'),
+              keyboardType: TextInputType.number,
+            ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () {
               final name = nameController.text.trim();
@@ -5649,7 +6427,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               }
               setState(() {
                 _manualItems.add(
-                    OrderItem(name: name, price: price, quantity: quantity));
+                  OrderItem(name: name, price: price, quantity: quantity),
+                );
               });
               Navigator.of(context).pop();
             },
@@ -5672,7 +6451,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           }
           if (snapshot.hasError) {
             return Center(
-                child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'));
+              child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'),
+            );
           }
           final products = snapshot.data ?? [];
           final filteredProducts = products.where((product) {
@@ -5685,10 +6465,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             final quantity = _orderQuantities[product.id] ?? 0;
             return sum + quantity * product.price;
           });
-          final discount = _parseAmount(_orderDiscountController.text)
-              .clamp(0, double.infinity);
-          final netTotal = (productsTotal + _manualTotal - discount)
-              .clamp(0, double.infinity);
+          final discount = _parseAmount(
+            _orderDiscountController.text,
+          ).clamp(0, double.infinity);
+          final netTotal = (productsTotal + _manualTotal - discount).clamp(
+            0,
+            double.infinity,
+          );
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -5698,13 +6481,17 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                   child: ListView(
                     children: [
                       const Text(
-                          'اختر منتجات من المتجر أو أضف منتجًا جديدًا يدوياً',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                        'اختر منتجات من المتجر أو أضف منتجًا جديدًا يدوياً',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       Card(
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 2,
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
@@ -5712,27 +6499,31 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text('بيانات العميل',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                              const Text(
+                                'بيانات العميل',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               const SizedBox(height: 12),
                               TextField(
                                 controller: _customerNameController,
                                 decoration: const InputDecoration(
-                                    labelText: 'اسم العميل'),
+                                  labelText: 'اسم العميل',
+                                ),
                               ),
                               const SizedBox(height: 12),
                               TextField(
                                 controller: _customerPhoneController,
                                 decoration: const InputDecoration(
-                                    labelText: 'رقم الهاتف (اختياري)'),
+                                  labelText: 'رقم الهاتف (اختياري)',
+                                ),
                                 keyboardType: TextInputType.phone,
                               ),
                               const SizedBox(height: 12),
                               TextField(
                                 controller: _orderNotesController,
                                 decoration: const InputDecoration(
-                                    labelText: 'ملاحظات الطلب (اختياري)'),
+                                  labelText: 'ملاحظات الطلب (اختياري)',
+                                ),
                                 minLines: 2,
                                 maxLines: 4,
                               ),
@@ -5740,10 +6531,12 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                               TextField(
                                 controller: _orderDiscountController,
                                 decoration: const InputDecoration(
-                                    labelText: 'خصم الطلب'),
+                                  labelText: 'خصم الطلب',
+                                ),
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
-                                        decimal: true),
+                                      decimal: true,
+                                    ),
                               ),
                             ],
                           ),
@@ -5782,32 +6575,43 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                         final quantity = _orderQuantities[product.id] ?? 0;
                         return Card(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: product.imageUrl != null
-                                  ? Image.network(product.imageUrl!,
-                                      width: 60, height: 60, fit: BoxFit.cover)
+                                  ? Image.network(
+                                      product.imageUrl!,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                    )
                                   : Container(
                                       width: 60,
                                       height: 60,
                                       color: Colors.grey.shade200,
                                       child: const Icon(
-                                          Icons.image_not_supported)),
+                                        Icons.image_not_supported,
+                                      ),
+                                    ),
                             ),
                             title: Text(product.name),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                    'السعر: ${product.price.toStringAsFixed(0)}'),
+                                  'السعر: ${product.price.toStringAsFixed(0)}',
+                                ),
                                 Text('المخزون: ${product.remainingQty} قطعة'),
                                 if (quantity > 0)
-                                  Text('محددة: $quantity',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    'محددة: $quantity',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                               ],
                             ),
                             trailing: SizedBox(
@@ -5822,8 +6626,9 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                                             setState(() {
                                               final next = quantity - 1;
                                               if (next <= 0) {
-                                                _orderQuantities
-                                                    .remove(product.id);
+                                                _orderQuantities.remove(
+                                                  product.id,
+                                                );
                                               } else {
                                                 _orderQuantities[product.id] =
                                                     next;
@@ -5832,10 +6637,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                                           }
                                         : null,
                                   ),
-                                  Text('$quantity',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16)),
+                                  Text(
+                                    '$quantity',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                                   IconButton(
                                     icon: const Icon(Icons.add),
                                     onPressed: product.remainingQty > quantity
@@ -5861,27 +6669,37 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                       ),
                       if (_manualItems.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        const Text('منتجات يدوية',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'منتجات يدوية',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 12),
-                        ..._manualItems.map((item) => Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                title: Text(item.name),
-                                subtitle: Text(
-                                    'سعر الوحدة: ${item.price.toStringAsFixed(0)} • الكمية: ${item.quantity}'),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.redAccent),
-                                  onPressed: () {
-                                    setState(() => _manualItems.remove(item));
-                                  },
-                                ),
+                        ..._manualItems.map(
+                          (item) => Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              title: Text(item.name),
+                              subtitle: Text(
+                                'سعر الوحدة: ${item.price.toStringAsFixed(0)} • الكمية: ${item.quantity}',
                               ),
-                            )),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.redAccent,
+                                ),
+                                onPressed: () {
+                                  setState(() => _manualItems.remove(item));
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -5891,7 +6709,8 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                   key: _orderShareKey,
                   child: Card(
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 2,
                     margin: const EdgeInsets.only(bottom: 14),
                     child: Padding(
@@ -5899,17 +6718,23 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text('ملخص الطلب',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'ملخص الطلب',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('عدد السلع المحددة'),
-                              Text(_orderQuantities.values
-                                  .fold<int>(0, (sum, qty) => sum + qty)
-                                  .toString()),
+                              Text(
+                                _orderQuantities.values
+                                    .fold<int>(0, (sum, qty) => sum + qty)
+                                    .toString(),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -5932,9 +6757,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('الخصم',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                              const Text(
+                                'الخصم',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               Text(discount.toStringAsFixed(0)),
                             ],
                           ),
@@ -5942,12 +6768,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('الإجمالي بعد الخصم',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                              Text(netTotal.toStringAsFixed(0),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
+                              const Text(
+                                'الإجمالي بعد الخصم',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                netTotal.toStringAsFixed(0),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -5965,11 +6795,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : const Icon(Icons.share),
-                        label: Text(_isSharingOrder
-                            ? 'جاري إنشاء الصورة...'
-                            : 'مشاركة الطلب كصورة'),
+                        label: Text(
+                          _isSharingOrder
+                              ? 'جاري إنشاء الصورة...'
+                              : 'مشاركة الطلب كصورة',
+                        ),
                         onPressed: _isSharingOrder ? null : _shareOrderAsImage,
                       ),
                     ),
@@ -6055,8 +6890,10 @@ class Order {
     }
 
     // حساب المجموع من العناصر
-    final calculatedTotal =
-        items.fold<double>(0, (sum, item) => sum + item.total);
+    final calculatedTotal = items.fold<double>(
+      0,
+      (sum, item) => sum + item.total,
+    );
 
     // قراءة الحقول بشكل آمن: support num or String
     double parseDoubleField(dynamic v, double fallback) {
@@ -6085,8 +6922,8 @@ class Order {
       createdAt: map['created_at'] is String
           ? DateTime.tryParse(map['created_at'] as String) ?? DateTime.now()
           : (map['created_at'] is DateTime
-              ? map['created_at'] as DateTime
-              : DateTime.now()),
+                ? map['created_at'] as DateTime
+                : DateTime.now()),
       customerName: (map['customer_name'] as String?)?.isEmpty == false
           ? map['customer_name'] as String?
           : null,
@@ -6180,8 +7017,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
       final RenderRepaintBoundary boundary = renderObject;
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       if (byteData == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -6191,20 +7029,22 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       }
       final Uint8List pngBytes = byteData.buffer.asUint8List();
 
-      await shareImageBytes(pngBytes,
-          filename:
-              'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png',
-          text: 'فاتورة محاسبية - العميل: ${widget.invoice.customerName}');
+      await shareImageBytes(
+        pngBytes,
+        filename:
+            'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png',
+        text: 'فاتورة محاسبية - العميل: ${widget.invoice.customerName}',
+      );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم مشاركة الفاتورة بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم مشاركة الفاتورة بنجاح')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في مشاركة الفاتورة: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في مشاركة الفاتورة: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSharing = false);
@@ -6231,7 +7071,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               key: _invoiceKey,
               child: Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -6241,48 +7082,68 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                       if (widget.invoice.logoBytes != null) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(widget.invoice.logoBytes!,
-                              height: 100, fit: BoxFit.contain),
+                          child: Image.memory(
+                            widget.invoice.logoBytes!,
+                            height: 100,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         const SizedBox(height: 16),
                       ],
-                      const Text('فاتورة محاسبية',
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'فاتورة محاسبية',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('رقم المتجر: ${widget.invoice.storePhone}',
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.grey)),
+                      Text(
+                        'رقم المتجر: ${widget.invoice.storePhone}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8)),
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text('بيانات الزبون',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Text(
+                              'بيانات الزبون',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Text('الاسم: ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'الاسم: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 Expanded(
-                                    child: Text(widget.invoice.customerName)),
+                                  child: Text(widget.invoice.customerName),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                const Text('الجوال: ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'الجوال: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 Expanded(
-                                    child: Text(widget.invoice.customerPhone)),
+                                  child: Text(widget.invoice.customerPhone),
+                                ),
                               ],
                             ),
                             if (widget.invoice.customerAddress.isNotEmpty) ...[
@@ -6290,31 +7151,40 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('العنوان: ',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
+                                  const Text(
+                                    'العنوان: ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   Expanded(
-                                      child:
-                                          Text(widget.invoice.customerAddress)),
+                                    child: Text(widget.invoice.customerAddress),
+                                  ),
                                 ],
                               ),
                             ],
                             if (widget.invoice.notes != null &&
                                 widget.invoice.notes!.isNotEmpty) ...[
                               const SizedBox(height: 6),
-                              const Text('ملاحظات الفاتورة:',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.red)),
-                              Text(widget.invoice.notes!,
-                                  style: const TextStyle(color: Colors.red)),
+                              const Text(
+                                'ملاحظات الفاتورة:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              Text(
+                                widget.invoice.notes!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
                             ],
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                const Text('التاريخ: ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'التاريخ: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 Expanded(
                                   child: Text(
                                     '${widget.invoice.createdAt.day.toString().padLeft(2, '0')}/${widget.invoice.createdAt.month.toString().padLeft(2, '0')}/${widget.invoice.createdAt.year}',
@@ -6326,9 +7196,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text('المنتجات',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text(
+                        'المنتجات',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Table(
                         border: TableBorder.all(color: Colors.grey.shade300),
@@ -6341,38 +7215,44 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                         },
                         children: [
                           TableRow(
-                            decoration:
-                                BoxDecoration(color: Colors.grey.shade200),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                            ),
                             children: const [
                               Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Text('#',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  '#',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                               Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Text('المنتج',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  'المنتج',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                               Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Text('السعر',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  'السعر',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                               Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Text('الكمية',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  'الكمية',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                               Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Text('المجموع',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  'المجموع',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ),
@@ -6396,10 +7276,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                         if (item.note != null &&
                                             item.note!.isNotEmpty) ...[
                                           const SizedBox(height: 4),
-                                          Text(item.note!,
-                                              style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey)),
+                                          Text(
+                                            item.note!,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
                                         ],
                                       ],
                                     ),
@@ -6435,9 +7318,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('الإجمالي قبل الخصم',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'الإجمالي قبل الخصم',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 Text(widget.invoice.total.toStringAsFixed(0)),
                               ],
                             ),
@@ -6447,14 +7331,17 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('الخصم',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.red)),
+                                  const Text(
+                                    'الخصم',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                    ),
+                                  ),
                                   Text(
-                                      '- ${widget.invoice.discount.toStringAsFixed(0)}',
-                                      style:
-                                          const TextStyle(color: Colors.red)),
+                                    '- ${widget.invoice.discount.toStringAsFixed(0)}',
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -6462,19 +7349,23 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('الإجمالي بعد الخصم',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
+                                const Text(
+                                  'الإجمالي بعد الخصم',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                                 Text(
                                   (widget.invoice.total -
                                           widget.invoice.discount)
                                       .clamp(0, double.infinity)
                                       .toStringAsFixed(0),
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: Colors.blue),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Colors.blue,
+                                  ),
                                 ),
                               ],
                             ),
@@ -6496,10 +7387,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Icon(Icons.share),
-                    label:
-                        Text(_isSharing ? 'جاري المشاركة...' : 'مشاركة كصورة'),
+                    label: Text(
+                      _isSharing ? 'جاري المشاركة...' : 'مشاركة كصورة',
+                    ),
                     onPressed: _isSharing ? null : _shareInvoiceAsImage,
                   ),
                 ),
@@ -6516,8 +7411,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             const SizedBox(height: 12),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              style:
-                  FilledButton.styleFrom(backgroundColor: Colors.grey.shade600),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.grey.shade600,
+              ),
               child: const Text('إغلاق'),
             ),
           ],
@@ -6582,22 +7478,24 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
 
           final createdAt =
               DateTime.tryParse(map['created_at']?.toString() ?? '') ??
-                  DateTime.now();
+              DateTime.now();
           final discount = (map['discount'] is num)
               ? (map['discount'] as num).toDouble()
               : double.tryParse(map['discount']?.toString() ?? '') ?? 0;
 
-          invoices.add(Invoice(
-            customerName: map['customer_name']?.toString() ?? '',
-            customerPhone: map['customer_phone']?.toString() ?? '',
-            customerAddress: map['customer_address']?.toString() ?? '',
-            storePhone: map['store_phone']?.toString() ?? '',
-            createdAt: createdAt,
-            items: items,
-            discount: discount,
-            id: map['id'],
-            invoiceNumber: map['invoice_number']?.toString(),
-          ));
+          invoices.add(
+            Invoice(
+              customerName: map['customer_name']?.toString() ?? '',
+              customerPhone: map['customer_phone']?.toString() ?? '',
+              customerAddress: map['customer_address']?.toString() ?? '',
+              storePhone: map['store_phone']?.toString() ?? '',
+              createdAt: createdAt,
+              items: items,
+              discount: discount,
+              id: map['id'],
+              invoiceNumber: map['invoice_number']?.toString(),
+            ),
+          );
         } catch (e) {
           debugPrint('parse invoice failed: $e');
         }
@@ -6625,7 +7523,8 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
           }
           if (snapshot.hasError) {
             return Center(
-                child: Text('خطأ في جلب الفواتير: ${snapshot.error}'));
+              child: Text('خطأ في جلب الفواتير: ${snapshot.error}'),
+            );
           }
           final invoices = snapshot.data ?? [];
           final query = _searchController.text.trim().toLowerCase();
@@ -6661,7 +7560,8 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
                     final invoice = filtered[index];
                     return Card(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       elevation: 2,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -6671,31 +7571,42 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('فاتورة ${index + 1}',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
                                 Text(
-                                    '${invoice.createdAt.day.toString().padLeft(2, '0')}/${invoice.createdAt.month.toString().padLeft(2, '0')}/${invoice.createdAt.year}',
-                                    style: const TextStyle(color: Colors.grey)),
+                                  'فاتورة ${index + 1}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  '${invoice.createdAt.day.toString().padLeft(2, '0')}/${invoice.createdAt.month.toString().padLeft(2, '0')}/${invoice.createdAt.year}',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Text(
-                                'الزبون: ${invoice.customerName} | الجوال: ${invoice.customerPhone}'),
+                              'الزبون: ${invoice.customerName} | الجوال: ${invoice.customerPhone}',
+                            ),
                             const SizedBox(height: 6),
                             if (invoice.customerAddress.isNotEmpty)
-                              Text('العنوان: ${invoice.customerAddress}',
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 13)),
+                              Text(
+                                'العنوان: ${invoice.customerAddress}',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              ),
                             if (invoice.customerAddress.isNotEmpty)
                               const SizedBox(height: 6),
                             Text('رقم المتجر: ${invoice.storePhone}'),
                             const SizedBox(height: 12),
                             Text(
-                                'عدد المنتجات: ${invoice.items.length} • إجمالي: ${invoice.total.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                              'عدد المنتجات: ${invoice.items.length} • إجمالي: ${invoice.total.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -6710,9 +7621,11 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
                                   icon: const Icon(Icons.share),
                                   onPressed: () {
                                     Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                            builder: (_) => InvoiceDetailPage(
-                                                invoice: invoice)));
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            InvoiceDetailPage(invoice: invoice),
+                                      ),
+                                    );
                                   },
                                 ),
                               ],
@@ -6738,8 +7651,9 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
     final nameCtrl = TextEditingController(text: invoice.customerName);
     final phoneCtrl = TextEditingController(text: invoice.customerPhone);
     final addrCtrl = TextEditingController(text: invoice.customerAddress);
-    final discountCtrl =
-        TextEditingController(text: invoice.discount.toStringAsFixed(0));
+    final discountCtrl = TextEditingController(
+      text: invoice.discount.toStringAsFixed(0),
+    );
 
     await showDialog<void>(
       context: context,
@@ -6750,33 +7664,39 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'اسم الزبون')),
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'اسم الزبون'),
+              ),
               TextField(
-                  controller: phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'جوال الزبون')),
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'جوال الزبون'),
+              ),
               TextField(
-                  controller: addrCtrl,
-                  decoration: const InputDecoration(labelText: 'عنوان الزبون')),
+                controller: addrCtrl,
+                decoration: const InputDecoration(labelText: 'عنوان الزبون'),
+              ),
               TextField(
-                  controller: discountCtrl,
-                  decoration: const InputDecoration(labelText: 'الخصم')),
+                controller: discountCtrl,
+                decoration: const InputDecoration(labelText: 'الخصم'),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
               await _updateInvoiceOnServer(
-                  invoice,
-                  nameCtrl.text.trim(),
-                  phoneCtrl.text.trim(),
-                  addrCtrl.text.trim(),
-                  double.tryParse(discountCtrl.text) ?? 0);
+                invoice,
+                nameCtrl.text.trim(),
+                phoneCtrl.text.trim(),
+                addrCtrl.text.trim(),
+                double.tryParse(discountCtrl.text) ?? 0,
+              );
             },
             child: const Text('حفظ'),
           ),
@@ -6785,8 +7705,13 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
     );
   }
 
-  Future<void> _updateInvoiceOnServer(Invoice invoice, String name,
-      String phone, String address, double discount) async {
+  Future<void> _updateInvoiceOnServer(
+    Invoice invoice,
+    String name,
+    String phone,
+    String address,
+    double discount,
+  ) async {
     final query = supabase.from('invoices').update({
       'customer_name': name,
       'customer_phone': phone,
@@ -6802,23 +7727,26 @@ class _AllInvoicesPageState extends State<AllInvoicesPage> {
       query.eq('invoice_number', invoiceNumber);
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('لا يمكن تحديث الفاتورة (معرف غير متاح)')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكن تحديث الفاتورة (معرف غير متاح)')),
+      );
       return;
     }
 
     try {
       await query;
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('تم تحديث الفاتورة')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تحديث الفاتورة')));
       setState(() {
         _invoicesFuture = _loadInvoices();
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('فشل تحديث الفاتورة: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل تحديث الفاتورة: $e')));
     }
   }
 }
@@ -6853,10 +7781,10 @@ class OrderItem {
   double get total => price * quantity;
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'price': price.toInt(),
-        'quantity': quantity,
-        'total': total.toInt(),
-        if (note != null && note!.isNotEmpty) 'note': note,
-      };
+    'name': name,
+    'price': price.toInt(),
+    'quantity': quantity,
+    'total': total.toInt(),
+    if (note != null && note!.isNotEmpty) 'note': note,
+  };
 }
