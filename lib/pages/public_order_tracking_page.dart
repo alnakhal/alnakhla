@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/customer_orders_supabase_service.dart';
 
@@ -16,6 +17,7 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
   final _orderNumberController = TextEditingController();
   final _ordersService = CustomerOrdersSupabaseService();
   Map<String, dynamic>? _order;
+  RealtimeChannel? _trackingChannel;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -31,6 +33,10 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
 
   @override
   void dispose() {
+    final channel = _trackingChannel;
+    if (channel != null) {
+      _ordersService.removeChannel(channel);
+    }
     _orderNumberController.dispose();
     super.dispose();
   }
@@ -38,6 +44,7 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
   Future<void> _loadOrder(String value) async {
     final orderNumber = value.trim().toUpperCase();
     if (orderNumber.isEmpty) {
+      _clearTrackingChannel();
       setState(() {
         _order = null;
         _errorMessage = 'أدخل رقم الطلب';
@@ -56,8 +63,10 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
         _order = order;
         _errorMessage = order == null ? 'لم يتم العثور على هذا الطلب' : null;
       });
+      _subscribeToOrder(orderNumber);
     } catch (error) {
       if (!mounted) return;
+      _clearTrackingChannel();
       setState(() {
         _order = null;
         _errorMessage = 'تعذر تحميل حالة الطلب: $error';
@@ -65,6 +74,28 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _clearTrackingChannel() {
+    final channel = _trackingChannel;
+    if (channel != null) {
+      _ordersService.removeChannel(channel);
+      _trackingChannel = null;
+    }
+  }
+
+  void _subscribeToOrder(String orderNumber) {
+    _clearTrackingChannel();
+    if (_order == null) {
+      return;
+    }
+    _trackingChannel = _ordersService.subscribeToPublicOrderTracking(
+      orderNumber,
+      (updatedOrder) {
+        if (!mounted) return;
+        setState(() => _order = {...?_order, ...updatedOrder});
+      },
+    );
   }
 
   String _statusArabic(String? status) {
@@ -202,7 +233,9 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                if (_formatDate(_order!['updated_at']).isNotEmpty)
+                                if (_formatDate(
+                                  _order!['updated_at'],
+                                ).isNotEmpty)
                                   Text(
                                     'آخر تحديث: ${_formatDate(_order!['updated_at'])}',
                                     textAlign: TextAlign.center,

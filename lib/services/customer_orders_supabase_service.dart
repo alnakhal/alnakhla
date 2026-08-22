@@ -67,7 +67,10 @@ class CustomerOrdersSupabaseService {
     final user = _requireUser();
     final rows = await _client
         .from('customer_orders')
-        .update({'status': newStatus, 'updated_at': DateTime.now().toIso8601String()})
+        .update({
+          'status': newStatus,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
         .eq('order_number', orderNumber)
         .eq('user_id', user.id)
         .select('id');
@@ -138,5 +141,28 @@ class CustomerOrdersSupabaseService {
     }
     if (response is Map<String, dynamic>) return response;
     return null;
+  }
+
+  RealtimeChannel subscribeToPublicOrderTracking(
+    String orderNumber,
+    void Function(Map<String, dynamic> order) onUpdate,
+  ) {
+    final channel = _client.channel('public-order-tracking:$orderNumber');
+    channel
+        .onBroadcast(
+          event: 'status_changed',
+          callback: (payload) {
+            final record = payload['record'];
+            if (record is Map) {
+              onUpdate(Map<String, dynamic>.from(record));
+            }
+          },
+        )
+        .subscribe();
+    return channel;
+  }
+
+  Future<void> removeChannel(RealtimeChannel channel) async {
+    await _client.removeChannel(channel);
   }
 }
