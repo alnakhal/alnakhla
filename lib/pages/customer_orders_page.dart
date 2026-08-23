@@ -2014,38 +2014,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           ),
                                         ),
                                         Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: Material(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.35,
-                                            ),
-                                            shape: const CircleBorder(),
-                                            child: IconButton(
-                                              tooltip:
-                                                  _favoriteProductIds.contains(
-                                                    product.id,
-                                                  )
-                                                  ? 'إزالة من المفضلة'
-                                                  : 'إضافة إلى المفضلة',
-                                              icon: Icon(
-                                                _favoriteProductIds.contains(
-                                                      product.id,
-                                                    )
-                                                    ? Icons.favorite
-                                                    : Icons.favorite_border,
-                                                color:
-                                                    _favoriteProductIds
-                                                        .contains(product.id)
-                                                    ? Colors.redAccent
-                                                    : Colors.white,
-                                              ),
-                                              onPressed: () =>
-                                                  _toggleFavorite(product),
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
                                           bottom: 0,
                                           left: 0,
                                           right: 0,
@@ -2177,6 +2145,42 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                             ),
                                                           ),
                                                       ],
+                                                    ),
+                                                    Material(
+                                                      color: colorScheme
+                                                          .surfaceContainerHighest,
+                                                      shape:
+                                                          const CircleBorder(),
+                                                      child: IconButton(
+                                                        tooltip:
+                                                            _favoriteProductIds
+                                                                .contains(
+                                                                  product.id,
+                                                                )
+                                                            ? 'إزالة من المفضلة'
+                                                            : 'إضافة إلى المفضلة',
+                                                        icon: Icon(
+                                                          _favoriteProductIds
+                                                                  .contains(
+                                                                    product.id,
+                                                                  )
+                                                              ? Icons.favorite
+                                                              : Icons
+                                                                    .favorite_border,
+                                                          color:
+                                                              _favoriteProductIds
+                                                                  .contains(
+                                                                    product.id,
+                                                                  )
+                                                              ? Colors.redAccent
+                                                              : colorScheme
+                                                                    .onSurfaceVariant,
+                                                        ),
+                                                        onPressed: () =>
+                                                            _toggleFavorite(
+                                                              product,
+                                                            ),
+                                                      ),
                                                     ),
                                                     AnimatedBuilder(
                                                       animation:
