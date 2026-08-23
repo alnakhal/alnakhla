@@ -702,8 +702,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         text.writeln('ملاحظات: $orderNote');
       }
       text.writeln('');
+        final phoneDigits = customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+        final phoneLast4 = phoneDigits.length >= 4
+            ? phoneDigits.substring(phoneDigits.length - 4)
+            : phoneDigits;
         final trackingUrl =
-          '$storeShareBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}';
+          '$storeShareBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}&phone=${Uri.encodeQueryComponent(phoneLast4)}';
         text.writeln('يمكنك متابعة حالة طلبك عبر الرابط:');
         text.writeln(trackingUrl);
 

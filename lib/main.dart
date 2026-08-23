@@ -165,11 +165,15 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   final slug = uri.queryParameters['slug'];
   final userId = uri.queryParameters['user_id'];
   final orderNumber = uri.queryParameters['order'];
+  final phoneLast4 = uri.queryParameters['phone'];
 
   if ((path == '/track-order' || path == '/order-tracking') &&
       orderNumber != null) {
     return MaterialPageRoute(
-      builder: (_) => PublicOrderTrackingPage(initialOrderNumber: orderNumber),
+      builder: (_) => PublicOrderTrackingPage(
+        initialOrderNumber: orderNumber,
+        initialPhoneLast4: phoneLast4,
+      ),
     );
   }
 

@@ -131,10 +131,14 @@ class CustomerOrdersSupabaseService {
 
   Future<Map<String, dynamic>?> getPublicOrderTracking(
     String orderNumber,
+    String phoneLast4,
   ) async {
     final response = await _client.rpc(
       'get_public_order_tracking',
-      params: {'p_order_number': orderNumber},
+      params: {
+        'p_order_number': orderNumber,
+        'p_phone_last4': phoneLast4,
+      },
     );
     if (response is List && response.isNotEmpty) {
       return Map<String, dynamic>.from(response.first as Map);

@@ -175,3 +175,35 @@ const orderStatuses = [
   'cancelled_company',
   'returned',
 ];
+
+String orderStatusArabic(String status) {
+  switch (status) {
+    case 'pending':
+      return 'قيد التجهيز';
+    case 'confirmed':
+      return 'مؤكد';
+    case 'shipped':
+      return 'قيد الشحن';
+    case 'delivered':
+      return 'تم الاستلام';
+    case 'cancelled':
+    case 'cancelled_company':
+      return 'ملغي';
+    case 'returned':
+      return 'راجع إلى المخزن';
+    default:
+      return status;
+  }
+}
+
+bool canTransitionOrderStatus(String currentStatus, String nextStatus) {
+  const allowedTransitions = {
+    'pending': {'confirmed', 'cancelled_company'},
+    'confirmed': {'shipped', 'cancelled_company'},
+    'shipped': {'delivered', 'returned'},
+    'delivered': <String>{},
+    'cancelled_company': <String>{},
+    'returned': <String>{},
+  };
+  return allowedTransitions[currentStatus]?.contains(nextStatus) ?? false;
+}
