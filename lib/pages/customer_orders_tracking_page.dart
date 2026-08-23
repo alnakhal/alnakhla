@@ -162,6 +162,8 @@ class _CustomerOrdersTrackingPageState
               name: 'order-${order.orderNumber}.png',
             ),
           ],
+          text:
+              'تفاصيل الطلب ${order.orderNumber}\n\nيمكنك تتبع طلبك من هذا الرابط:\n${_trackingUrl(order.orderNumber)}',
           subject: 'تفاصيل الطلب ${order.orderNumber}',
         ),
       );
