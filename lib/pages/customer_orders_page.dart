@@ -8,7 +8,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../main.dart'
-  show LoginPage, OwnerDashboardPage, ProductManagementPage, storeShareBaseUrl;
+    show
+        LoginPage,
+        OwnerDashboardPage,
+        ProductManagementPage,
+        storeShareBaseUrl;
 import '../models/product.dart';
 import '../models/customer_order_model.dart';
 import '../services/product_service.dart';
@@ -41,7 +45,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       TextEditingController();
   final TextEditingController _orderNoteController = TextEditingController();
   final PageController _sliderPageController = PageController();
-  final String _sortOption = 'الأحدث';
+  String _sortOption = 'الأحدث';
   String _selectedCategory = 'الكل';
   Set<int> _favoriteProductIds = <int>{};
   bool _showFavoritesOnly = false;
@@ -294,6 +298,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
             label,
             style: TextStyle(fontSize: 12, color: Colors.brown.shade800),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustStrip() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildTrustChip(Icons.local_shipping_outlined, 'توصيل موثوق'),
+          const SizedBox(width: 8),
+          _buildTrustChip(Icons.payments_outlined, 'الدفع عند الاستلام'),
+          const SizedBox(width: 8),
+          _buildTrustChip(Icons.support_agent_outlined, 'دعم سريع'),
         ],
       ),
     );
@@ -702,14 +721,14 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         text.writeln('ملاحظات: $orderNote');
       }
       text.writeln('');
-        final phoneDigits = customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
-        final phoneLast4 = phoneDigits.length >= 4
-            ? phoneDigits.substring(phoneDigits.length - 4)
-            : phoneDigits;
-        final trackingUrl =
+      final phoneDigits = customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+      final phoneLast4 = phoneDigits.length >= 4
+          ? phoneDigits.substring(phoneDigits.length - 4)
+          : phoneDigits;
+      final trackingUrl =
           '$storeShareBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}&phone=${Uri.encodeQueryComponent(phoneLast4)}';
-        text.writeln('يمكنك متابعة حالة طلبك عبر الرابط:');
-        text.writeln(trackingUrl);
+      text.writeln('يمكنك متابعة حالة طلبك عبر الرابط:');
+      text.writeln(trackingUrl);
 
       final url = Uri.parse(
         'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(text.toString())}',
@@ -1275,762 +1294,825 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           ),
         ],
       ),
-      body: FutureBuilder<List<Product>>(
-        future: _productsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'),
-            );
-          }
-          final products = snapshot.data ?? [];
-          _lastProducts = products;
-          final authUser = Supabase.instance.client.auth.currentUser;
-          if (products.isEmpty) {
-            final noStoreLink =
-                widget.storeSlug == null &&
-                widget.storeUserId == null &&
-                authUser == null;
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  noStoreLink
-                      ? 'استخدم رابط المتجر المخصص لعرض المنتجات، أو سجّل دخول صاحب المتجر.'
-                      : authUser == null
-                      ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
-                      : 'لا يوجد منتجات في المتجر حالياً.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: FutureBuilder<List<Product>>(
+          future: _productsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('خطأ في تحميل المنتجات: ${snapshot.error}'),
+              );
+            }
+            final products = snapshot.data ?? [];
+            _lastProducts = products;
+            final authUser = Supabase.instance.client.auth.currentUser;
+            if (products.isEmpty) {
+              final noStoreLink =
+                  widget.storeSlug == null &&
+                  widget.storeUserId == null &&
+                  authUser == null;
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    noStoreLink
+                        ? 'استخدم رابط المتجر المخصص لعرض المنتجات، أو سجّل دخول صاحب المتجر.'
+                        : authUser == null
+                        ? 'لا يوجد منتجات في المتجر حالياً أو لم يتم العثور على المتجر.'
+                        : 'لا يوجد منتجات في المتجر حالياً.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final query = _searchController.text.trim().toLowerCase();
-          final filtered = products.where((product) {
-            final matchesQuery =
-                query.isEmpty ||
-                product.name.toLowerCase().contains(query) ||
-                product.description.toLowerCase().contains(query);
-            final matchesCategory =
-                _selectedCategory == 'الكل' ||
-                (product.category ?? 'غير مصنف') == _selectedCategory;
-            final matchesFavorites =
-                !_showFavoritesOnly || _favoriteProductIds.contains(product.id);
-            return matchesQuery && matchesCategory && matchesFavorites;
-          }).toList();
+            final query = _searchController.text.trim().toLowerCase();
+            final filtered = products.where((product) {
+              final matchesQuery =
+                  query.isEmpty ||
+                  product.name.toLowerCase().contains(query) ||
+                  product.description.toLowerCase().contains(query);
+              final matchesCategory =
+                  _selectedCategory == 'الكل' ||
+                  (product.category ?? 'غير مصنف') == _selectedCategory;
+              final matchesFavorites =
+                  !_showFavoritesOnly ||
+                  _favoriteProductIds.contains(product.id);
+              return matchesQuery && matchesCategory && matchesFavorites;
+            }).toList();
 
-          return Padding(
-            padding: EdgeInsets.all(pagePadding),
-            child: RefreshIndicator(
-              onRefresh: _refreshProducts,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_sliderImageUrls.isNotEmpty) ...[
-                      if (_canEditSlider) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: () async {
-                                await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const SliderImagesSettingsPage(),
-                                  ),
-                                );
-                                _loadSliderImages();
-                              },
-                              icon: const Icon(Icons.photo_library_outlined),
-                              label: const Text('تعديل صور السلايدر'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        color: Colors.brown.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Padding(
+              padding: EdgeInsets.all(pagePadding),
+              child: RefreshIndicator(
+                onRefresh: _refreshProducts,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_sliderImageUrls.isNotEmpty) ...[
+                        if (_canEditSlider) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'شارك رابط المتجر',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.brown.shade800,
-                                      ),
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const SliderImagesSettingsPage(),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'https://alnakhal.github.io/alnakhla/',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  FilledButton.icon(
-                                    onPressed: () async {
-                                      await Share.share(
-                                        'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.share_outlined,
-                                      size: 18,
-                                    ),
-                                    label: const Text('شارك'),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.brown.shade700,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              customer_orders_tracking.CustomerOrdersTrackingPage(
-                                                loginPageBuilder: (_) =>
-                                                    const LoginPage(),
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.receipt_long_outlined,
-                                    ),
-                                    label: const Text('الطلبات'),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const ProductManagementPage(),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.inventory_2_outlined,
-                                    ),
-                                    label: const Text('المخزن'),
-                                  ),
-                                ],
+                                  );
+                                  _loadSliderImages();
+                                },
+                                icon: const Icon(Icons.photo_library_outlined),
+                                label: const Text('تعديل صور السلايدر'),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildImageSlider(),
-                      const SizedBox(height: 20),
-                    ],
-                    if (_showWelcomeBanner)
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        color: Colors.brown.shade50,
-                        margin: EdgeInsets.zero,
-                        child: Padding(
-                          padding: EdgeInsets.all(pagePadding),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.info_outline,
-                                  color: Colors.brown.shade700,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'تجربة طلب واضحة وسهلة',
-                                      style: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    if (_showWelcomeDescription)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 6),
-                                        child: Text(
-                                          'اضغط على المنتج لمشاهدة التفاصيل، ثم استخدم زر إضافة إلى السلة لإتمام الطلب بسرعة.',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade700,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (_showWelcomeDescription)
-                                IconButton(
-                                  icon: const Icon(Icons.close, size: 20),
-                                  tooltip: 'إزالة الشرح',
-                                  onPressed: () {
-                                    setState(() {
-                                      _showWelcomeDescription = false;
-                                    });
-                                  },
-                                ),
-                            ],
+                          const SizedBox(height: 10),
+                        ],
+                        Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
                           ),
-                        ),
-                      ),
-                    if (_showWelcomeBanner) const SizedBox(height: 16),
-                    if (_selectedCount > 0) ...[
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        color: colorScheme.secondaryContainer.withValues(
-                          alpha: 0.16,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: pagePadding,
-                            vertical: 14,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.shopping_cart,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'السلة تحتوي على $_selectedCount منتج. اضغط أيقونة العربة لمراجعة الطلب وإتمامه.',
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSecondaryContainer,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    Text(
-                      'التصنيفات',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: ['غير مصنف', ...productCategories]
-                            .map(
-                              (category) => Padding(
-                                padding: const EdgeInsetsDirectional.only(
-                                  end: 8,
-                                ),
-                                child: ChoiceChip(
-                                  label: Text(category),
-                                  selected: _selectedCategory == category,
-                                  onSelected: (_) => setState(
-                                    () => _selectedCategory = category,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    FilterChip(
-                      avatar: const Icon(Icons.favorite_border, size: 18),
-                      label: const Text('المفضلة فقط'),
-                      selected: _showFavoritesOnly,
-                      onSelected: (selected) {
-                        setState(() => _showFavoritesOnly = selected);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (filtered.isEmpty)
-                      SizedBox(
-                        height: 300,
-                        child: Center(
-                          child: Text(
-                            'لا توجد منتجات تطابق البحث.',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      )
-                    else
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final sortedProducts = _sortProducts(filtered);
-                          final crossAxisCount = constraints.maxWidth > 500
-                              ? 2
-                              : 1;
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: cardSpacing,
-                                  mainAxisSpacing: cardSpacing,
-                                  childAspectRatio: productCardAspectRatio,
-                                ),
-                            itemCount: sortedProducts.length,
-                            itemBuilder: (context, index) {
-                              final product = sortedProducts[index];
-                              final quantity =
-                                  _selectedQuantities[product.id] ?? 0;
-                              final available = product.remainingQty;
-                              return Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                elevation: 2,
-                                clipBehavior: Clip.antiAlias,
-                                child: InkWell(
-                                  onTap: () => _showProductDetails(product),
-                                  child: Stack(
+                          color: Colors.brown.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Positioned.fill(
-                                        child: product.imageUrl != null
-                                            ? Image.network(
-                                                product.imageUrl!,
-                                                fit: BoxFit.cover,
-                                                loadingBuilder:
-                                                    (
-                                                      context,
-                                                      child,
-                                                      loadingProgress,
-                                                    ) {
-                                                      if (loadingProgress ==
-                                                          null) {
-                                                        return child;
-                                                      }
-                                                      return Container(
-                                                        color: Colors
-                                                            .grey
-                                                            .shade200,
-                                                        child: const Center(
-                                                          child:
-                                                              CircularProgressIndicator(),
-                                                        ),
-                                                      );
-                                                    },
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) => Container(
-                                                      color:
-                                                          Colors.grey.shade200,
-                                                      child: const Center(
-                                                        child: Icon(
-                                                          Icons
-                                                              .image_not_supported,
-                                                          size: 60,
-                                                        ),
-                                                      ),
-                                                    ),
-                                              )
-                                            : Container(
-                                                color: Colors.grey.shade200,
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.image_not_supported,
-                                                    size: 60,
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                      Positioned.fill(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Colors.transparent,
-                                                Colors.black.withValues(
-                                                  alpha: 0.4,
-                                                ),
-                                              ],
-                                              stops: const [0.45, 1.0],
-                                            ),
-                                          ),
+                                      Text(
+                                        'شارك رابط المتجر',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.brown.shade800,
                                         ),
                                       ),
-                                      Positioned(
-                                        top: 12,
-                                        left: 12,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: available > 0
-                                                ? available <= 5
-                                                      ? colorScheme
-                                                            .errorContainer
-                                                            .withValues(
-                                                              alpha: 0.9,
-                                                            )
-                                                      : colorScheme
-                                                            .primaryContainer
-                                                            .withValues(
-                                                              alpha: 0.9,
-                                                            )
-                                                : colorScheme.error.withValues(
-                                                    alpha: 0.85,
-                                                  ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            available > 0
-                                                ? available <= 5
-                                                      ? 'كمية محدودة'
-                                                      : 'متوفر'
-                                                : 'منفد',
-                                            style: textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: colorScheme.onPrimary,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'https://alnakhal.github.io/alnakhla/',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue.shade600,
                                         ),
-                                      ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Material(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.35,
-                                          ),
-                                          shape: const CircleBorder(),
-                                          child: IconButton(
-                                            tooltip:
-                                                _favoriteProductIds.contains(
-                                                  product.id,
-                                                )
-                                                ? 'إزالة من المفضلة'
-                                                : 'إضافة إلى المفضلة',
-                                            icon: Icon(
-                                              _favoriteProductIds.contains(
-                                                    product.id,
-                                                  )
-                                                  ? Icons.favorite
-                                                  : Icons.favorite_border,
-                                              color:
-                                                  _favoriteProductIds.contains(
-                                                    product.id,
-                                                  )
-                                                  ? Colors.redAccent
-                                                  : Colors.white,
-                                            ),
-                                            onPressed: () =>
-                                                _toggleFavorite(product),
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Colors.transparent,
-                                                Colors.black.withValues(
-                                                  alpha: 0.85,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                product.name,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        '${product.price.toStringAsFixed(0)} د.ع',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 3),
-                                                      Text(
-                                                        '/قطعة',
-                                                        style: textTheme
-                                                            .bodySmall
-                                                            ?.copyWith(
-                                                              color: colorScheme
-                                                                  .onSurfaceVariant,
-                                                              fontSize: 11,
-                                                            ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  AnimatedBuilder(
-                                                    animation:
-                                                        _addButtonAnimationController,
-                                                    builder: (context, child) {
-                                                      return DecoratedBox(
-                                                        decoration: BoxDecoration(
-                                                          gradient:
-                                                              available > 0
-                                                              ? LinearGradient(
-                                                                  begin: Alignment
-                                                                      .topLeft,
-                                                                  end: Alignment
-                                                                      .bottomRight,
-                                                                  transform: GradientRotation(
-                                                                    _addButtonAnimationController
-                                                                            .value *
-                                                                        math.pi *
-                                                                        2,
-                                                                  ),
-                                                                  colors: const [
-                                                                    Color(
-                                                                      0xFFFFB300,
-                                                                    ),
-                                                                    Color(
-                                                                      0xFFFF7043,
-                                                                    ),
-                                                                    Color(
-                                                                      0xFFEF5350,
-                                                                    ),
-                                                                    Color(
-                                                                      0xFFFFB300,
-                                                                    ),
-                                                                  ],
-                                                                )
-                                                              : null,
-                                                          color: available > 0
-                                                              ? null
-                                                              : Colors.grey,
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                14,
-                                                              ),
-                                                          boxShadow:
-                                                              available > 0
-                                                              ? [
-                                                                  BoxShadow(
-                                                                    color: Colors
-                                                                        .deepOrange
-                                                                        .withValues(
-                                                                          alpha:
-                                                                              0.42,
-                                                                        ),
-                                                                    blurRadius:
-                                                                        10,
-                                                                    spreadRadius:
-                                                                        1,
-                                                                  ),
-                                                                ]
-                                                              : null,
-                                                        ),
-                                                        child: FilledButton.icon(
-                                                          onPressed:
-                                                              available > 0
-                                                              ? () {
-                                                                  setState(() {
-                                                                    final next =
-                                                                        quantity +
-                                                                        1;
-                                                                    _selectedQuantities[product
-                                                                            .id] =
-                                                                        next;
-                                                                  });
-                                                                }
-                                                              : null,
-                                                          style: FilledButton.styleFrom(
-                                                            backgroundColor:
-                                                                Colors
-                                                                    .transparent,
-                                                            disabledBackgroundColor:
-                                                                Colors
-                                                                    .transparent,
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            minimumSize: Size(
-                                                              width > 700
-                                                                  ? 132
-                                                                  : 116,
-                                                              50,
-                                                            ),
-                                                            elevation: 0,
-                                                            shadowColor: Colors
-                                                                .transparent,
-                                                            padding:
-                                                                EdgeInsets.symmetric(
-                                                                  horizontal:
-                                                                      width >
-                                                                          700
-                                                                      ? 20
-                                                                      : 16,
-                                                                  vertical: 11,
-                                                                ),
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    14,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                          icon: Icon(
-                                                            Icons
-                                                                .add_shopping_cart,
-                                                            size: width > 700
-                                                                ? 22
-                                                                : 20,
-                                                          ),
-                                                          label: Text(
-                                                            'أضف',
-                                                            style: textTheme
-                                                                .labelLarge
-                                                                ?.copyWith(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize:
-                                                                      width >
-                                                                          700
-                                                                      ? 16
-                                                                      : 15,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                              if (quantity > 0) ...[
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'في السلة x$quantity',
-                                                  style: const TextStyle(
-                                                    color: Colors.white70,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 10,
-                                        right: 10,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.45,
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.zoom_in,
-                                            color: Colors.white,
-                                            size: 18,
-                                          ),
-                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
-                              );
+                                const SizedBox(width: 10),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    FilledButton.icon(
+                                      onPressed: () async {
+                                        await Share.share(
+                                          'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.share_outlined,
+                                        size: 18,
+                                      ),
+                                      label: const Text('شارك'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.brown.shade700,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                customer_orders_tracking.CustomerOrdersTrackingPage(
+                                                  loginPageBuilder: (_) =>
+                                                      const LoginPage(),
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.receipt_long_outlined,
+                                      ),
+                                      label: const Text('الطلبات'),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const ProductManagementPage(),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.inventory_2_outlined,
+                                      ),
+                                      label: const Text('المخزن'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildImageSlider(),
+                        const SizedBox(height: 12),
+                        _buildTrustStrip(),
+                        const SizedBox(height: 20),
+                      ],
+                      if (_showWelcomeBanner)
+                        Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          color: Colors.brown.shade50,
+                          margin: EdgeInsets.zero,
+                          child: Padding(
+                            padding: EdgeInsets.all(pagePadding),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.info_outline,
+                                    color: Colors.brown.shade700,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'تجربة طلب واضحة وسهلة',
+                                        style: textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (_showWelcomeDescription)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 6,
+                                          ),
+                                          child: Text(
+                                            'اضغط على المنتج لمشاهدة التفاصيل، ثم استخدم زر إضافة إلى السلة لإتمام الطلب بسرعة.',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (_showWelcomeDescription)
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 20),
+                                    tooltip: 'إزالة الشرح',
+                                    onPressed: () {
+                                      setState(() {
+                                        _showWelcomeDescription = false;
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (_showWelcomeBanner) const SizedBox(height: 16),
+                      if (_selectedCount > 0) ...[
+                        Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          color: colorScheme.secondaryContainer.withValues(
+                            alpha: 0.16,
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: pagePadding,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.shopping_cart,
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'السلة تحتوي على $_selectedCount منتج. اضغط أيقونة العربة لمراجعة الطلب وإتمامه.',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSecondaryContainer,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'منتجات المتجر',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          DropdownButton<String>(
+                            value: _sortOption,
+                            underline: const SizedBox.shrink(),
+                            icon: const Icon(Icons.swap_vert, size: 18),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'الأحدث',
+                                child: Text('الأحدث'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'السعر الأقل',
+                                child: Text('الأقل سعراً'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'السعر الأعلى',
+                                child: Text('الأعلى سعراً'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _sortOption = value);
+                              }
                             },
-                          );
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${filtered.length} منتج متاح',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'التصنيفات',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: ['غير مصنف', ...productCategories]
+                              .map(
+                                (category) => Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    end: 8,
+                                  ),
+                                  child: ChoiceChip(
+                                    label: Text(category),
+                                    selected: _selectedCategory == category,
+                                    onSelected: (_) => setState(
+                                      () => _selectedCategory = category,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      FilterChip(
+                        avatar: const Icon(Icons.favorite_border, size: 18),
+                        label: const Text('المفضلة فقط'),
+                        selected: _showFavoritesOnly,
+                        onSelected: (selected) {
+                          setState(() => _showFavoritesOnly = selected);
                         },
                       ),
-                  ],
+                      const SizedBox(height: 16),
+                      if (filtered.isEmpty)
+                        SizedBox(
+                          height: 300,
+                          child: Center(
+                            child: Text(
+                              'لا توجد منتجات تطابق البحث.',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        )
+                      else
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final sortedProducts = _sortProducts(filtered);
+                            final crossAxisCount = constraints.maxWidth > 500
+                                ? 2
+                                : 1;
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: cardSpacing,
+                                    mainAxisSpacing: cardSpacing,
+                                    childAspectRatio: productCardAspectRatio,
+                                  ),
+                              itemCount: sortedProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = sortedProducts[index];
+                                final quantity =
+                                    _selectedQuantities[product.id] ?? 0;
+                                final available = product.remainingQty;
+                                return Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  elevation: 2,
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: () => _showProductDetails(product),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: product.imageUrl != null
+                                              ? Image.network(
+                                                  product.imageUrl!,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder:
+                                                      (
+                                                        context,
+                                                        child,
+                                                        loadingProgress,
+                                                      ) {
+                                                        if (loadingProgress ==
+                                                            null) {
+                                                          return child;
+                                                        }
+                                                        return Container(
+                                                          color: Colors
+                                                              .grey
+                                                              .shade200,
+                                                          child: const Center(
+                                                            child:
+                                                                CircularProgressIndicator(),
+                                                          ),
+                                                        );
+                                                      },
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) => Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade200,
+                                                        child: const Center(
+                                                          child: Icon(
+                                                            Icons
+                                                                .image_not_supported,
+                                                            size: 60,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                )
+                                              : Container(
+                                                  color: Colors.grey.shade200,
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 60,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                        Positioned.fill(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black.withValues(
+                                                    alpha: 0.4,
+                                                  ),
+                                                ],
+                                                stops: const [0.45, 1.0],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 12,
+                                          left: 12,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: available > 0
+                                                  ? available <= 5
+                                                        ? colorScheme
+                                                              .errorContainer
+                                                              .withValues(
+                                                                alpha: 0.9,
+                                                              )
+                                                        : colorScheme
+                                                              .primaryContainer
+                                                              .withValues(
+                                                                alpha: 0.9,
+                                                              )
+                                                  : colorScheme.error
+                                                        .withValues(
+                                                          alpha: 0.85,
+                                                        ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              available > 0
+                                                  ? available <= 5
+                                                        ? 'كمية محدودة'
+                                                        : 'متوفر'
+                                                  : 'منفد',
+                                              style: textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        colorScheme.onPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Material(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.35,
+                                            ),
+                                            shape: const CircleBorder(),
+                                            child: IconButton(
+                                              tooltip:
+                                                  _favoriteProductIds.contains(
+                                                    product.id,
+                                                  )
+                                                  ? 'إزالة من المفضلة'
+                                                  : 'إضافة إلى المفضلة',
+                                              icon: Icon(
+                                                _favoriteProductIds.contains(
+                                                      product.id,
+                                                    )
+                                                    ? Icons.favorite
+                                                    : Icons.favorite_border,
+                                                color:
+                                                    _favoriteProductIds
+                                                        .contains(product.id)
+                                                    ? Colors.redAccent
+                                                    : Colors.white,
+                                              ),
+                                              onPressed: () =>
+                                                  _toggleFavorite(product),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black.withValues(
+                                                    alpha: 0.85,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  product.name,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.center,
+                                                  children: [
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          '${product.price.toStringAsFixed(0)} د.ع',
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 3,
+                                                        ),
+                                                        Text(
+                                                          '/قطعة',
+                                                          style: textTheme
+                                                              .bodySmall
+                                                              ?.copyWith(
+                                                                color: colorScheme
+                                                                    .onSurfaceVariant,
+                                                                fontSize: 11,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    AnimatedBuilder(
+                                                      animation:
+                                                          _addButtonAnimationController,
+                                                      builder: (context, child) {
+                                                        return DecoratedBox(
+                                                          decoration: BoxDecoration(
+                                                            gradient:
+                                                                available > 0
+                                                                ? LinearGradient(
+                                                                    begin: Alignment
+                                                                        .topLeft,
+                                                                    end: Alignment
+                                                                        .bottomRight,
+                                                                    transform: GradientRotation(
+                                                                      _addButtonAnimationController
+                                                                              .value *
+                                                                          math.pi *
+                                                                          2,
+                                                                    ),
+                                                                    colors: const [
+                                                                      Color(
+                                                                        0xFFFFB300,
+                                                                      ),
+                                                                      Color(
+                                                                        0xFFFF7043,
+                                                                      ),
+                                                                      Color(
+                                                                        0xFFEF5350,
+                                                                      ),
+                                                                      Color(
+                                                                        0xFFFFB300,
+                                                                      ),
+                                                                    ],
+                                                                  )
+                                                                : null,
+                                                            color: available > 0
+                                                                ? null
+                                                                : Colors.grey,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  14,
+                                                                ),
+                                                            boxShadow:
+                                                                available > 0
+                                                                ? [
+                                                                    BoxShadow(
+                                                                      color: Colors
+                                                                          .deepOrange
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.42,
+                                                                          ),
+                                                                      blurRadius:
+                                                                          10,
+                                                                      spreadRadius:
+                                                                          1,
+                                                                    ),
+                                                                  ]
+                                                                : null,
+                                                          ),
+                                                          child: FilledButton.icon(
+                                                            onPressed:
+                                                                available > 0
+                                                                ? () {
+                                                                    setState(() {
+                                                                      final next =
+                                                                          quantity +
+                                                                          1;
+                                                                      _selectedQuantities[product
+                                                                              .id] =
+                                                                          next;
+                                                                    });
+                                                                  }
+                                                                : null,
+                                                            style: FilledButton.styleFrom(
+                                                              backgroundColor:
+                                                                  Colors
+                                                                      .transparent,
+                                                              disabledBackgroundColor:
+                                                                  Colors
+                                                                      .transparent,
+                                                              foregroundColor:
+                                                                  Colors.white,
+                                                              minimumSize: Size(
+                                                                width > 700
+                                                                    ? 132
+                                                                    : 116,
+                                                                50,
+                                                              ),
+                                                              elevation: 0,
+                                                              shadowColor: Colors
+                                                                  .transparent,
+                                                              padding:
+                                                                  EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        width >
+                                                                            700
+                                                                        ? 20
+                                                                        : 16,
+                                                                    vertical:
+                                                                        11,
+                                                                  ),
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      14,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                            icon: Icon(
+                                                              Icons
+                                                                  .add_shopping_cart,
+                                                              size: width > 700
+                                                                  ? 22
+                                                                  : 20,
+                                                            ),
+                                                            label: Text(
+                                                              'أضف',
+                                                              style: textTheme
+                                                                  .labelLarge
+                                                                  ?.copyWith(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        width >
+                                                                            700
+                                                                        ? 16
+                                                                        : 15,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                                if (quantity > 0) ...[
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    'في السلة x$quantity',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.45,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.zoom_in,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
