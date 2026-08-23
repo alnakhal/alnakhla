@@ -12,6 +12,7 @@ import '../main.dart'
     show
         LoginPage,
         OwnerDashboardPage,
+        AddProductPage,
         ProductManagementPage,
         storeShareBaseUrl;
 import '../models/product.dart';
@@ -1364,6 +1365,17 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
               ];
             },
           ),
+          if (Supabase.instance.client.auth.currentUser != null)
+            IconButton(
+              icon: const Icon(Icons.add_box_outlined),
+              tooltip: 'إضافة منتج',
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddProductPage()),
+                );
+                if (mounted) await _refreshProducts();
+              },
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Stack(
