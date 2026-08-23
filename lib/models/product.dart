@@ -102,4 +102,4 @@ class Product {
   final List<String> imageUrls;
 }
 
-const productCategories = ['أخرى', 'العروض'];
+const productCategories = ['العروض'];

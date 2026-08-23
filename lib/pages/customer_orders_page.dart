@@ -49,8 +49,8 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   final PageController _sliderPageController = PageController();
   String _sortOption = 'الأحدث';
   String _selectedCategory = 'الكل';
+  String _selectedQuickFilter = 'جميع المنتجات';
   Set<int> _favoriteProductIds = <int>{};
-  bool _showFavoritesOnly = false;
   static const List<String> _defaultSliderImages = [
     'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=80',
     'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
@@ -1462,11 +1462,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   product.description.toLowerCase().contains(query);
               final matchesCategory =
                   _selectedCategory == 'الكل' ||
-                  (product.category ?? 'غير مصنف') == _selectedCategory;
-              final matchesFavorites =
-                  !_showFavoritesOnly ||
-                  _favoriteProductIds.contains(product.id);
-              return matchesQuery && matchesCategory && matchesFavorites;
+                  product.category == _selectedCategory;
+              final matchesQuickFilter = switch (_selectedQuickFilter) {
+                'العروض' =>
+                  product.discountPrice != null &&
+                      product.discountPrice! > 0 &&
+                      product.discountPrice! < product.price,
+                'المفضلة' => _favoriteProductIds.contains(product.id),
+                _ => true,
+              };
+              return matchesQuery && matchesCategory && matchesQuickFilter;
             }).toList();
 
             return Padding(
@@ -1542,64 +1547,63 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    FilledButton.icon(
-                                      onPressed: () async {
-                                        await Share.share(
-                                          'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
-                                        );
-                                      },
-                                      icon: const Icon(
-                                        Icons.share_outlined,
-                                        size: 18,
-                                      ),
-                                      label: const Text('شارك'),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: Colors.brown.shade700,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 10,
+                                if (authUser != null)
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      FilledButton.icon(
+                                        onPressed: () async {
+                                          await Share.share(
+                                            'تسوق معنا الآن: https://alnakhal.github.io/alnakhla/\nمنتجات عالية الجودة وتوصيل سريع!',
+                                          );
+                                        },
+                                        icon: const Icon(Icons.share_outlined),
+                                        label: const Text('شارك'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor:
+                                              Colors.brown.shade700,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                customer_orders_tracking.CustomerOrdersTrackingPage(
-                                                  loginPageBuilder: (_) =>
-                                                      const LoginPage(),
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(
-                                        Icons.receipt_long_outlined,
+                                      const SizedBox(height: 8),
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  customer_orders_tracking.CustomerOrdersTrackingPage(
+                                                    loginPageBuilder: (_) =>
+                                                        const LoginPage(),
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(
+                                          Icons.receipt_long_outlined,
+                                        ),
+                                        label: const Text('الطلبات'),
                                       ),
-                                      label: const Text('الطلبات'),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const ProductManagementPage(),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(
-                                        Icons.inventory_2_outlined,
+                                      const SizedBox(height: 8),
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const ProductManagementPage(),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(
+                                          Icons.inventory_2_outlined,
+                                        ),
+                                        label: const Text('المخزن'),
                                       ),
-                                      label: const Text('المخزن'),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
                               ],
                             ),
                           ),
@@ -1766,7 +1770,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: ['غير مصنف', ...productCategories]
+                          children: productCategories
                               .map(
                                 (category) => Padding(
                                   padding: const EdgeInsetsDirectional.only(
@@ -1785,13 +1789,67 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      FilterChip(
-                        avatar: const Icon(Icons.favorite_border, size: 18),
-                        label: const Text('المفضلة فقط'),
-                        selected: _showFavoritesOnly,
-                        onSelected: (selected) {
-                          setState(() => _showFavoritesOnly = selected);
-                        },
+                      AnimatedBuilder(
+                        animation: _addButtonAnimationController,
+                        builder: (context, child) => SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: ['جميع المنتجات', 'العروض', 'المفضلة']
+                                .map(
+                                  (filter) => Padding(
+                                    padding: const EdgeInsetsDirectional.only(
+                                      end: 8,
+                                    ),
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          transform: GradientRotation(
+                                            _addButtonAnimationController
+                                                    .value *
+                                                math.pi *
+                                                2,
+                                          ),
+                                          colors: const [
+                                            Color(0xFF0F766E),
+                                            Color(0xFF2563EB),
+                                            Color(0xFFE11D48),
+                                            Color(0xFF0F766E),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: ChoiceChip(
+                                        avatar: Icon(
+                                          filter == 'العروض'
+                                              ? Icons.local_offer_outlined
+                                              : filter == 'المفضلة'
+                                              ? Icons.favorite_border
+                                              : Icons.apps,
+                                          size: 18,
+                                          color: Colors.white,
+                                        ),
+                                        label: Text(filter),
+                                        selected:
+                                            _selectedQuickFilter == filter,
+                                        selectedColor: Colors.transparent,
+                                        backgroundColor: Colors.transparent,
+                                        labelStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        side: BorderSide.none,
+                                        onSelected: (_) => setState(
+                                          () => _selectedQuickFilter = filter,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (filtered.isEmpty)
