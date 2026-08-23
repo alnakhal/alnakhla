@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'متجر التجار',
+      title: 'مستلزمات حجامة النخلة',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: const ColorScheme(
@@ -373,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('متجر التجار'),
+        title: const Text('مستلزمات حجامة النخلة'),
         centerTitle: true,
         elevation: 0,
         actions: [

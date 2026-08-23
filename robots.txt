@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://alnakhal.github.io/alnakhla/sitemap.xml

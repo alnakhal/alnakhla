@@ -1272,7 +1272,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'متجرنا صمم خصيصا لك',
+          'مستلزمات حجامة النخلة',
           style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         bottom: PreferredSize(
