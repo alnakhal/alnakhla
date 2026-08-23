@@ -2570,38 +2570,54 @@ class AddProductPage extends StatefulWidget {
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _skuController = TextEditingController();
+  final _barcodeController = TextEditingController();
+  final _brandController = TextEditingController();
+  final _unitController = TextEditingController(text: 'قطعة');
   final _priceController = TextEditingController();
+  final _discountPriceController = TextEditingController();
   final _costController = TextEditingController();
   final _wholesalePriceController = TextEditingController();
   final _minWholesaleController = TextEditingController();
   final _singlePriceController = TextEditingController();
   final _remainingQtyController = TextEditingController();
+  final _minimumStockController = TextEditingController(text: '0');
+  final _weightController = TextEditingController();
+  final _dimensionsController = TextEditingController();
+  final _variantsController = TextEditingController();
+  final _internalNotesController = TextEditingController();
   final _deliveryPriceController = TextEditingController(text: '0');
+  final _baghdadDeliveryPriceController = TextEditingController();
+  final _otherGovernoratesDeliveryPriceController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _category = productCategories.first;
   bool _hasWholesale = false;
-  XFile? _pickedImage;
-  Uint8List? _pickedImageBytes;
+  bool _pickupAvailable = false;
+  final List<XFile> _pickedImages = [];
+  final List<Uint8List> _pickedImageBytesList = [];
   bool _isSaving = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final result = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
-    if (result != null) {
-      final bytes = await result.readAsBytes();
+    final results = await picker.pickMultiImage(imageQuality: 75);
+    if (results.isNotEmpty) {
+      final bytes = await Future.wait(
+        results.map((image) => image.readAsBytes()),
+      );
       setState(() {
-        _pickedImage = result;
-        _pickedImageBytes = bytes;
+        _pickedImages
+          ..clear()
+          ..addAll(results);
+        _pickedImageBytesList
+          ..clear()
+          ..addAll(bytes);
       });
     }
   }
 
-  Future<String?> _uploadImage(XFile file) async {
+  Future<String?> _uploadImage(XFile file, {Uint8List? bytesOverride}) async {
     try {
-      final bytes = _pickedImageBytes ?? await file.readAsBytes();
+      final bytes = bytesOverride ?? await file.readAsBytes();
       final imageUrl = await uploadImageToSupabase(
         bytes: bytes,
         bucket: 'product-images',
@@ -2658,33 +2674,74 @@ class _AddProductPageState extends State<AddProductPage> {
     setState(() => _isSaving = true);
 
     final price = _parseDouble(_priceController.text) ?? 0;
+    final discountPrice = _parseDouble(_discountPriceController.text);
     final cost = _parseDouble(_costController.text) ?? 0;
     final wholesalePrice = _parseDouble(_wholesalePriceController.text) ?? 0;
     final minWholesale = _parseInt(_minWholesaleController.text) ?? 0;
     final singlePrice = _parseDouble(_singlePriceController.text) ?? 0;
     final remainingQty = _parseInt(_remainingQtyController.text) ?? 0;
+    final minimumStock = _parseInt(_minimumStockController.text) ?? 0;
+    final weight = _parseDouble(_weightController.text);
     final deliveryPrice = _parseDouble(_deliveryPriceController.text) ?? 0;
+    final baghdadDeliveryPrice = _parseDouble(
+      _baghdadDeliveryPriceController.text,
+    );
+    final otherGovernoratesDeliveryPrice = _parseDouble(
+      _otherGovernoratesDeliveryPriceController.text,
+    );
     final description = _descriptionController.text.trim();
 
-    String? imageUrl;
-    if (_pickedImage != null) {
-      imageUrl = await _uploadImage(_pickedImage!);
+    final imageUrls = <String>[];
+    for (var index = 0; index < _pickedImages.length; index++) {
+      final imageUrl = await _uploadImage(
+        _pickedImages[index],
+        bytesOverride: _pickedImageBytesList[index],
+      );
+      if (imageUrl != null) imageUrls.add(imageUrl);
     }
 
     final storeId = await getOrCreateStoreForUser(user.id);
 
     final insertData = {
       'name': _nameController.text.trim(),
+      'sku': _skuController.text.trim().isEmpty
+          ? null
+          : _skuController.text.trim(),
+      'barcode': _barcodeController.text.trim().isEmpty
+          ? null
+          : _barcodeController.text.trim(),
+      'brand': _brandController.text.trim().isEmpty
+          ? null
+          : _brandController.text.trim(),
+      'unit': _unitController.text.trim().isEmpty
+          ? 'قطعة'
+          : _unitController.text.trim(),
       'description': description,
       'price': price.toInt(),
+      'discount_price': discountPrice?.toInt(),
       'cost': cost.toInt(),
       'wholesale_price': wholesalePrice.toInt(),
       'min_wholesale_quantity': minWholesale,
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
+      'minimum_stock': minimumStock,
+      'weight': weight,
+      'dimensions': _dimensionsController.text.trim().isEmpty
+          ? null
+          : _dimensionsController.text.trim(),
+      'variants': _variantsController.text.trim().isEmpty
+          ? null
+          : _variantsController.text.trim(),
+      'internal_notes': _internalNotesController.text.trim().isEmpty
+          ? null
+          : _internalNotesController.text.trim(),
       'delivery_price': deliveryPrice,
-      'image_url': imageUrl,
+      'baghdad_delivery_price': baghdadDeliveryPrice,
+      'other_governorates_delivery_price': otherGovernoratesDeliveryPrice,
+      'pickup_available': _pickupAvailable,
+      'image_url': imageUrls.isEmpty ? null : imageUrls.first,
+      'image_urls': imageUrls,
       'category': _category,
       if (storeId != null) 'store_id': storeId,
       'created_at': DateTime.now().toIso8601String(),
@@ -2711,6 +2768,32 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _skuController.dispose();
+    _barcodeController.dispose();
+    _brandController.dispose();
+    _unitController.dispose();
+    _priceController.dispose();
+    _discountPriceController.dispose();
+    _costController.dispose();
+    _wholesalePriceController.dispose();
+    _minWholesaleController.dispose();
+    _singlePriceController.dispose();
+    _remainingQtyController.dispose();
+    _minimumStockController.dispose();
+    _weightController.dispose();
+    _dimensionsController.dispose();
+    _variantsController.dispose();
+    _internalNotesController.dispose();
+    _deliveryPriceController.dispose();
+    _baghdadDeliveryPriceController.dispose();
+    _otherGovernoratesDeliveryPriceController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('إضافة منتج جديد')),
@@ -2730,6 +2813,28 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _skuController,
+                decoration: const InputDecoration(
+                  labelText: 'رمز المنتج SKU (اختياري)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _barcodeController,
+                decoration: const InputDecoration(
+                  labelText: 'الباركود (اختياري)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _brandController,
+                decoration: const InputDecoration(
+                  labelText: 'العلامة التجارية (اختياري)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(labelText: 'سعر البيع'),
                 keyboardType: const TextInputType.numberWithOptions(
@@ -2745,6 +2850,16 @@ class _AddProductPageState extends State<AddProductPage> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _discountPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'السعر بعد الخصم (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -2769,6 +2884,11 @@ class _AddProductPageState extends State<AddProductPage> {
                 onChanged: (value) {
                   if (value != null) setState(() => _category = value);
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _unitController,
+                decoration: const InputDecoration(labelText: 'وحدة القياس'),
               ),
               const SizedBox(height: 12),
               SwitchListTile(
@@ -2811,6 +2931,39 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _minimumStockController,
+                decoration: const InputDecoration(
+                  labelText: 'حد التنبيه للمخزون المنخفض',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _weightController,
+                decoration: const InputDecoration(labelText: 'الوزن (اختياري)'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _dimensionsController,
+                decoration: const InputDecoration(
+                  labelText: 'الأبعاد (اختياري)',
+                  hintText: 'مثال: 20 × 10 × 5 سم',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _variantsController,
+                decoration: const InputDecoration(
+                  labelText: 'الألوان والمقاسات (اختياري)',
+                  hintText: 'مثال: أحمر، أزرق | صغير، كبير',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _deliveryPriceController,
                 decoration: const InputDecoration(
                   labelText: 'سعر التوصيل (اختياري)',
@@ -2821,25 +2974,66 @@ class _AddProductPageState extends State<AddProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _baghdadDeliveryPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'توصيل بغداد (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _otherGovernoratesDeliveryPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'توصيل باقي المحافظات (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              SwitchListTile(
+                title: const Text('متاح للاستلام من المتجر'),
+                value: _pickupAvailable,
+                onChanged: (value) => setState(() => _pickupAvailable = value),
+              ),
+              TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'الوصف'),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
+              TextFormField(
+                controller: _internalNotesController,
+                decoration: const InputDecoration(
+                  labelText: 'ملاحظات داخلية (لا تظهر للزبون)',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
               FilledButton.icon(
                 icon: const Icon(Icons.photo),
-                label: const Text('اختر صورة'),
+                label: const Text('اختر صور المنتج'),
                 onPressed: _pickImage,
               ),
-              if (_pickedImageBytes != null) ...[
+              if (_pickedImageBytesList.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(
-                    _pickedImageBytes!,
-                    height: 180,
-                    fit: BoxFit.cover,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _pickedImageBytesList
+                      .map(
+                        (bytes) => ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.memory(
+                            bytes,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
               const SizedBox(height: 24),
@@ -4274,26 +4468,48 @@ class EditProductPage extends StatefulWidget {
 class _EditProductPageState extends State<EditProductPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _skuController;
+  late TextEditingController _barcodeController;
+  late TextEditingController _brandController;
+  late TextEditingController _unitController;
   late TextEditingController _priceController;
+  late TextEditingController _discountPriceController;
   late TextEditingController _costController;
   late TextEditingController _wholesalePriceController;
   late TextEditingController _minWholesaleController;
   late TextEditingController _singlePriceController;
   late TextEditingController _remainingQtyController;
+  late TextEditingController _minimumStockController;
+  late TextEditingController _weightController;
+  late TextEditingController _dimensionsController;
+  late TextEditingController _variantsController;
+  late TextEditingController _internalNotesController;
   late TextEditingController _deliveryPriceController;
+  late TextEditingController _baghdadDeliveryPriceController;
+  late TextEditingController _otherGovernoratesDeliveryPriceController;
   late TextEditingController _descriptionController;
   late bool _hasWholesale;
+  late bool _pickupAvailable;
   late String _category;
-  XFile? _pickedImage;
-  Uint8List? _pickedImageBytes;
+  final List<XFile> _pickedImages = [];
+  final List<Uint8List> _pickedImageBytesList = [];
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product.name);
+    _skuController = TextEditingController(text: widget.product.sku ?? '');
+    _barcodeController = TextEditingController(
+      text: widget.product.barcode ?? '',
+    );
+    _brandController = TextEditingController(text: widget.product.brand ?? '');
+    _unitController = TextEditingController(text: widget.product.unit);
     _priceController = TextEditingController(
       text: widget.product.price.toString(),
+    );
+    _discountPriceController = TextEditingController(
+      text: widget.product.discountPrice?.toString() ?? '',
     );
     _costController = TextEditingController(
       text: widget.product.cost.toString(),
@@ -4310,13 +4526,35 @@ class _EditProductPageState extends State<EditProductPage> {
     _remainingQtyController = TextEditingController(
       text: widget.product.remainingQty.toString(),
     );
+    _minimumStockController = TextEditingController(
+      text: widget.product.minimumStock.toString(),
+    );
+    _weightController = TextEditingController(
+      text: widget.product.weight?.toString() ?? '',
+    );
+    _dimensionsController = TextEditingController(
+      text: widget.product.dimensions ?? '',
+    );
+    _variantsController = TextEditingController(
+      text: widget.product.variants ?? '',
+    );
+    _internalNotesController = TextEditingController(
+      text: widget.product.internalNotes ?? '',
+    );
     _deliveryPriceController = TextEditingController(
       text: (widget.product.deliveryPrice ?? 0).toString(),
+    );
+    _baghdadDeliveryPriceController = TextEditingController(
+      text: widget.product.baghdadDeliveryPrice?.toString() ?? '',
+    );
+    _otherGovernoratesDeliveryPriceController = TextEditingController(
+      text: widget.product.otherGovernoratesDeliveryPrice?.toString() ?? '',
     );
     _descriptionController = TextEditingController(
       text: widget.product.description,
     );
     _hasWholesale = widget.product.hasWholesale;
+    _pickupAvailable = widget.product.pickupAvailable;
     _category = productCategories.contains(widget.product.category)
         ? widget.product.category!
         : productCategories.first;
@@ -4325,35 +4563,50 @@ class _EditProductPageState extends State<EditProductPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _skuController.dispose();
+    _barcodeController.dispose();
+    _brandController.dispose();
+    _unitController.dispose();
     _priceController.dispose();
+    _discountPriceController.dispose();
     _costController.dispose();
     _wholesalePriceController.dispose();
     _minWholesaleController.dispose();
     _singlePriceController.dispose();
     _remainingQtyController.dispose();
+    _minimumStockController.dispose();
+    _weightController.dispose();
+    _dimensionsController.dispose();
+    _variantsController.dispose();
+    _internalNotesController.dispose();
     _deliveryPriceController.dispose();
+    _baghdadDeliveryPriceController.dispose();
+    _otherGovernoratesDeliveryPriceController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final result = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
-    if (result != null) {
-      final bytes = await result.readAsBytes();
+    final results = await picker.pickMultiImage(imageQuality: 75);
+    if (results.isNotEmpty) {
+      final bytes = await Future.wait(
+        results.map((image) => image.readAsBytes()),
+      );
       setState(() {
-        _pickedImage = result;
-        _pickedImageBytes = bytes;
+        _pickedImages
+          ..clear()
+          ..addAll(results);
+        _pickedImageBytesList
+          ..clear()
+          ..addAll(bytes);
       });
     }
   }
 
-  Future<String?> _uploadImage(XFile file) async {
+  Future<String?> _uploadImage(XFile file, {Uint8List? bytesOverride}) async {
     try {
-      final bytes = _pickedImageBytes ?? await file.readAsBytes();
+      final bytes = bytesOverride ?? await file.readAsBytes();
       final imageUrl = await uploadImageToSupabase(
         bytes: bytes,
         bucket: 'product-images',
@@ -4402,31 +4655,77 @@ class _EditProductPageState extends State<EditProductPage> {
     setState(() => _isSaving = true);
 
     final price = _parseDouble(_priceController.text) ?? 0;
+    final discountPrice = _parseDouble(_discountPriceController.text);
     final cost = _parseDouble(_costController.text) ?? 0;
     final wholesalePrice = _parseDouble(_wholesalePriceController.text) ?? 0;
     final minWholesale = _parseInt(_minWholesaleController.text) ?? 0;
     final singlePrice = _parseDouble(_singlePriceController.text) ?? 0;
     final remainingQty = _parseInt(_remainingQtyController.text) ?? 0;
+    final minimumStock = _parseInt(_minimumStockController.text) ?? 0;
+    final weight = _parseDouble(_weightController.text);
     final deliveryPrice = _parseDouble(_deliveryPriceController.text) ?? 0;
+    final baghdadDeliveryPrice = _parseDouble(
+      _baghdadDeliveryPriceController.text,
+    );
+    final otherGovernoratesDeliveryPrice = _parseDouble(
+      _otherGovernoratesDeliveryPriceController.text,
+    );
     final description = _descriptionController.text.trim();
 
     String? imageUrl = widget.product.imageUrl;
-    if (_pickedImage != null) {
-      imageUrl = await _uploadImage(_pickedImage!);
+    var imageUrls = List<String>.from(widget.product.imageUrls);
+    if (_pickedImages.isNotEmpty) {
+      imageUrls = [];
+      for (var index = 0; index < _pickedImages.length; index++) {
+        final uploaded = await _uploadImage(
+          _pickedImages[index],
+          bytesOverride: _pickedImageBytesList[index],
+        );
+        if (uploaded != null) imageUrls.add(uploaded);
+      }
+      imageUrl = imageUrls.isEmpty ? widget.product.imageUrl : imageUrls.first;
     }
 
     final updateData = {
       'name': _nameController.text.trim(),
+      'sku': _skuController.text.trim().isEmpty
+          ? null
+          : _skuController.text.trim(),
+      'barcode': _barcodeController.text.trim().isEmpty
+          ? null
+          : _barcodeController.text.trim(),
+      'brand': _brandController.text.trim().isEmpty
+          ? null
+          : _brandController.text.trim(),
+      'unit': _unitController.text.trim().isEmpty
+          ? 'قطعة'
+          : _unitController.text.trim(),
       'description': description,
       'price': price.toInt(),
+      'discount_price': discountPrice?.toInt(),
       'cost': cost.toInt(),
       'wholesale_price': wholesalePrice.toInt(),
       'min_wholesale_quantity': minWholesale,
       'single_price': singlePrice.toInt(),
       'has_wholesale': _hasWholesale,
       'remaining_qty': remainingQty,
+      'minimum_stock': minimumStock,
+      'weight': weight,
+      'dimensions': _dimensionsController.text.trim().isEmpty
+          ? null
+          : _dimensionsController.text.trim(),
+      'variants': _variantsController.text.trim().isEmpty
+          ? null
+          : _variantsController.text.trim(),
+      'internal_notes': _internalNotesController.text.trim().isEmpty
+          ? null
+          : _internalNotesController.text.trim(),
       'delivery_price': deliveryPrice,
+      'baghdad_delivery_price': baghdadDeliveryPrice,
+      'other_governorates_delivery_price': otherGovernoratesDeliveryPrice,
+      'pickup_available': _pickupAvailable,
       'image_url': imageUrl,
+      'image_urls': imageUrls,
       'category': _category,
     };
 
@@ -4472,6 +4771,28 @@ class _EditProductPageState extends State<EditProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _skuController,
+                decoration: const InputDecoration(
+                  labelText: 'رمز المنتج SKU (اختياري)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _barcodeController,
+                decoration: const InputDecoration(
+                  labelText: 'الباركود (اختياري)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _brandController,
+                decoration: const InputDecoration(
+                  labelText: 'العلامة التجارية (اختياري)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(labelText: 'سعر البيع'),
                 keyboardType: const TextInputType.numberWithOptions(
@@ -4487,6 +4808,16 @@ class _EditProductPageState extends State<EditProductPage> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _discountPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'السعر بعد الخصم (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -4511,6 +4842,11 @@ class _EditProductPageState extends State<EditProductPage> {
                 onChanged: (value) {
                   if (value != null) setState(() => _category = value);
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _unitController,
+                decoration: const InputDecoration(labelText: 'وحدة القياس'),
               ),
               const SizedBox(height: 12),
               SwitchListTile(
@@ -4553,6 +4889,39 @@ class _EditProductPageState extends State<EditProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _minimumStockController,
+                decoration: const InputDecoration(
+                  labelText: 'حد التنبيه للمخزون المنخفض',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _weightController,
+                decoration: const InputDecoration(labelText: 'الوزن (اختياري)'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _dimensionsController,
+                decoration: const InputDecoration(
+                  labelText: 'الأبعاد (اختياري)',
+                  hintText: 'مثال: 20 × 10 × 5 سم',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _variantsController,
+                decoration: const InputDecoration(
+                  labelText: 'الألوان والمقاسات (اختياري)',
+                  hintText: 'مثال: أحمر، أزرق | صغير، كبير',
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _deliveryPriceController,
                 decoration: const InputDecoration(
                   labelText: 'سعر التوصيل (اختياري)',
@@ -4563,8 +4932,40 @@ class _EditProductPageState extends State<EditProductPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                controller: _baghdadDeliveryPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'توصيل بغداد (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _otherGovernoratesDeliveryPriceController,
+                decoration: const InputDecoration(
+                  labelText: 'توصيل باقي المحافظات (اختياري)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              SwitchListTile(
+                title: const Text('متاح للاستلام من المتجر'),
+                value: _pickupAvailable,
+                onChanged: (value) => setState(() => _pickupAvailable = value),
+              ),
+              TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'الوصف'),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _internalNotesController,
+                decoration: const InputDecoration(
+                  labelText: 'ملاحظات داخلية (لا تظهر للزبون)',
+                ),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
@@ -4586,23 +4987,27 @@ class _EditProductPageState extends State<EditProductPage> {
               ],
               FilledButton.icon(
                 icon: const Icon(Icons.photo),
-                label: const Text('تغيير الصورة'),
+                label: const Text('تغيير صور المنتج'),
                 onPressed: _pickImage,
               ),
-              if (_pickedImageBytes != null) ...[
+              if (_pickedImageBytesList.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                const Text(
-                  'الصورة الجديدة:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(
-                    _pickedImageBytes!,
-                    height: 180,
-                    fit: BoxFit.cover,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _pickedImageBytesList
+                      .map(
+                        (bytes) => ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.memory(
+                            bytes,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
               const SizedBox(height: 24),

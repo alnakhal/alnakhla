@@ -14,7 +14,21 @@ class Product {
     this.imageUrl,
     this.storeId,
     this.deliveryPrice,
+    this.baghdadDeliveryPrice,
+    this.otherGovernoratesDeliveryPrice,
+    this.pickupAvailable = false,
     this.category,
+    this.sku,
+    this.barcode,
+    this.unit = 'قطعة',
+    this.minimumStock = 0,
+    this.discountPrice,
+    this.brand,
+    this.weight,
+    this.dimensions,
+    this.variants,
+    this.internalNotes,
+    this.imageUrls = const [],
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -36,7 +50,24 @@ class Product {
       imageUrl: map['image_url'] as String?,
       storeId: map['store_id']?.toString(),
       deliveryPrice: (map['delivery_price'] as num?)?.toDouble() ?? 0,
+      baghdadDeliveryPrice: (map['baghdad_delivery_price'] as num?)?.toDouble(),
+      otherGovernoratesDeliveryPrice:
+          (map['other_governorates_delivery_price'] as num?)?.toDouble(),
+      pickupAvailable: map['pickup_available'] as bool? ?? false,
       category: map['category'] as String?,
+      sku: map['sku'] as String?,
+      barcode: map['barcode'] as String?,
+      unit: map['unit'] as String? ?? 'قطعة',
+      minimumStock: (map['minimum_stock'] as num?)?.toInt() ?? 0,
+      discountPrice: (map['discount_price'] as num?)?.toDouble(),
+      brand: map['brand'] as String?,
+      weight: (map['weight'] as num?)?.toDouble(),
+      dimensions: map['dimensions'] as String?,
+      variants: map['variants'] as String?,
+      internalNotes: map['internal_notes'] as String?,
+      imageUrls:
+          (map['image_urls'] as List?)?.whereType<String>().toList() ??
+          const [],
     );
   }
 
@@ -54,10 +85,21 @@ class Product {
   final String? imageUrl;
   final String? storeId;
   final double? deliveryPrice;
+  final double? baghdadDeliveryPrice;
+  final double? otherGovernoratesDeliveryPrice;
+  final bool pickupAvailable;
   final String? category;
+  final String? sku;
+  final String? barcode;
+  final String unit;
+  final int minimumStock;
+  final double? discountPrice;
+  final String? brand;
+  final double? weight;
+  final String? dimensions;
+  final String? variants;
+  final String? internalNotes;
+  final List<String> imageUrls;
 }
 
-const productCategories = [
-  'أخرى',
-  'العروض',
-];
+const productCategories = ['أخرى', 'العروض'];

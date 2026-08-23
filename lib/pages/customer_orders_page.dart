@@ -566,6 +566,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   }
 
   void _showProductDetails(Product product) {
+    final productImages = <String>{
+      if (product.imageUrl != null) product.imageUrl!,
+      ...product.imageUrls,
+    }.toList();
     showModalBottomSheet<void>(
       context: context,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -584,7 +588,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (product.imageUrl != null) ...[
+                if (productImages.isNotEmpty) ...[
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).pop();
@@ -592,7 +596,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                         context,
                         MaterialPageRoute(
                           builder: (_) => PhotoViewerPage(
-                            imageUrl: product.imageUrl!,
+                            imageUrl: productImages.first,
                             productName: product.name,
                           ),
                         ),
@@ -603,7 +607,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       child: AspectRatio(
                         aspectRatio: 4 / 3,
                         child: Image.network(
-                          product.imageUrl!,
+                          productImages.first,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
@@ -619,6 +623,25 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (productImages.length > 1)
+                    SizedBox(
+                      height: 64,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: productImages.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) => ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            productImages[index],
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (productImages.length > 1) const SizedBox(height: 8),
                   Text(
                     'اضغط على الصورة لعرضها بالكامل مع إمكانية التدوير',
                     style: TextStyle(
@@ -635,6 +658,18 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       ? 'لا توجد تفاصيل إضافية.'
                       : product.description,
                 ),
+                if (product.brand != null && product.brand!.isNotEmpty)
+                  Text('العلامة التجارية: ${product.brand}'),
+                if (product.category != null && product.category!.isNotEmpty)
+                  Text('التصنيف: ${product.category}'),
+                if (product.variants != null && product.variants!.isNotEmpty)
+                  Text('الألوان والمقاسات: ${product.variants}'),
+                if (product.unit.isNotEmpty) Text('الوحدة: ${product.unit}'),
+                if (product.weight != null && product.weight! > 0)
+                  Text('الوزن: ${product.weight}'),
+                if (product.dimensions != null &&
+                    product.dimensions!.isNotEmpty)
+                  Text('الأبعاد: ${product.dimensions}'),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -643,9 +678,26 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       'السعر:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text(product.price.toStringAsFixed(0)),
+                    Text(
+                      (product.discountPrice != null &&
+                                  product.discountPrice! > 0 &&
+                                  product.discountPrice! < product.price
+                              ? product.discountPrice!
+                              : product.price)
+                          .toStringAsFixed(0),
+                    ),
                   ],
                 ),
+                if (product.discountPrice != null &&
+                    product.discountPrice! > 0 &&
+                    product.discountPrice! < product.price)
+                  Text(
+                    'السعر السابق: ${product.price.toStringAsFixed(0)} د.ع',
+                    style: const TextStyle(
+                      decoration: TextDecoration.lineThrough,
+                      color: Colors.grey,
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text('المخزون المتوفر: ${product.remainingQty} قطعة'),
                 if (product.hasWholesale) ...[
@@ -669,6 +721,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     ),
                   ),
                 ],
+                if (product.baghdadDeliveryPrice != null)
+                  Text(
+                    'توصيل بغداد: ${product.baghdadDeliveryPrice!.toStringAsFixed(0)} د.ع',
+                  ),
+                if (product.otherGovernoratesDeliveryPrice != null)
+                  Text(
+                    'توصيل المحافظات: ${product.otherGovernoratesDeliveryPrice!.toStringAsFixed(0)} د.ع',
+                  ),
+                if (product.pickupAvailable)
+                  const Text(
+                    'متاح للاستلام من المتجر',
+                    style: TextStyle(color: Colors.green),
+                  ),
                 const SizedBox(height: 20),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -1751,6 +1816,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                 final quantity =
                                     _selectedQuantities[product.id] ?? 0;
                                 final available = product.remainingQty;
+                                final hasDiscount =
+                                    product.discountPrice != null &&
+                                    product.discountPrice! > 0 &&
+                                    product.discountPrice! < product.price;
                                 return Card(
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18),
@@ -1941,6 +2010,43 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                       TextOverflow.ellipsis,
                                                 ),
                                                 const SizedBox(height: 8),
+                                                Wrap(
+                                                  spacing: 6,
+                                                  runSpacing: 4,
+                                                  children: [
+                                                    if (product.brand != null &&
+                                                        product
+                                                            .brand!
+                                                            .isNotEmpty)
+                                                      Text(
+                                                        product.brand!,
+                                                        style: const TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    if (product.category !=
+                                                            null &&
+                                                        product
+                                                            .category!
+                                                            .isNotEmpty)
+                                                      Text(
+                                                        product.category!,
+                                                        style: const TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    Text(
+                                                      'الوحدة: ${product.unit}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
                                                 Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment
@@ -1954,7 +2060,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                               .start,
                                                       children: [
                                                         Text(
-                                                          '${product.price.toStringAsFixed(0)} د.ع',
+                                                          '${(hasDiscount ? product.discountPrice! : product.price).toStringAsFixed(0)} د.ع',
                                                           style:
                                                               const TextStyle(
                                                                 color: Colors
@@ -1969,7 +2075,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                           height: 3,
                                                         ),
                                                         Text(
-                                                          '/قطعة',
+                                                          hasDiscount
+                                                              ? 'السعر بعد الخصم / ${product.unit}'
+                                                              : '/${product.unit}',
                                                           style: textTheme
                                                               .bodySmall
                                                               ?.copyWith(
@@ -1978,6 +2086,21 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                                 fontSize: 11,
                                                               ),
                                                         ),
+                                                        if (hasDiscount)
+                                                          Text(
+                                                            product.price
+                                                                .toStringAsFixed(
+                                                                  0,
+                                                                ),
+                                                            style: const TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 11,
+                                                              decoration:
+                                                                  TextDecoration
+                                                                      .lineThrough,
+                                                            ),
+                                                          ),
                                                       ],
                                                     ),
                                                     AnimatedBuilder(
