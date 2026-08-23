@@ -316,6 +316,21 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
     }
   }
 
+  String _deliveryPlatformArabic(String? platform) {
+    switch (platform) {
+      case 'whatsapp':
+        return 'واتساب';
+      case 'website':
+        return 'المتجر الإلكتروني';
+      case 'unknown':
+      case null:
+      case '':
+        return 'غير محدد';
+      default:
+        return platform;
+    }
+  }
+
   Widget _buildOrderSummary(Map<String, dynamic> order) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -330,6 +345,10 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
           _summaryRow(
             'طريقة الدفع',
             _paymentMethodArabic(order['payment_method']?.toString()),
+          ),
+          _summaryRow(
+            'منصة التوصيل',
+            _deliveryPlatformArabic(order['delivery_platform']?.toString()),
           ),
           _summaryRow(
             'منطقة التوصيل',

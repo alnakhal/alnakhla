@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -346,6 +347,54 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       _productsFuture = _loadProducts();
     });
     await _productsFuture;
+  }
+
+  Future<void> _showStoreLinkOptions() async {
+    const storeUrl = 'https://alnakhal.github.io/alnakhla/';
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('هل تريد فتح الرابط؟'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SelectableText(storeUrl),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () async {
+                final launched = await launchUrl(
+                  Uri.parse(storeUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+                if (!launched && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تعذر فتح رابط المتجر')),
+                  );
+                }
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('فتح الرابط'),
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(const ClipboardData(text: storeUrl));
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم نسخ الرابط')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_outlined),
+              label: const Text('نسخ الرابط'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   int get _selectedCount =>
@@ -756,6 +805,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           totalAmount: grandTotal,
           status: 'pending',
           paymentMethod: 'cash_on_delivery',
+          deliveryPlatform: 'website',
           deliveryArea: 'baghdad',
           deliveryFee: 0,
           notes: orderNote.isNotEmpty ? orderNote : null,
@@ -1397,14 +1447,19 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                         ),
                                       ),
                                       const SizedBox(height: 6),
-                                      Text(
-                                        'https://alnakhal.github.io/alnakhla/',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.blue.shade600,
+                                      InkWell(
+                                        onTap: _showStoreLinkOptions,
+                                        child: Text(
+                                          'https://alnakhal.github.io/alnakhla/',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue.shade600,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),

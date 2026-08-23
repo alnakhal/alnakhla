@@ -13,6 +13,7 @@ class CustomerOrder {
   final double deliveryFee;
   final String status;
   final String? paymentMethod;
+  final String? deliveryPlatform;
   final String? notes;
   final dynamic items;
   final String? userId;
@@ -32,6 +33,7 @@ class CustomerOrder {
     required this.deliveryFee,
     required this.status,
     this.paymentMethod,
+    this.deliveryPlatform,
     this.notes,
     this.items,
     this.userId,
@@ -57,6 +59,7 @@ class CustomerOrder {
       deliveryFee: _readDouble(json['delivery_fee']),
       status: json['status']?.toString() ?? 'قيد الانتظار',
       paymentMethod: json['payment_method']?.toString(),
+      deliveryPlatform: json['delivery_platform']?.toString(),
       notes: json['notes']?.toString(),
       items: json['items'],
       userId: json['user_id']?.toString(),
@@ -84,6 +87,7 @@ class CustomerOrder {
       'delivery_fee': deliveryFee,
       'status': status,
       if (paymentMethod != null) 'payment_method': paymentMethod,
+      if (deliveryPlatform != null) 'delivery_platform': deliveryPlatform,
       if (notes != null) 'notes': notes,
       if (items != null) 'items': items,
       if (userId != null) 'user_id': userId,

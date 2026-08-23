@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
@@ -23,6 +25,7 @@ class CustomerOrdersTrackingPage extends StatefulWidget {
 
 class _CustomerOrdersTrackingPageState
     extends State<CustomerOrdersTrackingPage> {
+  static const _newOrderDraftKey = 'customer_orders_new_order_draft_v1';
   late Future<List<CustomerOrderModel>> _ordersFuture;
   final _ordersService = CustomerOrdersSupabaseService();
   String _searchQuery = '';
@@ -863,15 +866,56 @@ class _CustomerOrdersTrackingPageState
   }
 
   Future<void> _showAddOrderDialog() async {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
-    final landmarkController = TextEditingController();
-    final receiptController = TextEditingController();
-    final notesController = TextEditingController();
-    final itemNameControllers = [TextEditingController()];
-    final itemQuantityControllers = [TextEditingController(text: '1')];
-    final itemPriceControllers = [TextEditingController()];
+    final prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> draft = <String, dynamic>{};
+    final draftJson = prefs.getString(_newOrderDraftKey);
+    if (draftJson != null) {
+      try {
+        draft = Map<String, dynamic>.from(jsonDecode(draftJson) as Map);
+      } catch (_) {
+        await prefs.remove(_newOrderDraftKey);
+      }
+    }
+
+    final nameController = TextEditingController(
+      text: draft['customerName']?.toString() ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: draft['customerPhone']?.toString() ?? '',
+    );
+    final addressController = TextEditingController(
+      text: draft['customerAddress']?.toString() ?? '',
+    );
+    final landmarkController = TextEditingController(
+      text: draft['customerLandmark']?.toString() ?? '',
+    );
+    final receiptController = TextEditingController(
+      text: draft['receiptNumber']?.toString() ?? '',
+    );
+    final notesController = TextEditingController(
+      text: draft['notes']?.toString() ?? '',
+    );
+    final draftItems = draft['items'] is List ? draft['items'] as List : [];
+    final itemNameControllers = <TextEditingController>[];
+    final itemQuantityControllers = <TextEditingController>[];
+    final itemPriceControllers = <TextEditingController>[];
+    for (final item in draftItems) {
+      if (item is! Map) continue;
+      itemNameControllers.add(
+        TextEditingController(text: item['name']?.toString() ?? ''),
+      );
+      itemQuantityControllers.add(
+        TextEditingController(text: item['quantity']?.toString() ?? '1'),
+      );
+      itemPriceControllers.add(
+        TextEditingController(text: item['price']?.toString() ?? ''),
+      );
+    }
+    if (itemNameControllers.isEmpty) {
+      itemNameControllers.add(TextEditingController());
+      itemQuantityControllers.add(TextEditingController(text: '1'));
+      itemPriceControllers.add(TextEditingController());
+    }
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -1048,6 +1092,38 @@ class _CustomerOrdersTrackingPageState
           ),
           actions: [
             TextButton(
+              onPressed: () {
+                setDialogState(() {
+                  nameController.clear();
+                  phoneController.clear();
+                  addressController.clear();
+                  landmarkController.clear();
+                  receiptController.clear();
+                  notesController.clear();
+                  for (final controller in itemNameControllers) {
+                    controller.dispose();
+                  }
+                  for (final controller in itemQuantityControllers) {
+                    controller.dispose();
+                  }
+                  for (final controller in itemPriceControllers) {
+                    controller.dispose();
+                  }
+                  itemNameControllers
+                    ..clear()
+                    ..add(TextEditingController());
+                  itemQuantityControllers
+                    ..clear()
+                    ..add(TextEditingController(text: '1'));
+                  itemPriceControllers
+                    ..clear()
+                    ..add(TextEditingController());
+                });
+                prefs.remove(_newOrderDraftKey);
+              },
+              child: const Text('بدء معلومات جديدة'),
+            ),
+            TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
               child: const Text('إلغاء'),
             ),
@@ -1063,6 +1139,24 @@ class _CustomerOrdersTrackingPageState
         ),
       ),
     );
+
+    final draftData = {
+      'customerName': nameController.text.trim(),
+      'customerPhone': phoneController.text.trim(),
+      'customerAddress': addressController.text.trim(),
+      'customerLandmark': landmarkController.text.trim(),
+      'receiptNumber': receiptController.text.trim(),
+      'notes': notesController.text.trim(),
+      'items': List.generate(
+        itemNameControllers.length,
+        (index) => {
+          'name': itemNameControllers[index].text.trim(),
+          'quantity': itemQuantityControllers[index].text.trim(),
+          'price': itemPriceControllers[index].text.trim(),
+        },
+      ),
+    };
+    await prefs.setString(_newOrderDraftKey, jsonEncode(draftData));
 
     if (saved == true) {
       final items = List.generate(
@@ -1104,6 +1198,7 @@ class _CustomerOrdersTrackingPageState
             const SnackBar(content: Text('تمت إضافة الطلب بنجاح')),
           );
         }
+        await prefs.remove(_newOrderDraftKey);
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(

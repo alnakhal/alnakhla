@@ -10,6 +10,7 @@ class CustomerOrderModel {
   final double totalAmount;
   final String status;
   final String paymentMethod;
+  final String deliveryPlatform;
   final String deliveryArea;
   final double deliveryFee;
   final String? receiptNumber;
@@ -31,6 +32,7 @@ class CustomerOrderModel {
     required this.totalAmount,
     this.status = 'pending',
     this.paymentMethod = 'cash_on_delivery',
+    this.deliveryPlatform = 'unknown',
     this.deliveryArea = 'baghdad',
     this.deliveryFee = 0,
     this.receiptNumber,
@@ -53,6 +55,7 @@ class CustomerOrderModel {
     'total_amount': totalAmount,
     'status': status,
     'payment_method': paymentMethod,
+    'delivery_platform': deliveryPlatform,
     'delivery_area': deliveryArea,
     'delivery_fee': deliveryFee,
     'receipt_number': receiptNumber,
@@ -82,6 +85,7 @@ class CustomerOrderModel {
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
       status: _readStatus(map),
       paymentMethod: map['payment_method']?.toString() ?? 'cash_on_delivery',
+      deliveryPlatform: map['delivery_platform']?.toString() ?? 'unknown',
       deliveryArea: map['delivery_area']?.toString() ?? 'baghdad',
       deliveryFee: (map['delivery_fee'] as num?)?.toDouble() ?? 0,
       receiptNumber: map['receipt_number']?.toString(),
