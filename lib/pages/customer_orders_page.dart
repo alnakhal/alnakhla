@@ -1994,16 +1994,13 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           child: Container(
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  Colors.transparent,
-                                                  Colors.black.withValues(
-                                                    alpha: 0.85,
-                                                  ),
-                                                ],
+                                              color: Colors.white.withValues(
+                                                alpha: 0.96,
                                               ),
+                                              borderRadius:
+                                                  const BorderRadius.vertical(
+                                                    top: Radius.circular(16),
+                                                  ),
                                             ),
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
@@ -2013,7 +2010,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                 Text(
                                                   product.name,
                                                   style: const TextStyle(
-                                                    color: Colors.white,
+                                                    color: Color(0xFF1F2937),
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -2033,7 +2030,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                       Text(
                                                         product.brand!,
                                                         style: const TextStyle(
-                                                          color: Colors.white70,
+                                                          color: Color(
+                                                            0xFF4B5563,
+                                                          ),
                                                           fontSize: 11,
                                                         ),
                                                       ),
@@ -2045,14 +2044,18 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                       Text(
                                                         product.category!,
                                                         style: const TextStyle(
-                                                          color: Colors.white70,
+                                                          color: Color(
+                                                            0xFF4B5563,
+                                                          ),
                                                           fontSize: 11,
                                                         ),
                                                       ),
                                                     Text(
                                                       'الوحدة: ${product.unit}',
                                                       style: const TextStyle(
-                                                        color: Colors.white70,
+                                                        color: Color(
+                                                          0xFF4B5563,
+                                                        ),
                                                         fontSize: 11,
                                                       ),
                                                     ),
@@ -2075,8 +2078,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                           '${(hasDiscount ? product.discountPrice! : product.price).toStringAsFixed(0)} د.ع',
                                                           style:
                                                               const TextStyle(
-                                                                color: Colors
-                                                                    .white,
+                                                                color: Color(
+                                                                  0xFF111827,
+                                                                ),
                                                                 fontSize: 14,
                                                                 fontWeight:
                                                                     FontWeight
@@ -2105,8 +2109,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                                   0,
                                                                 ),
                                                             style: const TextStyle(
-                                                              color: Colors
-                                                                  .white70,
+                                                              color: Color(
+                                                                0xFF6B7280,
+                                                              ),
                                                               fontSize: 11,
                                                               decoration:
                                                                   TextDecoration
@@ -2257,7 +2262,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                   Text(
                                                     'في السلة x$quantity',
                                                     style: const TextStyle(
-                                                      color: Colors.white70,
+                                                      color: Color(0xFF4B5563),
                                                       fontSize: 12,
                                                     ),
                                                   ),
