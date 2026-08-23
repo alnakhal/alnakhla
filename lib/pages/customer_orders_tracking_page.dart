@@ -71,9 +71,7 @@ class _CustomerOrdersTrackingPageState
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('تأكيد تغيير الحالة'),
-        content: Text(
-          'هل تريد نقل الطلب إلى ${orderStatusArabic(newStatus)}؟',
-        ),
+        content: Text('هل تريد نقل الطلب إلى ${orderStatusArabic(newStatus)}؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -92,13 +90,15 @@ class _CustomerOrdersTrackingPageState
       if (!mounted) return;
       setState(_loadOrders);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}')),
+        SnackBar(
+          content: Text('تم تحديث حالة الطلب إلى ${_statusArabic(newStatus)}'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')));
     }
   }
 
@@ -115,22 +115,18 @@ class _CustomerOrdersTrackingPageState
     return 'منذ لحظات';
   }
 
-  String _trackingUrl(String orderNumber, String phone) {
-    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    final phoneLast4 = digits.length >= 4
-        ? digits.substring(digits.length - 4)
-        : digits;
-    return '$_publicTrackingBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}&phone=${Uri.encodeQueryComponent(phoneLast4)}';
+  String _trackingUrl(String orderNumber) {
+    return '$_publicTrackingBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}';
   }
 
   Future<void> _copyTrackingLink(CustomerOrderModel order) async {
     await Clipboard.setData(
-      ClipboardData(text: _trackingUrl(order.orderNumber, order.customerPhone)),
+      ClipboardData(text: _trackingUrl(order.orderNumber)),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم نسخ رابط تتبع الطلب')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم نسخ رابط تتبع الطلب')));
   }
 
   Future<void> _shareOrderAsImage(CustomerOrderModel order) async {
@@ -411,22 +407,30 @@ class _CustomerOrdersTrackingPageState
                   return Center(child: Text('خطأ: ${snapshot.error}'));
                 }
                 final orders = snapshot.data ?? [];
-                final filteredOrders = orders.where((order) {
-                  if (_searchQuery.isEmpty) return true;
-                  return order.orderNumber.toLowerCase().contains(
-                        _searchQuery,
-                      ) ||
-                      order.customerName.toLowerCase().contains(_searchQuery) ||
-                      order.customerPhone.toLowerCase().contains(_searchQuery);
-                }).where((order) {
-                  return _selectedStatusFilter == 'all' ||
-                      order.status == _selectedStatusFilter;
-                }).toList()
-                  ..sort(
-                    (a, b) => _sortNewestFirst
-                        ? b.createdAt.compareTo(a.createdAt)
-                        : a.createdAt.compareTo(b.createdAt),
-                  );
+                final filteredOrders =
+                    orders
+                        .where((order) {
+                          if (_searchQuery.isEmpty) return true;
+                          return order.orderNumber.toLowerCase().contains(
+                                _searchQuery,
+                              ) ||
+                              order.customerName.toLowerCase().contains(
+                                _searchQuery,
+                              ) ||
+                              order.customerPhone.toLowerCase().contains(
+                                _searchQuery,
+                              );
+                        })
+                        .where((order) {
+                          return _selectedStatusFilter == 'all' ||
+                              order.status == _selectedStatusFilter;
+                        })
+                        .toList()
+                      ..sort(
+                        (a, b) => _sortNewestFirst
+                            ? b.createdAt.compareTo(a.createdAt)
+                            : a.createdAt.compareTo(b.createdAt),
+                      );
                 final ordersByStatus = <String, List<CustomerOrderModel>>{
                   for (final status in orderStatuses)
                     status: filteredOrders
@@ -471,8 +475,9 @@ class _CustomerOrdersTrackingPageState
                             tooltip: _sortNewestFirst
                                 ? 'ترتيب من الأقدم'
                                 : 'ترتيب من الأحدث',
-                            onPressed: () =>
-                                setState(() => _sortNewestFirst = !_sortNewestFirst),
+                            onPressed: () => setState(
+                              () => _sortNewestFirst = !_sortNewestFirst,
+                            ),
                             icon: Icon(
                               _sortNewestFirst
                                   ? Icons.south_outlined

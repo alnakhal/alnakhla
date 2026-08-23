@@ -11,14 +11,9 @@ const _publicTrackingBaseUrl = 'https://alnakhal.github.io/alnakhla';
 const _storePhoneNumber = '+9647746582364';
 
 class PublicOrderTrackingPage extends StatefulWidget {
-  const PublicOrderTrackingPage({
-    super.key,
-    this.initialOrderNumber,
-    this.initialPhoneLast4,
-  });
+  const PublicOrderTrackingPage({super.key, this.initialOrderNumber});
 
   final String? initialOrderNumber;
-  final String? initialPhoneLast4;
 
   @override
   State<PublicOrderTrackingPage> createState() =>
@@ -27,7 +22,6 @@ class PublicOrderTrackingPage extends StatefulWidget {
 
 class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
   final _orderNumberController = TextEditingController();
-  final _phoneLast4Controller = TextEditingController();
   final _ordersService = CustomerOrdersSupabaseService();
   Map<String, dynamic>? _order;
   RealtimeChannel? _trackingChannel;
@@ -41,9 +35,8 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
     super.initState();
     final orderNumber = widget.initialOrderNumber?.trim() ?? '';
     _orderNumberController.text = orderNumber;
-    _phoneLast4Controller.text = widget.initialPhoneLast4?.trim() ?? '';
     if (orderNumber.isNotEmpty) {
-      _loadOrder(orderNumber, _phoneLast4Controller.text);
+      _loadOrder(orderNumber);
     }
   }
 
@@ -54,26 +47,16 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
       _ordersService.removeChannel(channel);
     }
     _orderNumberController.dispose();
-    _phoneLast4Controller.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOrder(String value, [String? phoneValue]) async {
+  Future<void> _loadOrder(String value) async {
     final orderNumber = value.trim().toUpperCase();
-    final phoneLast4 = (phoneValue ?? _phoneLast4Controller.text).trim();
     if (orderNumber.isEmpty) {
       _clearTrackingChannel();
       setState(() {
         _order = null;
         _errorMessage = 'أدخل رقم الطلب';
-      });
-      return;
-    }
-    if (!RegExp(r'^\d{4}$').hasMatch(phoneLast4)) {
-      _clearTrackingChannel();
-      setState(() {
-        _order = null;
-        _errorMessage = 'أدخل آخر أربعة أرقام من هاتف العميل';
       });
       return;
     }
@@ -91,10 +74,7 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
       _errorMessage = null;
     });
     try {
-      final order = await _ordersService.getPublicOrderTracking(
-        orderNumber,
-        phoneLast4,
-      );
+      final order = await _ordersService.getPublicOrderTracking(orderNumber);
       if (!mounted) return;
       setState(() {
         _order = order;
@@ -382,7 +362,7 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
   }
 
   String _trackingUrl(String orderNumber) {
-    return '$_publicTrackingBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}&phone=${Uri.encodeQueryComponent(_phoneLast4Controller.text.trim())}';
+    return '$_publicTrackingBaseUrl/#/track-order?order=${Uri.encodeQueryComponent(orderNumber)}';
   }
 
   Future<void> _copyOrderNumber(String orderNumber) async {
@@ -442,12 +422,7 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
           label: const Text('اتصال'),
         ),
         TextButton.icon(
-          onPressed: _isLoading
-              ? null
-              : () => _loadOrder(
-                  orderNumber,
-                  _phoneLast4Controller.text.trim(),
-                ),
+          onPressed: _isLoading ? null : () => _loadOrder(orderNumber),
           icon: const Icon(Icons.refresh),
           label: const Text('تحديث'),
         ),
@@ -463,10 +438,10 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
 
   Future<void> _refreshOrder() async {
     final orderNumber = _orderNumberController.text.trim();
-    if (orderNumber.isEmpty || _phoneLast4Controller.text.trim().isEmpty) {
+    if (orderNumber.isEmpty) {
       return;
     }
-    await _loadOrder(orderNumber, _phoneLast4Controller.text.trim());
+    await _loadOrder(orderNumber);
   }
 
   Widget _buildLoadingPlaceholder() {
@@ -539,28 +514,10 @@ class _PublicOrderTrackingPageState extends State<PublicOrderTrackingPage> {
                       onSubmitted: _loadOrder,
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _phoneLast4Controller,
-                      keyboardType: TextInputType.phone,
-                      maxLength: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'آخر أربعة أرقام من هاتف العميل',
-                        hintText: '1234',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(),
-                        counterText: '',
-                      ),
-                      onSubmitted: (value) =>
-                          _loadOrder(_orderNumberController.text, value),
-                    ),
-                    const SizedBox(height: 12),
                     FilledButton.icon(
                       onPressed: _isLoading
                           ? null
-                          : () => _loadOrder(
-                              _orderNumberController.text,
-                              _phoneLast4Controller.text,
-                            ),
+                          : () => _loadOrder(_orderNumberController.text),
                       icon: _isLoading
                           ? const SizedBox(
                               width: 18,

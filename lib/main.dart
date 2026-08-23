@@ -165,15 +165,11 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   final slug = uri.queryParameters['slug'];
   final userId = uri.queryParameters['user_id'];
   final orderNumber = uri.queryParameters['order'];
-  final phoneLast4 = uri.queryParameters['phone'];
 
   if ((path == '/track-order' || path == '/order-tracking') &&
       orderNumber != null) {
     return MaterialPageRoute(
-      builder: (_) => PublicOrderTrackingPage(
-        initialOrderNumber: orderNumber,
-        initialPhoneLast4: phoneLast4,
-      ),
+      builder: (_) => PublicOrderTrackingPage(initialOrderNumber: orderNumber),
     );
   }
 
@@ -194,9 +190,7 @@ Route<dynamic> _onGenerateRoute(RouteSettings settings) {
   }
 
   if (path == '/track-order' || path == '/order-tracking') {
-    return MaterialPageRoute(
-      builder: (_) => const PublicOrderTrackingPage(),
-    );
+    return MaterialPageRoute(builder: (_) => const PublicOrderTrackingPage());
   }
 
   if (path.startsWith('/store/')) {
@@ -5562,9 +5556,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     if (newStatus == _currentOrder.status) return;
     if (supabase.auth.currentUser == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى تسجيل الدخول أولاً')));
       return;
     }
 
@@ -5608,9 +5602,9 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
       Navigator.of(context).pop(_currentOrder);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')));
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
@@ -5917,7 +5911,10 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               ),
               items: const [
                 DropdownMenuItem(value: 'pending', child: Text('قيد الانتظار')),
-                DropdownMenuItem(value: 'in_delivery', child: Text('قيد التوصيل')),
+                DropdownMenuItem(
+                  value: 'in_delivery',
+                  child: Text('قيد التوصيل'),
+                ),
                 DropdownMenuItem(value: 'completed', child: Text('مكتمل')),
                 DropdownMenuItem(value: 'cancelled', child: Text('ملغي')),
               ],
