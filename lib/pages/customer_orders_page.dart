@@ -1464,11 +1464,11 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   _selectedCategory == 'الكل' ||
                   product.category == _selectedCategory;
               final matchesQuickFilter = switch (_selectedQuickFilter) {
+                'المفضلة' => _favoriteProductIds.contains(product.id),
                 'العروض' =>
                   product.discountPrice != null &&
                       product.discountPrice! > 0 &&
                       product.discountPrice! < product.price,
-                'المفضلة' => _favoriteProductIds.contains(product.id),
                 _ => true,
               };
               return matchesQuery && matchesCategory && matchesQuickFilter;
@@ -1835,8 +1835,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                             _selectedQuickFilter == filter,
                                         selectedColor: Colors.transparent,
                                         backgroundColor: Colors.transparent,
-                                        labelStyle: const TextStyle(
-                                          color: Colors.white,
+                                        labelStyle: TextStyle(
+                                          color: filter == 'المفضلة'
+                                              ? Colors.red.shade700
+                                              : Colors.teal.shade800,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         side: BorderSide.none,
