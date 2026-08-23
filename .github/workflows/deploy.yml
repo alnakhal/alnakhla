@@ -24,6 +24,12 @@ jobs:
       - name: Build web
         run: flutter build web --base-href "/alnakhla/"
 
+      - name: Add SEO and verification files
+        run: |
+          cp googleef05bf2a779b5a96.html build/web/googleef05bf2a779b5a96.html
+          cp robots.txt build/web/robots.txt
+          cp sitemap.xml build/web/sitemap.xml
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
