@@ -661,8 +661,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                 ),
                 if (product.brand != null && product.brand!.isNotEmpty)
                   Text('العلامة التجارية: ${product.brand}'),
-                if (product.category != null && product.category!.isNotEmpty)
-                  Text('التصنيف: ${product.category}'),
                 if (product.variants != null && product.variants!.isNotEmpty)
                   Text('الألوان والمقاسات: ${product.variants}'),
                 if (product.unit.isNotEmpty) Text('الوحدة: ${product.unit}'),
@@ -1460,7 +1458,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   query.isEmpty ||
                   product.name.toLowerCase().contains(query) ||
                   product.description.toLowerCase().contains(query);
-              final matchesCategory =
+                final matchesCategory =
                   _selectedCategory == 'الكل' ||
                   product.category == _selectedCategory;
               final matchesQuickFilter = switch (_selectedQuickFilter) {
@@ -1770,7 +1768,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: productCategories
+                          children: ['الكل', ...productCategories]
                               .map(
                                 (category) => Padding(
                                   padding: const EdgeInsetsDirectional.only(
@@ -2057,20 +2055,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                             .isNotEmpty)
                                                       Text(
                                                         product.brand!,
-                                                        style: const TextStyle(
-                                                          color: Color(
-                                                            0xFF4B5563,
-                                                          ),
-                                                          fontSize: 11,
-                                                        ),
-                                                      ),
-                                                    if (product.category !=
-                                                            null &&
-                                                        product
-                                                            .category!
-                                                            .isNotEmpty)
-                                                      Text(
-                                                        product.category!,
                                                         style: const TextStyle(
                                                           color: Color(
                                                             0xFF4B5563,

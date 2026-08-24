@@ -1846,7 +1846,6 @@ class _ProductsTabState extends State<ProductsTab> {
   final ScrollController _scrollController = ScrollController();
   final List<Product> _products = [];
   ProductFilter _selectedFilter = ProductFilter.all;
-  String _selectedCategory = 'الكل';
   bool _isLoading = false;
   bool _hasMore = true;
   String? _errorMessage;
@@ -2062,14 +2061,6 @@ class _ProductsTabState extends State<ProductsTab> {
           .toList();
     }
 
-    if (_selectedCategory != 'الكل') {
-      filtered = filtered
-          .where(
-            (product) => (product.category ?? 'غير مصنف') == _selectedCategory,
-          )
-          .toList();
-    }
-
     switch (_selectedFilter) {
       case ProductFilter.lowStock:
         return filtered.where((product) => product.remainingQty <= 5).toList();
@@ -2102,23 +2093,6 @@ class _ProductsTabState extends State<ProductsTab> {
               },
             );
           }).toList(),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedCategory,
-          decoration: const InputDecoration(
-            labelText: 'التصنيف',
-            prefixIcon: Icon(Icons.category_outlined),
-          ),
-          items: ['الكل', 'غير مصنف', ...productCategories]
-              .map(
-                (category) =>
-                    DropdownMenuItem(value: category, child: Text(category)),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) setState(() => _selectedCategory = value);
-          },
         ),
       ],
     );
@@ -2870,22 +2844,6 @@ class _AddProductPageState extends State<AddProductPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _category,
-                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
-                items: productCategories
-                    .map(
-                      (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _category = value);
-                },
-              ),
-              const SizedBox(height: 12),
               TextFormField(
                 controller: _unitController,
                 decoration: const InputDecoration(labelText: 'وحدة القياس'),
@@ -2922,6 +2880,22 @@ class _AddProductPageState extends State<AddProductPage> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
+                items: productCategories
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -4488,9 +4462,9 @@ class _EditProductPageState extends State<EditProductPage> {
   late TextEditingController _baghdadDeliveryPriceController;
   late TextEditingController _otherGovernoratesDeliveryPriceController;
   late TextEditingController _descriptionController;
+  late String _category;
   late bool _hasWholesale;
   late bool _pickupAvailable;
-  late String _category;
   final List<XFile> _pickedImages = [];
   final List<Uint8List> _pickedImageBytesList = [];
   bool _isSaving = false;
@@ -4553,11 +4527,11 @@ class _EditProductPageState extends State<EditProductPage> {
     _descriptionController = TextEditingController(
       text: widget.product.description,
     );
-    _hasWholesale = widget.product.hasWholesale;
-    _pickupAvailable = widget.product.pickupAvailable;
     _category = productCategories.contains(widget.product.category)
         ? widget.product.category!
         : productCategories.first;
+    _hasWholesale = widget.product.hasWholesale;
+    _pickupAvailable = widget.product.pickupAvailable;
   }
 
   @override
@@ -4828,22 +4802,6 @@ class _EditProductPageState extends State<EditProductPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _category,
-                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
-                items: productCategories
-                    .map(
-                      (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _category = value);
-                },
-              ),
-              const SizedBox(height: 12),
               TextFormField(
                 controller: _unitController,
                 decoration: const InputDecoration(labelText: 'وحدة القياس'),
@@ -4880,6 +4838,22 @@ class _EditProductPageState extends State<EditProductPage> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(labelText: 'تصنيف المنتج'),
+                items: productCategories
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
