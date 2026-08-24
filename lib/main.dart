@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'utils/share_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,29 +37,6 @@ void main() async {
 }
 
 final supabase = Supabase.instance.client;
-
-Future<Uint8List?> _cropProductImage(BuildContext context, XFile image) async {
-  final cropped = await ImageCropper().cropImage(
-    sourcePath: image.path,
-    compressFormat: ImageCompressFormat.jpg,
-    compressQuality: 88,
-    aspectRatio: const CropAspectRatio(ratioX: 4, ratioY: 3),
-    uiSettings: [
-      AndroidUiSettings(
-        toolbarTitle: 'ضبط صورة المنتج',
-        lockAspectRatio: true,
-        aspectRatioPresets: [CropAspectRatioPreset.ratio4x3],
-      ),
-      IOSUiSettings(
-        title: 'ضبط صورة المنتج',
-        aspectRatioLockEnabled: true,
-        aspectRatioPresets: [CropAspectRatioPreset.ratio4x3],
-      ),
-      WebUiSettings(context: context),
-    ],
-  );
-  return cropped?.readAsBytes();
-}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -2597,26 +2573,27 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final results = await picker.pickMultiImage(imageQuality: 75);
-    if (results.isNotEmpty) {
-      final processedImages = <XFile>[];
-      final bytes = <Uint8List>[];
-      for (final image in results) {
-        final croppedBytes = await _cropProductImage(context, image);
-        if (croppedBytes != null) {
-          processedImages.add(image);
-          bytes.add(croppedBytes);
-        }
+    final results = await picker.pickMultiImage();
+    if (results.isEmpty || !mounted) return;
+
+    final processedImages = <XFile>[];
+    final bytes = <Uint8List>[];
+    for (final image in results) {
+      final imageBytes = await image.readAsBytes();
+      if (imageBytes.isNotEmpty) {
+        processedImages.add(image);
+        bytes.add(imageBytes);
       }
-      setState(() {
-        _pickedImages
-          ..clear()
-          ..addAll(processedImages);
-        _pickedImageBytesList
-          ..clear()
-          ..addAll(bytes);
-      });
     }
+    if (!mounted || bytes.isEmpty) return;
+    setState(() {
+      _pickedImages
+        ..clear()
+        ..addAll(processedImages);
+      _pickedImageBytesList
+        ..clear()
+        ..addAll(bytes);
+    });
   }
 
   Future<String?> _uploadImage(XFile file, {Uint8List? bytesOverride}) async {
@@ -3020,6 +2997,11 @@ class _AddProductPageState extends State<AddProductPage> {
                 label: const Text('اختر صور المنتج'),
                 onPressed: _pickImage,
               ),
+              const SizedBox(height: 8),
+              Text(
+                'المقاس الموصى به للعرض: 1200×900 بكسل (نسبة 4:3). سيتم حفظ الصور كما هي دون اقتصاص أو تعديل.',
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+              ),
               if (_pickedImageBytesList.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Wrap(
@@ -3033,7 +3015,7 @@ class _AddProductPageState extends State<AddProductPage> {
                             bytes,
                             width: 90,
                             height: 90,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       )
@@ -4592,26 +4574,27 @@ class _EditProductPageState extends State<EditProductPage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final results = await picker.pickMultiImage(imageQuality: 75);
-    if (results.isNotEmpty) {
-      final processedImages = <XFile>[];
-      final bytes = <Uint8List>[];
-      for (final image in results) {
-        final croppedBytes = await _cropProductImage(context, image);
-        if (croppedBytes != null) {
-          processedImages.add(image);
-          bytes.add(croppedBytes);
-        }
+    final results = await picker.pickMultiImage();
+    if (results.isEmpty || !mounted) return;
+
+    final processedImages = <XFile>[];
+    final bytes = <Uint8List>[];
+    for (final image in results) {
+      final imageBytes = await image.readAsBytes();
+      if (imageBytes.isNotEmpty) {
+        processedImages.add(image);
+        bytes.add(imageBytes);
       }
-      setState(() {
-        _pickedImages
-          ..clear()
-          ..addAll(processedImages);
-        _pickedImageBytesList
-          ..clear()
-          ..addAll(bytes);
-      });
     }
+    if (!mounted || bytes.isEmpty) return;
+    setState(() {
+      _pickedImages
+        ..clear()
+        ..addAll(processedImages);
+      _pickedImageBytesList
+        ..clear()
+        ..addAll(bytes);
+    });
   }
 
   Future<String?> _uploadImage(XFile file, {Uint8List? bytesOverride}) async {
@@ -4987,10 +4970,13 @@ class _EditProductPageState extends State<EditProductPage> {
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    widget.product.imageUrl!,
+                  child: Container(
                     height: 150,
-                    fit: BoxFit.cover,
+                    color: Colors.grey.shade100,
+                    child: Image.network(
+                      widget.product.imageUrl!,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -4999,6 +4985,11 @@ class _EditProductPageState extends State<EditProductPage> {
                 icon: const Icon(Icons.photo),
                 label: const Text('تغيير صور المنتج'),
                 onPressed: _pickImage,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'المقاس الموصى به للعرض: 1200×900 بكسل (نسبة 4:3). سيتم حفظ الصور كما هي دون اقتصاص أو تعديل.',
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
               ),
               if (_pickedImageBytesList.isNotEmpty) ...[
                 const SizedBox(height: 16),
@@ -5013,7 +5004,7 @@ class _EditProductPageState extends State<EditProductPage> {
                             bytes,
                             width: 90,
                             height: 90,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       )
