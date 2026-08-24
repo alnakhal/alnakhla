@@ -102,4 +102,10 @@ class Product {
   final List<String> imageUrls;
 }
 
-const productCategories = <String>[];
+const productCategories = <String>[
+  'مستلزمات النخيل',
+  'مستلزمات الزراعة',
+  'أسمدة ومبيدات',
+  'أدوات زراعية',
+  'أخرى',
+];
