@@ -782,11 +782,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     required String orderNote,
   }) async {
     if (_isSendingOrder) return;
-    final authUser = Supabase.instance.client.auth.currentUser;
-    if (authUser == null) {
-      await _showMessage('يرجى تسجيل الدخول أولاً لحفظ ومتابعة الطلب');
-      return;
-    }
     setState(() {
       _isSendingOrder = true;
     });
@@ -891,7 +886,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         final order = CustomerOrderModel(
           orderNumber: orderNumber,
           customerName: customerName.isNotEmpty ? customerName : 'زائر',
-          userId: authUser.id,
           storeUserId: widget.storeUserId,
           customerPhone: customerPhone,
           customerAddress: customerAddress,

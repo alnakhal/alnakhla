@@ -53,10 +53,10 @@ class CustomerOrdersSupabaseService {
   }
 
   Future<void> insertOrder(CustomerOrderModel order) async {
-    final user = _requireUser();
-    final data = order.toMap()
-      ..remove('id')
-      ..['user_id'] = user.id;
+    final data = order.toMap()..remove('id');
+    final user = _client.auth.currentUser;
+    if (user != null) data['user_id'] = user.id;
+    if (user == null) data.remove('user_id');
     await _client.from('customer_orders').insert(data);
   }
 
