@@ -17,20 +17,63 @@ class UploadResult {
 
   bool get failed => !success;
 
-  factory UploadResult.success([String? imageUrl]) => UploadResult(success: true, imageUrl: imageUrl);
-  factory UploadResult.failure(String message) => UploadResult(success: false, error: message);
+  factory UploadResult.success([String? imageUrl]) =>
+      UploadResult(success: true, imageUrl: imageUrl);
+  factory UploadResult.failure(String message) =>
+      UploadResult(success: false, error: message);
 }
 
 class DataService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  Future<int?> recordStorePageView({
+    String? storeSlug,
+    String? storeUserId,
+  }) async {
+    try {
+      final result = await _supabase.rpc(
+        'record_store_page_view',
+        params: {'p_store_slug': storeSlug, 'p_store_user_id': storeUserId},
+      );
+      if (result is num) return result.toInt();
+      if (result is List && result.isNotEmpty && result.first is num) {
+        return (result.first as num).toInt();
+      }
+    } catch (e) {
+      debugPrint('خطأ في تسجيل زيارة المتجر: $e');
+    }
+    return null;
+  }
+
+  Future<int?> getStorePageViewCount({
+    String? storeSlug,
+    String? storeUserId,
+  }) async {
+    try {
+      final result = await _supabase.rpc(
+        'get_store_page_view_count_for_store',
+        params: {'p_store_slug': storeSlug, 'p_store_user_id': storeUserId},
+      );
+      if (result is num) return result.toInt();
+    } catch (e) {
+      debugPrint('خطأ في جلب عدد زيارات المتجر: $e');
+    }
+    return null;
+  }
+
   Future<String> _getPublicUrl(String path) async {
     return _supabase.storage.from('uploads').getPublicUrl(path);
   }
 
-  Future<UploadResult> uploadSliderImageFromBytes(Uint8List imageBytes, String title, {String? fileName}) async {
+  Future<UploadResult> uploadSliderImageFromBytes(
+    Uint8List imageBytes,
+    String title, {
+    String? fileName,
+  }) async {
     if (kIsWeb) {
-      debugPrint('Web platform detected: uploading slider image using bytes only.');
+      debugPrint(
+        'Web platform detected: uploading slider image using bytes only.',
+      );
     }
 
     return _uploadSliderImageInternal(
@@ -46,15 +89,20 @@ class DataService {
     String? fileName,
   }) async {
     try {
-      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
-      final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
+      final sanitizedFileName = _sanitizeFileName(
+        fileName ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+      final uniqueFileName =
+          '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
       final path = 'slider/$uniqueFileName';
 
-      await _supabase.storage.from('uploads').uploadBinary(
-        path,
-        imageBytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _supabase.storage
+          .from('uploads')
+          .uploadBinary(
+            path,
+            imageBytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('slider_items').insert({
@@ -71,9 +119,16 @@ class DataService {
     }
   }
 
-  Future<UploadResult> uploadCategoryImageFromBytes(Uint8List imageBytes, String categoryName, List<String> productKeywords, {String? fileName}) async {
+  Future<UploadResult> uploadCategoryImageFromBytes(
+    Uint8List imageBytes,
+    String categoryName,
+    List<String> productKeywords, {
+    String? fileName,
+  }) async {
     if (kIsWeb) {
-      debugPrint('Web platform detected: uploading category image using bytes only.');
+      debugPrint(
+        'Web platform detected: uploading category image using bytes only.',
+      );
     }
 
     return _uploadCategoryImageInternal(
@@ -91,15 +146,20 @@ class DataService {
     String? fileName,
   }) async {
     try {
-      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
-      final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
+      final sanitizedFileName = _sanitizeFileName(
+        fileName ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+      final uniqueFileName =
+          '${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
       final path = 'categories/$uniqueFileName';
 
-      await _supabase.storage.from('uploads').uploadBinary(
-        path,
-        imageBytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _supabase.storage
+          .from('uploads')
+          .uploadBinary(
+            path,
+            imageBytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
       final publicUrl = await _getPublicUrl(path);
 
       await _supabase.from('category_items').insert({
@@ -132,7 +192,11 @@ class DataService {
     }
   }
 
-  Future<UploadResult> saveCategoryImageUrl(String imageUrl, String categoryName, List<String> productKeywords) async {
+  Future<UploadResult> saveCategoryImageUrl(
+    String imageUrl,
+    String categoryName,
+    List<String> productKeywords,
+  ) async {
     try {
       await _supabase.from('category_items').insert({
         'category_name': categoryName,
@@ -148,22 +212,31 @@ class DataService {
     }
   }
 
-  Future<UploadResult> updateSliderImageFromBytes(int id, Uint8List imageBytes, String title, {String? fileName}) async {
+  Future<UploadResult> updateSliderImageFromBytes(
+    int id,
+    Uint8List imageBytes,
+    String title, {
+    String? fileName,
+  }) async {
     try {
-      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
+      final sanitizedFileName = _sanitizeFileName(
+        fileName ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      );
       final path = 'slider/$sanitizedFileName';
 
-      await _supabase.storage.from('uploads').uploadBinary(
-        path,
-        imageBytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _supabase.storage
+          .from('uploads')
+          .uploadBinary(
+            path,
+            imageBytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
       final publicUrl = await _getPublicUrl(path);
 
-      await _supabase.from('slider_items').update({
-        'image_url': publicUrl,
-        'title': title,
-      }).eq('id', id);
+      await _supabase
+          .from('slider_items')
+          .update({'image_url': publicUrl, 'title': title})
+          .eq('id', id);
 
       return UploadResult.success(publicUrl);
     } catch (e, st) {
@@ -173,23 +246,36 @@ class DataService {
     }
   }
 
-  Future<UploadResult> updateCategoryImageFromBytes(int id, Uint8List imageBytes, String categoryName, List<String> productKeywords, {String? fileName}) async {
+  Future<UploadResult> updateCategoryImageFromBytes(
+    int id,
+    Uint8List imageBytes,
+    String categoryName,
+    List<String> productKeywords, {
+    String? fileName,
+  }) async {
     try {
-      final sanitizedFileName = _sanitizeFileName(fileName ?? DateTime.now().millisecondsSinceEpoch.toString());
+      final sanitizedFileName = _sanitizeFileName(
+        fileName ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      );
       final path = 'categories/$sanitizedFileName';
 
-      await _supabase.storage.from('uploads').uploadBinary(
-        path,
-        imageBytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _supabase.storage
+          .from('uploads')
+          .uploadBinary(
+            path,
+            imageBytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
       final publicUrl = await _getPublicUrl(path);
 
-      await _supabase.from('category_items').update({
-        'image_url': publicUrl,
-        'category_name': categoryName,
-        'product_keywords': productKeywords.join(','),
-      }).eq('id', id);
+      await _supabase
+          .from('category_items')
+          .update({
+            'image_url': publicUrl,
+            'category_name': categoryName,
+            'product_keywords': productKeywords.join(','),
+          })
+          .eq('id', id);
 
       return UploadResult.success(publicUrl);
     } catch (e, st) {
@@ -210,7 +296,11 @@ class DataService {
       final fileName = pickedFile.name;
       final bytes = await pickedFile.readAsBytes();
       if (isSlider) {
-        return await uploadSliderImageFromBytes(bytes, title, fileName: fileName);
+        return await uploadSliderImageFromBytes(
+          bytes,
+          title,
+          fileName: fileName,
+        );
       } else {
         return await uploadCategoryImageFromBytes(
           bytes,
@@ -264,7 +354,12 @@ class DataService {
     return base64Decode(base64String);
   }
 
-  Widget buildImageWidget(String imageData, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+  Widget buildImageWidget(
+    String imageData, {
+    BoxFit fit = BoxFit.cover,
+    double? width,
+    double? height,
+  }) {
     if (imageData.startsWith('http')) {
       return Image.network(
         imageData,
@@ -294,7 +389,10 @@ class DataService {
     }
   }
 
-  Widget _buildImageFromBase64(String base64String, {BoxFit fit = BoxFit.cover}) {
+  Widget _buildImageFromBase64(
+    String base64String, {
+    BoxFit fit = BoxFit.cover,
+  }) {
     try {
       final imageBytes = decodeBase64Image(base64String);
       return Image.memory(
@@ -349,10 +447,7 @@ Future<List<Map<String, dynamic>>> fetchCategoryImages() async {
 /// حذف صورة سلايدر من Supabase
 Future<bool> deleteSliderImage(int id) async {
   try {
-    await _supabaseClient
-        .from('slider_items')
-        .delete()
-        .eq('id', id);
+    await _supabaseClient.from('slider_items').delete().eq('id', id);
     return true;
   } catch (e) {
     debugPrint('خطأ في حذف صورة السلايدر: $e');
@@ -363,10 +458,7 @@ Future<bool> deleteSliderImage(int id) async {
 /// حذف صورة قسم من Supabase
 Future<bool> deleteCategoryImage(int id) async {
   try {
-    await _supabaseClient
-        .from('category_items')
-        .delete()
-        .eq('id', id);
+    await _supabaseClient.from('category_items').delete().eq('id', id);
     return true;
   } catch (e) {
     debugPrint('خطأ في حذف صورة القسم: $e');
@@ -380,7 +472,12 @@ Uint8List decodeBase64Image(String base64String) {
 }
 
 /// بناء صورة من رابط أو base64
-Widget buildImageWidget(String imageData, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+Widget buildImageWidget(
+  String imageData, {
+  BoxFit fit = BoxFit.cover,
+  double? width,
+  double? height,
+}) {
   if (imageData.startsWith('http')) {
     return Image.network(
       imageData,

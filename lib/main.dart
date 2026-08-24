@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'utils/share_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,29 @@ void main() async {
 }
 
 final supabase = Supabase.instance.client;
+
+Future<Uint8List?> _cropProductImage(BuildContext context, XFile image) async {
+  final cropped = await ImageCropper().cropImage(
+    sourcePath: image.path,
+    compressFormat: ImageCompressFormat.jpg,
+    compressQuality: 88,
+    aspectRatio: const CropAspectRatio(ratioX: 4, ratioY: 3),
+    uiSettings: [
+      AndroidUiSettings(
+        toolbarTitle: 'ضبط صورة المنتج',
+        lockAspectRatio: true,
+        aspectRatioPresets: [CropAspectRatioPreset.ratio4x3],
+      ),
+      IOSUiSettings(
+        title: 'ضبط صورة المنتج',
+        aspectRatioLockEnabled: true,
+        aspectRatioPresets: [CropAspectRatioPreset.ratio4x3],
+      ),
+      WebUiSettings(context: context),
+    ],
+  );
+  return cropped?.readAsBytes();
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -2575,13 +2599,19 @@ class _AddProductPageState extends State<AddProductPage> {
     final picker = ImagePicker();
     final results = await picker.pickMultiImage(imageQuality: 75);
     if (results.isNotEmpty) {
-      final bytes = await Future.wait(
-        results.map((image) => image.readAsBytes()),
-      );
+      final processedImages = <XFile>[];
+      final bytes = <Uint8List>[];
+      for (final image in results) {
+        final croppedBytes = await _cropProductImage(context, image);
+        if (croppedBytes != null) {
+          processedImages.add(image);
+          bytes.add(croppedBytes);
+        }
+      }
       setState(() {
         _pickedImages
           ..clear()
-          ..addAll(results);
+          ..addAll(processedImages);
         _pickedImageBytesList
           ..clear()
           ..addAll(bytes);
@@ -4564,13 +4594,19 @@ class _EditProductPageState extends State<EditProductPage> {
     final picker = ImagePicker();
     final results = await picker.pickMultiImage(imageQuality: 75);
     if (results.isNotEmpty) {
-      final bytes = await Future.wait(
-        results.map((image) => image.readAsBytes()),
-      );
+      final processedImages = <XFile>[];
+      final bytes = <Uint8List>[];
+      for (final image in results) {
+        final croppedBytes = await _cropProductImage(context, image);
+        if (croppedBytes != null) {
+          processedImages.add(image);
+          bytes.add(croppedBytes);
+        }
+      }
       setState(() {
         _pickedImages
           ..clear()
-          ..addAll(results);
+          ..addAll(processedImages);
         _pickedImageBytesList
           ..clear()
           ..addAll(bytes);

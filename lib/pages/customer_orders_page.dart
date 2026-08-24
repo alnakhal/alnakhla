@@ -68,6 +68,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
   bool _showWelcomeDescription = true;
   Timer? _welcomeTimer;
   late final AnimationController _addButtonAnimationController;
+  int? _visitorCount;
 
   bool get _canEditSlider {
     final authUser = Supabase.instance.client.auth.currentUser;
@@ -90,6 +91,34 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     _loadCustomerPreferences();
     _loadSliderImages();
     _startSliderTimer();
+    _recordPageView();
+  }
+
+  Future<void> _recordPageView() async {
+    final storeKey = widget.storeSlug ?? widget.storeUserId ?? 'default';
+    final ownerUserId =
+        widget.storeUserId ?? Supabase.instance.client.auth.currentUser?.id;
+    final prefs = await SharedPreferences.getInstance();
+    final lastVisit = prefs.getInt('store_page_visit_$storeKey');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final shouldRecord = lastVisit == null || now - lastVisit > 30 * 60 * 1000;
+    if (shouldRecord) {
+      await prefs.setInt('store_page_visit_$storeKey', now);
+    }
+    final count = shouldRecord
+        ? await dataService.recordStorePageView(
+            storeSlug: widget.storeSlug,
+            storeUserId: ownerUserId,
+          )
+        : _canEditSlider
+        ? await dataService.getStorePageViewCount(
+            storeSlug: widget.storeSlug,
+            storeUserId: ownerUserId,
+          )
+        : null;
+    if (mounted && count != null && _canEditSlider) {
+      setState(() => _visitorCount = count);
+    }
   }
 
   @override
@@ -1310,6 +1339,16 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           ),
         ),
         actions: [
+          if (_canEditSlider && _visitorCount != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Center(
+                child: Tooltip(
+                  message: 'عدد زيارات الصفحة',
+                  child: Text('الزوار: $_visitorCount'),
+                ),
+              ),
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.settings, color: Colors.white),
             tooltip: 'الإعدادات',
@@ -1458,7 +1497,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                   query.isEmpty ||
                   product.name.toLowerCase().contains(query) ||
                   product.description.toLowerCase().contains(query);
-                final matchesCategory =
+              final matchesCategory =
                   _selectedCategory == 'الكل' ||
                   product.category == _selectedCategory;
               final matchesQuickFilter = switch (_selectedQuickFilter) {
