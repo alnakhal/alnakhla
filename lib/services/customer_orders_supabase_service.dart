@@ -60,6 +60,38 @@ class CustomerOrdersSupabaseService {
     await _client.from('customer_orders').insert(data);
   }
 
+  Future<List<Map<String, dynamic>>> searchCustomersByPhonePrefix(
+    String prefix,
+  ) async {
+    final user = _requireUser();
+    if (prefix.length < 5) return [];
+    final rows = await _client
+        .from('customer_orders')
+        .select('customer_name, customer_phone, customer_address')
+        .eq('user_id', user.id)
+        .ilike('customer_phone', '$prefix%')
+        .order('created_at', ascending: false)
+        .limit(20);
+    return (rows as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<int> countCustomerOrdersThisMonth(String phone) async {
+    final user = _requireUser();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month);
+    final nextMonth = DateTime(now.year, now.month + 1);
+    final rows = await _client
+        .from('customer_orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('customer_phone', phone)
+        .gte('created_at', monthStart.toIso8601String())
+        .lt('created_at', nextMonth.toIso8601String());
+    return (rows as List).length;
+  }
+
   Future<void> updateOrderStatus(String orderNumber, String newStatus) async {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');

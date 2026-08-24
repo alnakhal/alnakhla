@@ -780,6 +780,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
     required String customerPhone,
     required String customerAddress,
     required String orderNote,
+    String? gift,
   }) async {
     if (_isSendingOrder) return;
     final authUser = Supabase.instance.client.auth.currentUser;
@@ -832,6 +833,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         return sum + qty * product.price;
       });
       final grandTotal = total;
+      if (total >= 100000 && gift == null) {
+        await _showMessage('يرجى اختيار الهدية قبل إرسال الطلب');
+        return;
+      }
 
       final orderNumber = _generateOrderNumber();
       final text = StringBuffer();
@@ -859,6 +864,9 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       text.writeln('---');
       text.writeln('مجموع المنتجات: ${total.toStringAsFixed(0)} د.ع');
       text.writeln('الإجمالي النهائي: ${grandTotal.toStringAsFixed(0)} د.ع');
+      if (gift != null) {
+        text.writeln('الهدية: $gift');
+      }
       if (orderNote.isNotEmpty) {
         text.writeln('ملاحظات: $orderNote');
       }
@@ -902,16 +910,18 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
           deliveryArea: 'baghdad',
           deliveryFee: 0,
           notes: orderNote.isNotEmpty ? orderNote : null,
-          items: selectedProducts
-              .map(
-                (p) => {
-                  'id': p.id,
-                  'name': p.name,
-                  'quantity': _selectedQuantities[p.id] ?? 0,
-                  'price': p.price,
-                },
-              )
-              .toList(),
+          items: [
+            ...selectedProducts.map(
+              (p) => {
+                'id': p.id,
+                'name': p.name,
+                'quantity': _selectedQuantities[p.id] ?? 0,
+                'price': p.price,
+              },
+            ),
+            if (gift != null)
+              {'type': 'gift', 'name': gift, 'quantity': 1, 'price': 0},
+          ],
           createdAt: DateTime.now(),
         );
         await CustomerOrdersSupabaseService().insertOrder(order);
@@ -942,6 +952,12 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
       _showMessage('يرجى اختيار منتجات قبل إتمام الطلب');
       return;
     }
+    String? selectedGift;
+    final customerOrdersService = CustomerOrdersSupabaseService();
+    List<Map<String, dynamic>> customerSuggestions = [];
+    int? customerMonthlyOrderCount;
+    bool isLoadingCustomers = false;
+    var customerLookupRequest = 0;
 
     showModalBottomSheet<void>(
       context: context,
@@ -955,6 +971,54 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
             final currentProducts = _lastProducts
                 .where((product) => (_selectedQuantities[product.id] ?? 0) > 0)
                 .toList();
+            final currentTotal = currentProducts.fold<double>(
+              0,
+              (sum, product) =>
+                  sum + product.price * (_selectedQuantities[product.id] ?? 0),
+            );
+            final giftEligible = currentTotal >= 100000;
+            if (!giftEligible) selectedGift = null;
+
+            Future<void> lookupCustomers(String rawPhone) async {
+              final prefix = _normalizePhone(rawPhone);
+              final request = ++customerLookupRequest;
+              if (prefix.length < 5) {
+                setStateSheet(() {
+                  customerSuggestions = [];
+                  customerMonthlyOrderCount = null;
+                  isLoadingCustomers = false;
+                });
+                return;
+              }
+              setStateSheet(() {
+                customerSuggestions = [];
+                customerMonthlyOrderCount = null;
+                isLoadingCustomers = true;
+              });
+              try {
+                final rows = await customerOrdersService
+                    .searchCustomersByPhonePrefix(prefix);
+                if (!context.mounted || request != customerLookupRequest) {
+                  return;
+                }
+                final uniqueCustomers = <String, Map<String, dynamic>>{};
+                for (final row in rows) {
+                  final phone = row['customer_phone']?.toString() ?? '';
+                  if (phone.isNotEmpty) {
+                    uniqueCustomers.putIfAbsent(phone, () => row);
+                  }
+                }
+                setStateSheet(() {
+                  customerSuggestions = uniqueCustomers.values.toList();
+                  isLoadingCustomers = false;
+                });
+              } catch (error) {
+                debugPrint('خطأ في البحث عن العميل: $error');
+                if (context.mounted && request == customerLookupRequest) {
+                  setStateSheet(() => isLoadingCustomers = false);
+                }
+              }
+            }
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -1149,6 +1213,44 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                         ),
                       ],
                     ),
+                    if (giftEligible) ...[
+                      const SizedBox(height: 12),
+                      Card(
+                        color: Colors.amber.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'مبروك! اختر هديتك عند إكمال الطلب',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              RadioListTile<String>(
+                                value: 'ضاغط هواء',
+                                groupValue: selectedGift,
+                                title: const Text('ضاغط هواء'),
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (value) {
+                                  setStateSheet(() => selectedGift = value);
+                                },
+                              ),
+                              RadioListTile<String>(
+                                value: '10 كاسة حجامة',
+                                groupValue: selectedGift,
+                                title: const Text('10 كاسة حجامة'),
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (value) {
+                                  setStateSheet(() => selectedGift = value);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1186,10 +1288,55 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                     TextField(
                       controller: _customerPhoneController,
                       keyboardType: TextInputType.phone,
+                      onChanged: lookupCustomers,
                       decoration: const InputDecoration(
                         labelText: 'رقم الجوال (مطلوب)',
                       ),
                     ),
+                    if (isLoadingCustomers)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: LinearProgressIndicator(),
+                      ),
+                    if (customerSuggestions.isNotEmpty)
+                      ...customerSuggestions.map((customer) {
+                        final phone = customer['customer_phone']?.toString() ?? '';
+                        final name = customer['customer_name']?.toString() ?? '';
+                        final address =
+                            customer['customer_address']?.toString() ?? '';
+                        return Card(
+                          margin: const EdgeInsets.only(top: 8),
+                          child: ListTile(
+                            leading: const Icon(Icons.person_search),
+                            title: Text(name),
+                            subtitle: Text(phone),
+                            onTap: () async {
+                              _customerPhoneController.text = phone;
+                              _customerNameController.text = name;
+                              _customerAddressController.text = address;
+                              final count = await customerOrdersService
+                                  .countCustomerOrdersThisMonth(phone);
+                              if (!context.mounted) return;
+                              setStateSheet(() {
+                                customerSuggestions = [];
+                                customerMonthlyOrderCount = count;
+                                isLoadingCustomers = false;
+                              });
+                            },
+                          ),
+                        );
+                      }),
+                    if (customerMonthlyOrderCount != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'عدد طلبات العميل هذا الشهر: $customerMonthlyOrderCount',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _customerAddressController,
@@ -1250,6 +1397,10 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                 await _showMessage('الرجاء إدخال العنوان');
                                 return;
                               }
+                              if (giftEligible && selectedGift == null) {
+                                await _showMessage('يرجى اختيار الهدية');
+                                return;
+                              }
 
                               final confirmed = await _confirmSendOrder(
                                 sheetContext,
@@ -1262,6 +1413,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                 customerPhone: phoneVal,
                                 customerAddress: addressVal,
                                 orderNote: _orderNoteController.text.trim(),
+                                gift: selectedGift,
                               );
                               if (!sheetContext.mounted) return;
                               Navigator.of(sheetContext).pop();
@@ -2101,15 +2253,6 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                           fontSize: 11,
                                                         ),
                                                       ),
-                                                    Text(
-                                                      'الوحدة: ${product.unit}',
-                                                      style: const TextStyle(
-                                                        color: Color(
-                                                          0xFF4B5563,
-                                                        ),
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
                                                   ],
                                                 ),
                                                 const SizedBox(height: 6),
@@ -2141,18 +2284,17 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                         const SizedBox(
                                                           height: 3,
                                                         ),
-                                                        Text(
-                                                          hasDiscount
-                                                              ? 'السعر بعد الخصم / ${product.unit}'
-                                                              : '/${product.unit}',
-                                                          style: textTheme
-                                                              .bodySmall
-                                                              ?.copyWith(
-                                                                color: colorScheme
-                                                                    .onSurfaceVariant,
-                                                                fontSize: 11,
-                                                              ),
-                                                        ),
+                                                        if (hasDiscount)
+                                                          Text(
+                                                            'السعر بعد الخصم',
+                                                            style: textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                  color: colorScheme
+                                                                      .onSurfaceVariant,
+                                                                  fontSize: 11,
+                                                                ),
+                                                          ),
                                                         if (hasDiscount)
                                                           Text(
                                                             product.price
