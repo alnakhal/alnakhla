@@ -1,3 +1,13 @@
+double _parseDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+int _parseInt(dynamic value) {
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 class Product {
   Product({
     required this.id,
@@ -38,30 +48,35 @@ class Product {
           : int.tryParse(map['id']?.toString() ?? '0') ?? 0,
       name: map['name'] as String,
       description: map['description'] as String? ?? '',
-      price: (map['price'] as num).toDouble(),
-      cost: (map['cost'] as num?)?.toDouble() ?? 0,
-      wholesalePrice: (map['wholesale_price'] as num?)?.toDouble() ?? 0,
-      minWholesaleQuantity:
-          (map['min_wholesale_quantity'] as num?)?.toInt() ?? 0,
-      singlePrice: (map['single_price'] as num?)?.toDouble() ?? 0,
+        price: _parseDouble(map['price']),
+        cost: _parseDouble(map['cost']),
+        wholesalePrice: _parseDouble(map['wholesale_price']),
+        minWholesaleQuantity: _parseInt(map['min_wholesale_quantity']),
+        singlePrice: _parseDouble(map['single_price']),
       hasWholesale: map['has_wholesale'] as bool? ?? false,
-      remainingQty: (map['remaining_qty'] as num?)?.toInt() ?? 0,
+      remainingQty: _parseInt(map['remaining_qty'] ?? map['quantity']),
       isHidden: map['is_hidden'] as bool? ?? false,
       imageUrl: map['image_url'] as String?,
       storeId: map['store_id']?.toString(),
-      deliveryPrice: (map['delivery_price'] as num?)?.toDouble() ?? 0,
-      baghdadDeliveryPrice: (map['baghdad_delivery_price'] as num?)?.toDouble(),
+        deliveryPrice: _parseDouble(map['delivery_price']),
+        baghdadDeliveryPrice: map['baghdad_delivery_price'] == null
+          ? null
+          : _parseDouble(map['baghdad_delivery_price']),
       otherGovernoratesDeliveryPrice:
-          (map['other_governorates_delivery_price'] as num?)?.toDouble(),
+          map['other_governorates_delivery_price'] == null
+          ? null
+          : _parseDouble(map['other_governorates_delivery_price']),
       pickupAvailable: map['pickup_available'] as bool? ?? false,
       category: map['category'] as String?,
       sku: map['sku'] as String?,
       barcode: map['barcode'] as String?,
       unit: map['unit'] as String? ?? 'قطعة',
-      minimumStock: (map['minimum_stock'] as num?)?.toInt() ?? 0,
-      discountPrice: (map['discount_price'] as num?)?.toDouble(),
+        minimumStock: _parseInt(map['minimum_stock']),
+        discountPrice: map['discount_price'] == null
+          ? null
+          : _parseDouble(map['discount_price']),
       brand: map['brand'] as String?,
-      weight: (map['weight'] as num?)?.toDouble(),
+      weight: map['weight'] == null ? null : _parseDouble(map['weight']),
       dimensions: map['dimensions'] as String?,
       variants: map['variants'] as String?,
       internalNotes: map['internal_notes'] as String?,
