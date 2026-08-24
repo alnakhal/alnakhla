@@ -145,8 +145,28 @@ Future<String?> getStoreIdForUser(String userId) async {
 Future<List<Product>> fetchProductsByUserId(String userId) async {
   try {
     final storeId = await getStoreIdForUser(userId);
-    if (storeId == null) return [];
-    return await fetchProductsByStoreId(storeId);
+    final productsByStore = <Product>[];
+    if (storeId != null) {
+      productsByStore.addAll(await fetchProductsByStoreId(storeId));
+    }
+
+    // Keep products created before store_id was introduced visible.
+    final dynamic res = await _client
+        .from('products')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    final list = res as List<dynamic>;
+    final productsByUser = list
+        .map((e) => Product.fromMap(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    final productsById = <int, Product>{
+      for (final product in productsByStore) product.id: product,
+    };
+    for (final product in productsByUser) {
+      productsById[product.id] = product;
+    }
+    return productsById.values.toList();
   } catch (e) {
     debugPrint('fetchProductsByUserId error: $e');
     return [];
@@ -159,7 +179,13 @@ Future<List<Product>> fetchProductsBySlug(String slug) async {
     if (storeRes == null) return [];
     final storeId = (storeRes is Map<String, dynamic>) ? storeRes['id']?.toString() : null;
     if (storeId == null) return [];
-    return await fetchProductsByStoreId(storeId);
+    final products = await fetchProductsByStoreId(storeId);
+    if (products.isNotEmpty) return products;
+
+    final ownerUserId =
+        (storeRes is Map<String, dynamic>) ? storeRes['user_id']?.toString() : null;
+    if (ownerUserId == null || ownerUserId.isEmpty) return [];
+    return fetchProductsByUserId(ownerUserId);
   } catch (e) {
     debugPrint('fetchProductsBySlug error: $e');
     return [];
