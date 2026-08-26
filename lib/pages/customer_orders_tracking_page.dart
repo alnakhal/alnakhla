@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
+import '../main.dart' show Invoice, InvoiceDetailPage, OrderItem;
 
 const _publicTrackingBaseUrl = 'https://alnakhal.github.io/alnakhla';
 
@@ -1377,11 +1378,34 @@ class _CustomerOrdersTrackingPageState
         totalAmount: double.parse(priceController.text.trim()),
         deliveryResult: order.deliveryResult,
       );
+      final updatedOrder = await _ordersService.getMyOrderByNumber(
+        order.orderNumber,
+      );
       if (!mounted) return;
       setState(_loadOrders);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('تم حفظ تفاصيل الطلب')));
+      if (updatedOrder != null) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => InvoiceDetailPage(
+              invoice: Invoice(
+                customerName: updatedOrder.customerName,
+                customerPhone: updatedOrder.customerPhone,
+                customerAddress: updatedOrder.customerAddress,
+                storePhone: '077821215446',
+                createdAt: updatedOrder.createdAt,
+                items: (updatedOrder.items ?? const <Map<String, dynamic>>[])
+                    .map(OrderItem.fromMap)
+                    .toList(),
+                notes: updatedOrder.notes,
+                invoiceNumber: updatedOrder.orderNumber,
+              ),
+            ),
+          ),
+        );
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
