@@ -368,7 +368,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -6571,14 +6570,25 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   final TextEditingController _customerNameController = TextEditingController();
   final TextEditingController _customerPhoneController =
       TextEditingController();
+    final TextEditingController _customerAddressController =
+      TextEditingController();
   final TextEditingController _orderNotesController = TextEditingController();
   final TextEditingController _orderDiscountController = TextEditingController(
     text: '0',
   );
+  final TextEditingController _deliveryFeeController = TextEditingController(
+    text: '0',
+  );
+  final TextEditingController _paidAmountController = TextEditingController(
+    text: '0',
+  );
+  String _paymentMethod = 'cash_on_delivery';
   final GlobalKey _orderShareKey = GlobalKey();
   bool _isSharingOrder = false;
   late final Future<List<Product>> _productsFuture;
   bool _isSaving = false;
+  final String _orderNumber =
+      'ORD-${DateTime.now().millisecondsSinceEpoch}';
 
   @override
   void initState() {
@@ -6587,6 +6597,15 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _searchController.addListener(() {
       if (mounted) setState(() {});
     });
+    for (final controller in [
+      _orderDiscountController,
+      _deliveryFeeController,
+      _paidAmountController,
+    ]) {
+      controller.addListener(() {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   double _parseAmount(String value) {
@@ -6599,8 +6618,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     _searchController.dispose();
     _customerNameController.dispose();
     _customerPhoneController.dispose();
+    _customerAddressController.dispose();
     _orderNotesController.dispose();
     _orderDiscountController.dispose();
+    _deliveryFeeController.dispose();
+    _paidAmountController.dispose();
     super.dispose();
   }
 
@@ -6742,6 +6764,22 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           (sum, item) => sum + (item['total'] as num).toDouble(),
         ),
       );
+      final deliveryFee = _parseAmount(_deliveryFeeController.text).clamp(
+        0,
+        double.infinity,
+      );
+      final paidAmount = _parseAmount(_paidAmountController.text).clamp(
+        0,
+        double.infinity,
+      );
+      final itemTotal = selectedItems.fold<double>(
+        0,
+        (sum, item) => sum + (item['total'] as num).toDouble(),
+      );
+      final invoiceTotal = (itemTotal + deliveryFee - discount).clamp(
+        0,
+        double.infinity,
+      );
 
       final rows = selectedItems
           .map(
@@ -6764,7 +6802,31 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       debugPrint('Order insert rows: $rows');
       await supabase.from('orders').insert(rows);
 
-      final invoiceNumber = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+        await supabase.from('customer_orders').insert({
+        'user_id': user.id,
+        'order_number': _orderNumber,
+        'customer_name': _customerNameController.text.trim(),
+        'customer_phone': _customerPhoneController.text.trim(),
+        'customer_address': _customerAddressController.text.trim(),
+        'total_amount': invoiceTotal,
+        'status': 'pending',
+        'payment_method': _paymentMethod,
+        'delivery_fee': deliveryFee,
+        'items': selectedItems,
+        'notes': _orderNotesController.text.trim().isEmpty
+          ? null
+          : _orderNotesController.text.trim(),
+        'invoice_status': paidAmount >= invoiceTotal
+          ? 'paid'
+          : 'pending_payment',
+        'paid_amount': paidAmount > invoiceTotal ? invoiceTotal : paidAmount,
+        'payment_status': paidAmount >= invoiceTotal
+          ? 'paid'
+          : (paidAmount > 0 ? 'partial' : 'unpaid'),
+        'offline_created_at': DateTime.now().toIso8601String(),
+        });
+
+      final invoiceNumber = _orderNumber;
       final invoicePrefs = await SharedPreferences.getInstance();
       final logoBase64 = invoicePrefs.getString('invoice_logo_base64');
       Uint8List? invoiceLogoBytes;
@@ -6776,7 +6838,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final invoice = Invoice(
         customerName: _customerNameController.text.trim(),
         customerPhone: _customerPhoneController.text.trim(),
-        customerAddress: '',
+        customerAddress: _customerAddressController.text.trim(),
         storePhone: invoicePrefs.getString('store_phone') ?? '',
         createdAt: DateTime.now(),
         items: selectedItems
@@ -6793,6 +6855,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             )
             .toList(),
         discount: discount.toDouble(),
+        deliveryFee: deliveryFee.toDouble(),
+        paymentMethod: _paymentMethod,
+        paidAmount: (paidAmount > invoiceTotal ? invoiceTotal : paidAmount)
+          .toDouble(),
+        paymentStatus: paidAmount >= invoiceTotal
+          ? 'paid'
+          : (paidAmount > 0 ? 'partial' : 'unpaid'),
         notes: _orderNotesController.text.trim().isNotEmpty
             ? _orderNotesController.text.trim()
             : null,
@@ -6808,6 +6877,15 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           'store_phone': invoice.storePhone,
           'created_at': invoice.createdAt.toIso8601String(),
           'discount': invoice.discount,
+            'delivery_fee': invoice.deliveryFee,
+            'payment_method': _paymentMethod,
+            'paid_amount': paidAmount > invoice.total ? invoice.total : paidAmount,
+            'invoice_status': paidAmount >= invoice.total
+              ? 'paid'
+              : 'pending_payment',
+            'payment_status': paidAmount >= invoice.total
+              ? 'paid'
+              : (paidAmount > 0 ? 'partial' : 'unpaid'),
           'total': (invoice.total - invoice.discount)
               .clamp(0, double.infinity)
               .toInt(),
@@ -6930,6 +7008,34 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     );
   }
 
+  Widget _buildProductImage(Product product) {
+    final imageUrl = product.imageUrl ??
+        (product.imageUrls.isNotEmpty ? product.imageUrls.first : null);
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        width: 56,
+        height: 56,
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.image_not_supported),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        imageUrl,
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: 56,
+          height: 56,
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.broken_image),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -6959,7 +7065,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           final discount = _parseAmount(
             _orderDiscountController.text,
           ).clamp(0, double.infinity);
-          final netTotal = (productsTotal + _manualTotal - discount).clamp(
+          final deliveryFee = _parseAmount(_deliveryFeeController.text).clamp(
+            0,
+            double.infinity,
+          );
+          final paidAmount = _parseAmount(_paidAmountController.text).clamp(
+            0,
+            double.infinity,
+          );
+          final netTotal =
+              (productsTotal + _manualTotal + deliveryFee - discount).clamp(
             0,
             double.infinity,
           );
@@ -7011,6 +7126,14 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                               ),
                               const SizedBox(height: 12),
                               TextField(
+                                controller: _customerAddressController,
+                                decoration: const InputDecoration(
+                                  labelText: 'عنوان العميل (اختياري)',
+                                ),
+                                maxLines: 2,
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
                                 controller: _orderNotesController,
                                 decoration: const InputDecoration(
                                   labelText: 'ملاحظات الطلب (اختياري)',
@@ -7028,6 +7151,56 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _deliveryFeeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'رسوم التوصيل',
+                                ),
+                                keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                initialValue: _paymentMethod,
+                                decoration: const InputDecoration(
+                                  labelText: 'طريقة الدفع',
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'cash_on_delivery',
+                                    child: Text('الدفع عند الاستلام'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'cash',
+                                    child: Text('نقدي'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'bank_transfer',
+                                    child: Text('تحويل مصرفي'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'card',
+                                    child: Text('بطاقة'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _paymentMethod = value);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _paidAmountController,
+                                decoration: const InputDecoration(
+                                  labelText: 'المبلغ المدفوع',
+                                ),
+                                keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
                               ),
                             ],
                           ),
@@ -7192,6 +7365,30 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                           ),
                         ),
                       ],
+                      if (_orderQuantities.values.any((quantity) => quantity > 0)) ...[
+                        const SizedBox(height: 16),
+                        const Text(
+                          'المنتجات المختارة في الطلب',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...products
+                            .where((product) =>
+                                (_orderQuantities[product.id] ?? 0) > 0)
+                            .map(
+                              (product) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: _buildProductImage(product),
+                                title: Text(product.name),
+                                subtitle: Text(
+                                  'الكمية: ${_orderQuantities[product.id]} • ${product.price.toStringAsFixed(0)} د.ع',
+                                ),
+                              ),
+                            ),
+                      ],
                     ],
                   ),
                 ),
@@ -7215,6 +7412,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'رقم الطلب: $_orderNumber',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -7248,6 +7450,14 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              const Text('رسوم التوصيل'),
+                              Text(deliveryFee.toStringAsFixed(0)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
                               const Text(
                                 'الخصم',
                                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -7268,6 +7478,28 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('المبلغ المدفوع'),
+                              Text(paidAmount.toStringAsFixed(0)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'المبلغ المتبقي',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                (netTotal - paidAmount).clamp(0, double.infinity).toStringAsFixed(0),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -7448,6 +7680,10 @@ class Invoice {
     this.notes,
     this.logoBytes,
     this.discount = 0,
+    this.deliveryFee = 0,
+    this.paymentMethod = 'cash_on_delivery',
+    this.paidAmount = 0,
+    this.paymentStatus = 'unpaid',
     this.id,
     this.invoiceNumber,
   });
@@ -7461,10 +7697,15 @@ class Invoice {
   final String? notes;
   final Uint8List? logoBytes;
   final double discount;
+  final double deliveryFee;
+  final String paymentMethod;
+  final double paidAmount;
+  final String paymentStatus;
   final int? id;
   final String? invoiceNumber;
 
-  double get total => items.fold<double>(0, (sum, item) => sum + item.total);
+  double get total =>
+      items.fold<double>(0, (sum, item) => sum + item.total) + deliveryFee;
 }
 
 final List<Invoice> savedInvoices = [];
@@ -7595,6 +7836,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                           fontSize: 14,
                           color: Colors.grey,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'الدفع: ${_paymentMethodArabic(widget.invoice.paymentMethod)} • الحالة: ${_paymentStatusArabic(widget.invoice.paymentStatus)}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       if (widget.invoice.invoiceNumber != null) ...[
                         const SizedBox(height: 4),
@@ -7855,6 +8101,20 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                 Text(widget.invoice.total.toStringAsFixed(0)),
                               ],
                             ),
+                            if (widget.invoice.deliveryFee > 0) ...[
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('رسوم التوصيل'),
+                                  Text(
+                                    widget.invoice.deliveryFee
+                                        .toStringAsFixed(0),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 6),
                             if (widget.invoice.discount > 0) ...[
                               Row(
@@ -7895,6 +8155,34 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                     color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('المبلغ المدفوع'),
+                                Text(widget.invoice.paidAmount.toStringAsFixed(0)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'المبلغ المتبقي',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  (widget.invoice.total -
+                                          widget.invoice.discount -
+                                          widget.invoice.paidAmount)
+                                      .clamp(0, double.infinity)
+                                      .toStringAsFixed(0),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
@@ -7977,6 +8265,30 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         ),
       ),
     );
+  }
+
+  String _paymentMethodArabic(String method) {
+    switch (method) {
+      case 'cash':
+        return 'نقدي';
+      case 'bank_transfer':
+        return 'تحويل مصرفي';
+      case 'card':
+        return 'بطاقة';
+      default:
+        return 'الدفع عند الاستلام';
+    }
+  }
+
+  String _paymentStatusArabic(String status) {
+    switch (status) {
+      case 'paid':
+        return 'مدفوع';
+      case 'partial':
+        return 'مدفوع جزئيًا';
+      default:
+        return 'غير مدفوع';
+    }
   }
 }
 

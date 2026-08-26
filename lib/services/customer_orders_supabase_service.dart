@@ -65,18 +65,16 @@ class CustomerOrdersSupabaseService {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
     final user = _requireUser();
-    final rows = await _client
-        .from('customer_orders')
-        .update({
-          'status': newStatus,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('order_number', orderNumber)
-        .eq('user_id', user.id)
-        .select('id');
-    if (rows.isEmpty) {
-      throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
-    }
+    await _client.rpc(
+      'update_customer_order_status_with_inventory',
+      params: {'p_order_number': orderNumber, 'p_new_status': newStatus},
+    );
+    await _client.from('order_audit_log').insert({
+      'order_number': orderNumber,
+      'user_id': user.id,
+      'action': 'status_changed',
+      'details': {'status': newStatus},
+    });
   }
 
   Future<void> updateOrderDetails({

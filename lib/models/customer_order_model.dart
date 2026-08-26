@@ -15,6 +15,12 @@ class CustomerOrderModel {
   final double deliveryFee;
   final String? receiptNumber;
   final String deliveryResult;
+  final String invoiceStatus;
+  final double paidAmount;
+  final String paymentStatus;
+  final DateTime? approvedAt;
+  final DateTime? offlineCreatedAt;
+  final DateTime? lastSyncedAt;
   final String? notes;
   final List<Map<String, dynamic>>? items;
   final DateTime createdAt;
@@ -37,6 +43,12 @@ class CustomerOrderModel {
     this.deliveryFee = 0,
     this.receiptNumber,
     this.deliveryResult = 'pending',
+    this.invoiceStatus = 'draft',
+    this.paidAmount = 0,
+    this.paymentStatus = 'unpaid',
+    this.approvedAt,
+    this.offlineCreatedAt,
+    this.lastSyncedAt,
     this.notes,
     this.items,
     required this.createdAt,
@@ -60,6 +72,12 @@ class CustomerOrderModel {
     'delivery_fee': deliveryFee,
     'receipt_number': receiptNumber,
     'delivery_result': deliveryResult,
+    'invoice_status': invoiceStatus,
+    'paid_amount': paidAmount,
+    'payment_status': paymentStatus,
+    'approved_at': approvedAt?.toIso8601String(),
+    'offline_created_at': offlineCreatedAt?.toIso8601String(),
+    'last_synced_at': lastSyncedAt?.toIso8601String(),
     'notes': notes,
     'items': items,
     'created_at': createdAt.toIso8601String(),
@@ -90,6 +108,12 @@ class CustomerOrderModel {
       deliveryFee: (map['delivery_fee'] as num?)?.toDouble() ?? 0,
       receiptNumber: map['receipt_number']?.toString(),
       deliveryResult: map['delivery_result']?.toString() ?? 'pending',
+      invoiceStatus: map['invoice_status']?.toString() ?? 'draft',
+      paidAmount: (map['paid_amount'] as num?)?.toDouble() ?? 0,
+      paymentStatus: map['payment_status']?.toString() ?? 'unpaid',
+      approvedAt: _readDate(map['approved_at']),
+      offlineCreatedAt: _readDate(map['offline_created_at']),
+      lastSyncedAt: _readDate(map['last_synced_at']),
       notes: map['notes']?.toString(),
       items: _readItems(map),
       createdAt: map['created_at'] is DateTime
@@ -103,6 +127,12 @@ class CustomerOrderModel {
                 : DateTime.parse(map['updated_at'].toString()))
           : null,
     );
+  }
+
+  static DateTime? _readDate(dynamic value) {
+    if (value is DateTime) return value;
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString());
   }
 
   static List<Map<String, dynamic>>? _readItems(Map<String, dynamic> map) {
