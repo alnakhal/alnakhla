@@ -10,7 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
-import '../main.dart' show Invoice, InvoiceDetailPage, OrderItem;
+import '../main.dart'
+  show CreateOrderPage, Invoice, InvoiceDetailPage, OrderItem;
 
 const _publicTrackingBaseUrl = 'https://alnakhal.github.io/alnakhla';
 
@@ -866,7 +867,20 @@ class _CustomerOrdersTrackingPageState
         .toList();
   }
 
+  Future<void> _openCreateOrderPage() async {
+    await _requireLogin();
+    if (!mounted || _supabase.auth.currentUser == null) return;
+
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreateOrderPage()));
+    if (mounted) setState(_loadOrders);
+  }
+
   Future<void> _showAddOrderDialog() async {
+    await _openCreateOrderPage();
+    return;
+
     final prefs = await SharedPreferences.getInstance();
     Map<String, dynamic> draft = <String, dynamic>{};
     final draftJson = prefs.getString(_newOrderDraftKey);
