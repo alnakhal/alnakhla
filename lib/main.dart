@@ -6688,10 +6688,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
       final quantity = _orderQuantities[product.id] ?? 0;
       if (quantity > 0) {
         selectedItems.add({
+          'product_id': product.id,
           'name': product.name,
           'price': product.price.toInt(),
           'quantity': quantity,
           'total': (product.price * quantity).toInt(),
+          'image_url': product.imageUrl,
+          'image_urls': product.imageUrls,
         });
       }
     }
@@ -6729,6 +6732,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     }
 
     setState(() => _isSaving = true);
+    Invoice? savedOrderInvoice;
     try {
       final createdAt = DateTime.now().toIso8601String();
       final discount = _parseAmount(_orderDiscountController.text).clamp(
@@ -6759,6 +6763,68 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
       debugPrint('Order insert rows: $rows');
       await supabase.from('orders').insert(rows);
+
+      final invoiceNumber = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+      final invoicePrefs = await SharedPreferences.getInstance();
+      final logoBase64 = invoicePrefs.getString('invoice_logo_base64');
+      Uint8List? invoiceLogoBytes;
+      if (logoBase64 != null && logoBase64.isNotEmpty) {
+        try {
+          invoiceLogoBytes = base64Decode(logoBase64);
+        } catch (_) {}
+      }
+      final invoice = Invoice(
+        customerName: _customerNameController.text.trim(),
+        customerPhone: _customerPhoneController.text.trim(),
+        customerAddress: '',
+        storePhone: invoicePrefs.getString('store_phone') ?? '',
+        createdAt: DateTime.now(),
+        items: selectedItems
+            .map(
+              (item) => OrderItem(
+                name: item['name'] as String,
+                price: (item['price'] as num).toDouble(),
+                quantity: (item['quantity'] as num).toInt(),
+                imageUrl: item['image_url'] as String?,
+                imageUrls: (item['image_urls'] as List<dynamic>? ?? [])
+                    .whereType<String>()
+                    .toList(),
+              ),
+            )
+            .toList(),
+        discount: discount.toDouble(),
+        notes: _orderNotesController.text.trim().isNotEmpty
+            ? _orderNotesController.text.trim()
+            : null,
+        logoBytes: invoiceLogoBytes,
+        invoiceNumber: invoiceNumber,
+      );
+      try {
+        await supabase.from('invoices').insert({
+          'invoice_number': invoiceNumber,
+          'customer_name': invoice.customerName,
+          'customer_phone': invoice.customerPhone,
+          'customer_address': invoice.customerAddress,
+          'store_phone': invoice.storePhone,
+          'created_at': invoice.createdAt.toIso8601String(),
+          'discount': invoice.discount,
+          'total': (invoice.total - invoice.discount)
+              .clamp(0, double.infinity)
+              .toInt(),
+          'items': invoice.items.map((item) => item.toJson()).toList(),
+          'notes': invoice.notes,
+          if (user.id.isNotEmpty) 'user_id': user.id,
+        });
+        savedOrderInvoice = invoice;
+        savedInvoices.add(invoice);
+      } catch (e) {
+        debugPrint('Invoice insert error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إنشاء الطلب لكن تعذر حفظ الفاتورة: $e')),
+          );
+        }
+      }
 
       // ثم نخفض الكميات في جدول المنتجات
       for (final product in products) {
@@ -6796,7 +6862,15 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('تم إنشاء الطلب بنجاح')));
-    Navigator.of(context).pop();
+    if (savedOrderInvoice != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => InvoiceDetailPage(invoice: savedOrderInvoice!),
+        ),
+      );
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   void _showAddManualItemDialog() {
@@ -7522,6 +7596,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                           color: Colors.grey,
                         ),
                       ),
+                      if (widget.invoice.invoiceNumber != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'رقم الفاتورة: ${widget.invoice.invoiceNumber}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -7689,6 +7770,38 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        if (item.imageUrl != null ||
+                                            item.imageUrls.isNotEmpty)
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: [
+                                              ...{
+                                                if (item.imageUrl != null)
+                                                  item.imageUrl!,
+                                                ...item.imageUrls,
+                                              }.map(
+                                                (url) => ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  child: Image.network(
+                                                    url,
+                                                    width: 48,
+                                                    height: 48,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => const Icon(
+                                                      Icons.broken_image,
+                                                      size: 32,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         Text(item.name),
                                         if (item.note != null &&
                                             item.note!.isNotEmpty) ...[
@@ -7785,6 +7898,33 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.green.shade700, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.green.shade50,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.verified, color: Colors.green.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'ختم إلكتروني معتمد • ${widget.invoice.invoiceNumber ?? ''}',
+                              style: TextStyle(
+                                color: Colors.green.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
@@ -8174,6 +8314,8 @@ class OrderItem {
     required this.price,
     required this.quantity,
     this.note,
+    this.imageUrl,
+    this.imageUrls = const [],
   });
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
@@ -8183,6 +8325,10 @@ class OrderItem {
         price: ((map['price'] as num?) ?? 0).toDouble(),
         quantity: ((map['quantity'] as num?) ?? 0).toInt(),
         note: (map['note'] as String?) ?? '',
+        imageUrl: map['image_url'] as String?,
+        imageUrls: (map['image_urls'] as List<dynamic>? ?? [])
+          .whereType<String>()
+          .toList(),
       );
     } catch (e) {
       debugPrint('Error creating OrderItem: $e, map: $map');
@@ -8194,6 +8340,8 @@ class OrderItem {
   final double price;
   final int quantity;
   final String? note;
+  final String? imageUrl;
+  final List<String> imageUrls;
 
   double get total => price * quantity;
 
@@ -8203,5 +8351,7 @@ class OrderItem {
     'quantity': quantity,
     'total': total.toInt(),
     if (note != null && note!.isNotEmpty) 'note': note,
+    if (imageUrl != null && imageUrl!.isNotEmpty) 'image_url': imageUrl,
+    if (imageUrls.isNotEmpty) 'image_urls': imageUrls,
   };
 }
