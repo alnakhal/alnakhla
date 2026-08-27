@@ -1281,6 +1281,42 @@ class _CustomerOrdersTrackingPageState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        border: Border.all(color: Colors.green.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'فاتورة محاسبية',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text('مستلزمات النخلة - 077821215446'),
+                          const SizedBox(height: 4),
+                          Text(
+                            'رقم الفاتورة: ${order.orderNumber}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'فاتورة معدلة',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     _buildOrderDetail('رقم الطلب', order.orderNumber),
                     TextFormField(
                       controller: nameController,
@@ -1362,70 +1398,128 @@ class _CustomerOrdersTrackingPageState
                         ),
                       ],
                     ),
-                    ...List<Widget>.generate(itemControllers.length, (index) {
-                      final fields = itemControllers[index];
-                      final source = itemSources[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: TextFormField(
-                                      controller: fields['name'],
-                                      decoration: const InputDecoration(
-                                        labelText: 'اسم المنتج',
-                                        isDense: true,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Table(
+                        defaultVerticalAlignment:
+                            TableCellVerticalAlignment.middle,
+                        border: TableBorder.all(color: Colors.grey.shade300),
+                        columnWidths: const {
+                          0: FixedColumnWidth(250),
+                          1: FixedColumnWidth(120),
+                          2: FixedColumnWidth(100),
+                          3: FixedColumnWidth(130),
+                          4: FixedColumnWidth(55),
+                        },
+                        children: [
+                          TableRow(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                            ),
+                            children: const [
+                              _InvoiceEditHeader('المنتج'),
+                              _InvoiceEditHeader('السعر'),
+                              _InvoiceEditHeader('العدد'),
+                              _InvoiceEditHeader('المجموع'),
+                              _InvoiceEditHeader(''),
+                            ],
+                          ),
+                          ...List<TableRow>.generate(itemControllers.length, (
+                            index,
+                          ) {
+                            final fields = itemControllers[index];
+                            final source = itemSources[index];
+                            final quantity =
+                                int.tryParse(fields['quantity']!.text) ?? 0;
+                            final price =
+                                double.tryParse(fields['price']!.text) ?? 0;
+                            return TableRow(
+                              children: [
+                                _invoiceEditCell(
+                                  Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: fields['name'],
+                                        decoration: const InputDecoration(
+                                          hintText: 'اسم المنتج',
+                                          isDense: true,
+                                        ),
+                                        onChanged: (_) => setDialogState(() {}),
+                                        validator: (value) =>
+                                            value == null ||
+                                                value.trim().isEmpty
+                                            ? 'أدخل اسم المنتج'
+                                            : null,
                                       ),
-                                      validator: (value) =>
-                                          value == null || value.trim().isEmpty
-                                          ? 'أدخل اسم المنتج'
-                                          : null,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: fields['quantity'],
-                                      decoration: const InputDecoration(
-                                        labelText: 'العدد',
-                                        isDense: true,
+                                      TextField(
+                                        controller: fields['note'],
+                                        decoration: const InputDecoration(
+                                          hintText: 'ملاحظة المنتج',
+                                          isDense: true,
+                                        ),
                                       ),
-                                      keyboardType: TextInputType.number,
-                                      validator: (value) =>
-                                          int.tryParse(value?.trim() ?? '') ==
-                                                  null ||
-                                              int.parse(value!.trim()) <= 0
-                                          ? 'عدد غير صحيح'
-                                          : null,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: fields['price'],
-                                      decoration: const InputDecoration(
-                                        labelText: 'السعر',
-                                        isDense: true,
-                                      ),
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
+                                      if (source['image_url'] != null ||
+                                          source['image_urls'] != null)
+                                        const Align(
+                                          alignment:
+                                              AlignmentDirectional.centerStart,
+                                          child: Text(
+                                            'الصور محفوظة',
+                                            style: TextStyle(fontSize: 11),
                                           ),
-                                      validator: (value) =>
-                                          double.tryParse(
-                                                value?.trim() ?? '',
-                                              ) ==
-                                              null
-                                          ? 'سعر غير صحيح'
-                                          : null,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                _invoiceEditCell(
+                                  TextFormField(
+                                    controller: fields['price'],
+                                    decoration: const InputDecoration(
+                                      hintText: '0',
+                                      suffixText: 'د.ع',
+                                      isDense: true,
+                                    ),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    onChanged: (_) => setDialogState(() {}),
+                                    validator: (value) =>
+                                        double.tryParse(value?.trim() ?? '') ==
+                                            null
+                                        ? 'سعر غير صحيح'
+                                        : null,
+                                  ),
+                                ),
+                                _invoiceEditCell(
+                                  TextFormField(
+                                    controller: fields['quantity'],
+                                    decoration: const InputDecoration(
+                                      hintText: '1',
+                                      isDense: true,
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setDialogState(() {}),
+                                    validator: (value) =>
+                                        int.tryParse(value?.trim() ?? '') ==
+                                                null ||
+                                            int.tryParse(value!.trim())! <= 0
+                                        ? 'عدد غير صحيح'
+                                        : null,
+                                  ),
+                                ),
+                                _invoiceEditCell(
+                                  Text(
+                                    '${(quantity * price).toStringAsFixed(0)} د.ع',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  IconButton(
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: IconButton(
                                     tooltip: 'حذف المنتج',
                                     onPressed: itemControllers.length == 1
                                         ? null
@@ -1437,32 +1531,13 @@ class _CustomerOrdersTrackingPageState
                                           },
                                     icon: const Icon(Icons.delete_outline),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: fields['note'],
-                                decoration: const InputDecoration(
-                                  labelText: 'ملاحظة المنتج',
-                                  isDense: true,
                                 ),
-                              ),
-                              if (source['image_url'] != null ||
-                                  source['image_urls'] != null)
-                                const Align(
-                                  alignment: AlignmentDirectional.centerStart,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(top: 6),
-                                    child: Text(
-                                      'صور المنتج محفوظة مع الفاتورة',
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                     Builder(
                       builder: (_) {
                         final total = itemControllers.fold<double>(0, (
@@ -1628,6 +1703,28 @@ class _CustomerOrdersTrackingPageState
           ),
           Expanded(child: Text(value)),
         ],
+      ),
+    );
+  }
+
+  Widget _invoiceEditCell(Widget child) {
+    return Padding(padding: const EdgeInsets.all(8), child: child);
+  }
+}
+
+class _InvoiceEditHeader extends StatelessWidget {
+  const _InvoiceEditHeader(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );
   }
