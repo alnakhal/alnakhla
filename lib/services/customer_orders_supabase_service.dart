@@ -64,17 +64,70 @@ class CustomerOrdersSupabaseService {
     if (!orderStatuses.contains(newStatus)) {
       throw ArgumentError('حالة طلب غير صالحة: $newStatus');
     }
+    final invoiceStatus = _invoiceStatusForOrderStatus(newStatus);
     final user = _requireUser();
-    await _client.rpc(
-      'update_customer_order_status_with_inventory',
-      params: {'p_order_number': orderNumber, 'p_new_status': newStatus},
-    );
+    var rpcUnavailable = false;
+    try {
+      await _client.rpc(
+        'update_customer_order_status_with_inventory',
+        params: {'p_order_number': orderNumber, 'p_new_status': newStatus},
+      );
+    } on PostgrestException catch (error) {
+      if (error.code != '42883' && error.code != 'PGRST202') rethrow;
+      rpcUnavailable = true;
+    }
+
+    var order = await _client
+        .from('customer_orders')
+        .select('status, invoice_status')
+        .eq('order_number', orderNumber)
+        .eq('user_id', user.id)
+        .maybeSingle();
+    if (rpcUnavailable ||
+        order?['status'] != newStatus ||
+        order?['invoice_status'] != invoiceStatus) {
+      final updatedRows = await _client
+          .from('customer_orders')
+          .update({
+            'status': newStatus,
+            'invoice_status': invoiceStatus,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('order_number', orderNumber)
+          .eq('user_id', user.id)
+          .select('status, invoice_status');
+      if (updatedRows.isEmpty) {
+        throw StateError('لم يتم العثور على الطلب أو لا تملك صلاحية تعديله');
+      }
+      order = Map<String, dynamic>.from(updatedRows.first as Map);
+    }
+    if (order?['status'] != newStatus ||
+        order?['invoice_status'] != invoiceStatus) {
+      throw StateError('لم يتم حفظ حالة الطلب');
+    }
     await _client.from('order_audit_log').insert({
       'order_number': orderNumber,
       'user_id': user.id,
       'action': 'status_changed',
       'details': {'status': newStatus},
     });
+  }
+
+  String _invoiceStatusForOrderStatus(String status) {
+    switch (status) {
+      case 'pending':
+        return 'draft';
+      case 'confirmed':
+      case 'shipped':
+        return 'processing';
+      case 'delivered':
+        return 'completed';
+      case 'cancelled_company':
+      case 'returned':
+        return 'cancelled';
+      default:
+        throw ArgumentError('حالة طلب غير صالحة: $status');
+    }
   }
 
   Future<void> updateOrderDetails({
