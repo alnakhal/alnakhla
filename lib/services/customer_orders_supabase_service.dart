@@ -141,6 +141,7 @@ class CustomerOrdersSupabaseService {
     required List<Map<String, dynamic>> items,
     required double totalAmount,
     required String deliveryResult,
+    String invoiceStatus = 'modified',
   }) async {
     if (!['pending', 'received', 'returned'].contains(deliveryResult)) {
       throw ArgumentError('نتيجة تسليم غير صالحة: $deliveryResult');
@@ -158,6 +159,7 @@ class CustomerOrdersSupabaseService {
           'items': items,
           'total_amount': totalAmount,
           'delivery_result': deliveryResult,
+          'invoice_status': invoiceStatus,
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('order_number', orderNumber)

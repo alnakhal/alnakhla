@@ -11,7 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
 import '../services/customer_orders_supabase_service.dart';
 import '../main.dart'
-  show CreateOrderPage, Invoice, InvoiceDetailPage, OrderItem;
+    show CreateOrderPage, Invoice, InvoiceDetailPage, OrderItem;
 
 const _publicTrackingBaseUrl = 'https://alnakhal.github.io/alnakhla';
 
@@ -223,6 +223,25 @@ class _CustomerOrdersTrackingPageState
                 _shareInfoRow('العنوان', order.customerAddress),
                 if (order.customerLandmark.isNotEmpty)
                   _shareInfoRow('أقرب نقطة دالة', order.customerLandmark),
+                if (order.receiptNumber != null &&
+                    order.receiptNumber!.isNotEmpty)
+                  _shareInfoRow('رقم الوصل', order.receiptNumber!),
+                _shareInfoRow(
+                  'حالة الفاتورة',
+                  order.invoiceStatus == 'modified'
+                      ? 'فاتورة معدلة'
+                      : order.invoiceStatus,
+                ),
+                if (order.updatedAt != null)
+                  _shareInfoRow(
+                    'تاريخ آخر تعديل',
+                    DateFormat(
+                      'dd/MM/yyyy HH:mm',
+                      'ar',
+                    ).format(order.updatedAt!),
+                  ),
+                if (order.notes != null && order.notes!.isNotEmpty)
+                  _shareInfoRow('ملاحظات الطلب', order.notes!),
                 const SizedBox(height: 24),
                 const Text(
                   'المنتجات',
@@ -255,7 +274,20 @@ class _CustomerOrdersTrackingPageState
                     ),
                     child: Row(
                       children: [
-                        Expanded(flex: 5, child: Text(name)),
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(name),
+                              if (item['note']?.toString().isNotEmpty == true)
+                                Text(
+                                  'ملاحظة: ${item['note']}',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                            ],
+                          ),
+                        ),
                         Expanded(child: Text(_formatNumber(quantity))),
                         Expanded(
                           child: Text('${price.toStringAsFixed(0)} د.ع'),
@@ -846,27 +878,6 @@ class _CustomerOrdersTrackingPageState
     ).showSnackBar(const SnackBar(content: Text('تم نسخ المعلومات')));
   }
 
-  String _itemsToText(CustomerOrderModel order) {
-    return (order.items ?? const <Map<String, dynamic>>[])
-        .map((item) {
-          final name = item['name']?.toString() ?? '';
-          final quantity = item['quantity']?.toString() ?? '1';
-          return '$name x$quantity';
-        })
-        .join('\n');
-  }
-
-  List<Map<String, dynamic>> _itemsFromText(String text) {
-    return text
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .map(
-          (line) => <String, dynamic>{'name': line, 'quantity': 1, 'price': 0},
-        )
-        .toList();
-  }
-
   Future<void> _openCreateOrderPage() async {
     await _requireLogin();
     if (!mounted || _supabase.auth.currentUser == null) return;
@@ -1238,19 +1249,32 @@ class _CustomerOrdersTrackingPageState
     final receiptController = TextEditingController(
       text: order.receiptNumber ?? '',
     );
-    final itemsController = TextEditingController(text: _itemsToText(order));
-    final priceController = TextEditingController(
-      text: order.totalAmount.toStringAsFixed(0),
-    );
+    final itemControllers = <Map<String, TextEditingController>>[];
+    final itemSources = <Map<String, dynamic>>[];
+    for (final item in order.items ?? const <Map<String, dynamic>>[]) {
+      itemControllers.add({
+        'name': TextEditingController(text: item['name']?.toString() ?? ''),
+        'quantity': TextEditingController(
+          text: item['quantity']?.toString() ?? '1',
+        ),
+        'price': TextEditingController(text: item['price']?.toString() ?? '0'),
+        'note': TextEditingController(text: item['note']?.toString() ?? ''),
+      });
+      itemSources.add(Map<String, dynamic>.from(item));
+    }
+    if (itemControllers.isEmpty) {
+      itemControllers.add(_newInvoiceItemControllers());
+      itemSources.add(<String, dynamic>{});
+    }
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('تفاصيل الطلب'),
+          title: const Text('تعديل الفاتورة'),
           content: SizedBox(
-            width: 460,
+            width: 620,
             child: SingleChildScrollView(
               child: Form(
                 key: formKey,
@@ -1319,28 +1343,146 @@ class _CustomerOrdersTrackingPageState
                       decoration: const InputDecoration(labelText: 'رقم الوصل'),
                     ),
                     const SizedBox(height: 10),
-                    TextField(
-                      controller: itemsController,
-                      decoration: const InputDecoration(
-                        labelText: 'محتويات الطلب',
-                        hintText: 'اكتب كل منتج في سطر مستقل',
-                      ),
-                      minLines: 2,
-                      maxLines: 5,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'بنود الفاتورة',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              itemControllers.add(_newInvoiceItemControllers());
+                              itemSources.add(<String, dynamic>{});
+                            });
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('إضافة منتج'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'السعر الكلي',
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (value) =>
-                          double.tryParse(value?.trim() ?? '') == null
-                          ? 'أدخل سعرًا صحيحًا'
-                          : null,
+                    ...List<Widget>.generate(itemControllers.length, (index) {
+                      final fields = itemControllers[index];
+                      final source = itemSources[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: TextFormField(
+                                      controller: fields['name'],
+                                      decoration: const InputDecoration(
+                                        labelText: 'اسم المنتج',
+                                        isDense: true,
+                                      ),
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'أدخل اسم المنتج'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: fields['quantity'],
+                                      decoration: const InputDecoration(
+                                        labelText: 'العدد',
+                                        isDense: true,
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      validator: (value) =>
+                                          int.tryParse(value?.trim() ?? '') ==
+                                                  null ||
+                                              int.parse(value!.trim()) <= 0
+                                          ? 'عدد غير صحيح'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: fields['price'],
+                                      decoration: const InputDecoration(
+                                        labelText: 'السعر',
+                                        isDense: true,
+                                      ),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      validator: (value) =>
+                                          double.tryParse(
+                                                value?.trim() ?? '',
+                                              ) ==
+                                              null
+                                          ? 'سعر غير صحيح'
+                                          : null,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'حذف المنتج',
+                                    onPressed: itemControllers.length == 1
+                                        ? null
+                                        : () {
+                                            setDialogState(() {
+                                              itemControllers.removeAt(index);
+                                              itemSources.removeAt(index);
+                                            });
+                                          },
+                                    icon: const Icon(Icons.delete_outline),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: fields['note'],
+                                decoration: const InputDecoration(
+                                  labelText: 'ملاحظة المنتج',
+                                  isDense: true,
+                                ),
+                              ),
+                              if (source['image_url'] != null ||
+                                  source['image_urls'] != null)
+                                const Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      'صور المنتج محفوظة مع الفاتورة',
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    Builder(
+                      builder: (_) {
+                        final total = itemControllers.fold<double>(0, (
+                          sum,
+                          fields,
+                        ) {
+                          final quantity =
+                              int.tryParse(fields['quantity']!.text) ?? 0;
+                          final price =
+                              double.tryParse(fields['price']!.text) ?? 0;
+                          return sum + quantity * price;
+                        });
+                        return Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: Text(
+                            'الإجمالي: ${total.toStringAsFixed(0)} د.ع',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -1380,6 +1522,30 @@ class _CustomerOrdersTrackingPageState
     }
 
     try {
+      final items = <Map<String, dynamic>>[];
+      for (var index = 0; index < itemControllers.length; index++) {
+        final fields = itemControllers[index];
+        final source = itemSources[index];
+        final item = <String, dynamic>{
+          ...source,
+          'name': fields['name']!.text.trim(),
+          'quantity': int.parse(fields['quantity']!.text.trim()),
+          'price': double.parse(fields['price']!.text.trim()),
+        };
+        final note = fields['note']!.text.trim();
+        if (note.isEmpty) {
+          item.remove('note');
+        } else {
+          item['note'] = note;
+        }
+        item['total'] = (item['quantity'] as int) * (item['price'] as double);
+        items.add(item);
+      }
+      final totalAmount = items.fold<double>(
+        0,
+        (sum, item) =>
+            sum + (item['quantity'] as int) * (item['price'] as double),
+      );
       await _ordersService.updateOrderDetails(
         orderNumber: order.orderNumber,
         customerName: nameController.text.trim(),
@@ -1388,9 +1554,10 @@ class _CustomerOrdersTrackingPageState
         landmark: landmarkController.text.trim(),
         notes: notesController.text.trim(),
         receiptNumber: receiptController.text.trim(),
-        items: _itemsFromText(itemsController.text),
-        totalAmount: double.parse(priceController.text.trim()),
+        items: items,
+        totalAmount: totalAmount,
         deliveryResult: order.deliveryResult,
+        invoiceStatus: 'modified',
       );
       final updatedOrder = await _ordersService.getMyOrderByNumber(
         order.orderNumber,
@@ -1413,7 +1580,17 @@ class _CustomerOrdersTrackingPageState
                 items: (updatedOrder.items ?? const <Map<String, dynamic>>[])
                     .map(OrderItem.fromMap)
                     .toList(),
-                notes: updatedOrder.notes,
+                notes: [
+                  'حالة الفاتورة: فاتورة معدلة',
+                  if (updatedOrder.customerLandmark.isNotEmpty)
+                    'أقرب نقطة دالة: ${updatedOrder.customerLandmark}',
+                  if (updatedOrder.receiptNumber != null &&
+                      updatedOrder.receiptNumber!.isNotEmpty)
+                    'رقم الوصل: ${updatedOrder.receiptNumber}',
+                  if (updatedOrder.notes != null &&
+                      updatedOrder.notes!.isNotEmpty)
+                    updatedOrder.notes!,
+                ].join('\n'),
                 invoiceNumber: updatedOrder.orderNumber,
               ),
             ),
@@ -1428,6 +1605,13 @@ class _CustomerOrdersTrackingPageState
       }
     }
   }
+
+  Map<String, TextEditingController> _newInvoiceItemControllers() => {
+    'name': TextEditingController(),
+    'quantity': TextEditingController(text: '1'),
+    'price': TextEditingController(text: '0'),
+    'note': TextEditingController(),
+  };
 
   Widget _buildOrderDetail(String label, String value) {
     return Padding(
