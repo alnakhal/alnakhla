@@ -1390,11 +1390,11 @@ class _CustomerOrdersTrackingPageState
                             TableCellVerticalAlignment.middle,
                         border: TableBorder.all(color: Colors.grey.shade300),
                         columnWidths: const {
-                          0: FixedColumnWidth(250),
-                          1: FixedColumnWidth(120),
-                          2: FixedColumnWidth(100),
-                          3: FixedColumnWidth(130),
-                          4: FixedColumnWidth(55),
+                          0: FixedColumnWidth(180),
+                          1: FixedColumnWidth(95),
+                          2: FixedColumnWidth(70),
+                          3: FixedColumnWidth(105),
+                          4: FixedColumnWidth(48),
                         },
                         children: [
                           TableRow(

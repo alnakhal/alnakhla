@@ -8013,159 +8013,157 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Table(
-                              border: TableBorder.all(
-                                color: Colors.grey.shade300,
-                              ),
-                              columnWidths: const {
-                                0: FlexColumnWidth(1),
-                                1: FlexColumnWidth(3),
-                                2: FlexColumnWidth(1),
-                                3: FlexColumnWidth(1),
-                                4: FlexColumnWidth(1),
-                              },
-                              children: [
-                                TableRow(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                  children: const [
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Text(
-                                        '#',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Text(
-                                        'المنتج',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Text(
-                                        'السعر',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Text(
-                                        'الكمية',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Text(
-                                        'المجموع',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Table(
+                                border: TableBorder.all(
+                                  color: Colors.grey.shade300,
                                 ),
-                                ...List<
-                                  TableRow
-                                >.generate(widget.invoice.items.length, (
-                                  index,
-                                ) {
-                                  final item = widget.invoice.items[index];
-                                  return TableRow(
-                                    children: [
+                                defaultColumnWidth:
+                                    const IntrinsicColumnWidth(),
+                                children: [
+                                  TableRow(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                    children: const [
                                       Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Text((index + 1).toString()),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            if (item.imageUrl != null ||
-                                                item.imageUrls.isNotEmpty)
-                                              Wrap(
-                                                spacing: 6,
-                                                runSpacing: 6,
-                                                children: [
-                                                  ...{
-                                                    if (item.imageUrl != null)
-                                                      item.imageUrl!,
-                                                    ...item.imageUrls,
-                                                  }.map(
-                                                    (url) => ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            6,
-                                                          ),
-                                                      child: Image.network(
-                                                        url,
-                                                        width: 48,
-                                                        height: 48,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder:
-                                                            (
-                                                              context,
-                                                              error,
-                                                              stackTrace,
-                                                            ) => const Icon(
-                                                              Icons
-                                                                  .broken_image,
-                                                              size: 32,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            Text(item.name),
-                                            if (item.note != null &&
-                                                item.note!.isNotEmpty) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                item.note!,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                        padding: EdgeInsets.all(8),
+                                        child: Text(
+                                          '#',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.all(8),
+                                        padding: EdgeInsets.all(8),
                                         child: Text(
-                                          item.price.toStringAsFixed(0),
+                                          'المنتج',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Text(item.quantity.toString()),
+                                        padding: EdgeInsets.all(8),
+                                        child: Text(
+                                          'السعر',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.all(8),
+                                        padding: EdgeInsets.all(8),
                                         child: Text(
-                                          item.total.toStringAsFixed(0),
+                                          'الكمية',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Text(
+                                          'المجموع',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ],
-                                  );
-                                }),
-                              ],
+                                  ),
+                                  ...List<
+                                    TableRow
+                                  >.generate(widget.invoice.items.length, (
+                                    index,
+                                  ) {
+                                    final item = widget.invoice.items[index];
+                                    return TableRow(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Text((index + 1).toString()),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              if (item.imageUrl != null ||
+                                                  item.imageUrls.isNotEmpty)
+                                                Wrap(
+                                                  spacing: 6,
+                                                  runSpacing: 6,
+                                                  children: [
+                                                    ...{
+                                                      if (item.imageUrl != null)
+                                                        item.imageUrl!,
+                                                      ...item.imageUrls,
+                                                    }.map(
+                                                      (url) => ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                        child: Image.network(
+                                                          url,
+                                                          width: 48,
+                                                          height: 48,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder:
+                                                              (
+                                                                context,
+                                                                error,
+                                                                stackTrace,
+                                                              ) => const Icon(
+                                                                Icons
+                                                                    .broken_image,
+                                                                size: 32,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              Text(item.name),
+                                              if (item.note != null &&
+                                                  item.note!.isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  item.note!,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Text(
+                                            item.price.toStringAsFixed(0),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Text(item.quantity.toString()),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Text(
+                                            item.total.toStringAsFixed(0),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 20),
                             Container(
