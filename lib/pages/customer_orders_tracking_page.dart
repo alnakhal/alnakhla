@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_order_model.dart';
@@ -135,51 +133,38 @@ class _CustomerOrdersTrackingPageState
   }
 
   Future<void> _shareOrderAsImage(CustomerOrderModel order) async {
-    final boundaryKey = GlobalKey();
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: -10000,
-        top: 0,
-        child: RepaintBoundary(
-          key: boundaryKey,
-          child: _buildShareImage(order),
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InvoiceDetailPage(
+          invoice: _invoiceFromOrder(order),
+          autoShare: true,
         ),
       ),
     );
+  }
 
-    try {
-      Overlay.of(context).insert(entry);
-      await WidgetsBinding.instance.endOfFrame;
-      final boundary =
-          boundaryKey.currentContext!.findRenderObject()!
-              as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 2.5);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw StateError('تعذر إنشاء صورة الطلب');
-      final bytes = byteData.buffer.asUint8List();
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(
-              bytes,
-              mimeType: 'image/png',
-              name: 'order-${order.orderNumber}.png',
-            ),
-          ],
-          text:
-              'تفاصيل الطلب ${order.orderNumber}\n\nيمكنك تتبع طلبك من هذا الرابط:\n${_trackingUrl(order.orderNumber)}',
-          subject: 'تفاصيل الطلب ${order.orderNumber}',
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('تعذر مشاركة صورة الطلب: $error')));
-    } finally {
-      entry.remove();
-    }
+  Invoice _invoiceFromOrder(CustomerOrderModel order) {
+    return Invoice(
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerAddress: [
+        order.customerAddress,
+        if (order.customerLandmark.isNotEmpty)
+          'أقرب نقطة دالة: ${order.customerLandmark}',
+      ].where((value) => value.isNotEmpty).join('\n'),
+      storePhone: '077821215446',
+      createdAt: order.createdAt,
+      items: (order.items ?? const <Map<String, dynamic>>[])
+          .map(OrderItem.fromMap)
+          .toList(),
+      notes: [
+        if (order.invoiceStatus == 'modified') 'فاتورة معدلة',
+        if (order.receiptNumber != null && order.receiptNumber!.isNotEmpty)
+          'رقم الوصل: ${order.receiptNumber}',
+        if (order.notes != null && order.notes!.isNotEmpty) order.notes!,
+      ].join('\n'),
+      invoiceNumber: order.orderNumber,
+    );
   }
 
   Widget _buildShareImage(CustomerOrderModel order) {
