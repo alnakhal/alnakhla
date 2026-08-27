@@ -7723,12 +7723,28 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final GlobalKey<State> _invoiceKey = GlobalKey<State>();
   bool _isSharing = false;
 
+  Future<void> _precacheInvoiceImages() async {
+    final imageUrls = <String>{
+      for (final item in widget.invoice.items) ...[
+        if (item.imageUrl != null && item.imageUrl!.isNotEmpty) item.imageUrl!,
+        ...item.imageUrls.where((url) => url.isNotEmpty),
+      ],
+    };
+    await Future.wait(
+      imageUrls.map(
+        (url) => precacheImage(NetworkImage(url), context).catchError((_) {}),
+      ),
+    );
+  }
+
   Future<void> _shareInvoiceAsImage() async {
     if (_isSharing) return;
 
     setState(() => _isSharing = true);
 
     try {
+      await _precacheInvoiceImages();
+      await WidgetsBinding.instance.endOfFrame;
       final currentContext = _invoiceKey.currentContext;
       if (currentContext == null) {
         if (!mounted) return;
