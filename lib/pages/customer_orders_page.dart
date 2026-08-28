@@ -1283,13 +1283,13 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
         : width > 650
         ? 22.0
         : 16.0;
-    final cardSpacing = width > 900 ? 16.0 : 10.0;
+    final cardSpacing = width > 900 ? 14.0 : 9.0;
     final appBarHeight = width > 600 ? 82.0 : 70.0;
     final productCardAspectRatio = width >= 1100
-      ? 1.2
+      ? 1.32
       : width >= 720
-      ? 1.05
-      : 1.0;
+      ? 1.16
+      : 1.1;
 
     return Scaffold(
       appBar: AppBar(
@@ -2051,7 +2051,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                           left: 0,
                                           right: 0,
                                           child: Container(
-                                            padding: const EdgeInsets.all(8),
+                                            padding: const EdgeInsets.all(7),
                                             decoration: BoxDecoration(
                                               color: Colors.white.withValues(
                                                 alpha: 0.96,
@@ -2070,7 +2070,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                   product.name,
                                                   style: const TextStyle(
                                                     color: Color(0xFF1F2937),
-                                                    fontSize: 16,
+                                                    fontSize: 14,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                   maxLines: 2,
@@ -2092,7 +2092,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                           color: Color(
                                                             0xFF4B5563,
                                                           ),
-                                                          fontSize: 11,
+                                                          fontSize: 10,
                                                         ),
                                                       ),
                                                     Text(
@@ -2101,7 +2101,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                         color: Color(
                                                           0xFF4B5563,
                                                         ),
-                                                        fontSize: 11,
+                                                        fontSize: 10,
                                                       ),
                                                     ),
                                                   ],
@@ -2126,7 +2126,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                                 color: Color(
                                                                   0xFF111827,
                                                                 ),
-                                                                fontSize: 14,
+                                                                fontSize: 13,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
@@ -2142,7 +2142,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                               ?.copyWith(
                                                                 color: colorScheme
                                                                     .onSurfaceVariant,
-                                                                fontSize: 11,
+                                                                fontSize: 10,
                                                               ),
                                                         ),
                                                         if (hasDiscount)
@@ -2283,15 +2283,15 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                               foregroundColor:
                                                                   Colors.white,
                                                               minimumSize: Size(
-                                                                width > 700 ? 116 : 82,
-                                                                42,
+                                                                width > 700 ? 104 : 74,
+                                                                38,
                                                               ),
                                                               elevation: 0,
                                                               shadowColor: Colors
                                                                   .transparent,
                                                               padding: EdgeInsets.symmetric(
-                                                                horizontal: width > 700 ? 14 : 8,
-                                                                vertical: 7,
+                                                                horizontal: width > 700 ? 13 : 7,
+                                                                vertical: 6,
                                                               ),
                                                               shape: RoundedRectangleBorder(
                                                                 borderRadius:
@@ -2303,7 +2303,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                             icon: Icon(
                                                               Icons
                                                                   .add_shopping_cart,
-                                                                size: width > 700 ? 20 : 18,
+                                                                size: width > 700 ? 18 : 16,
                                                             ),
                                                             label: Text(
                                                               'أضف',
@@ -2313,7 +2313,7 @@ class _CustomerOrdersPageState extends State<CustomerOrdersPage>
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
-                                                                    fontSize: width > 700 ? 15 : 13,
+                                                                    fontSize: width > 700 ? 14 : 12,
                                                                   ),
                                                             ),
                                                           ),
