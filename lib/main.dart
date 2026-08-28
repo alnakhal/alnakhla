@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -7769,6 +7770,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     try {
       await _precacheInvoiceImages();
       await WidgetsBinding.instance.endOfFrame;
+      await WidgetsBinding.instance.endOfFrame;
       final currentContext = _invoiceKey.currentContext;
       if (currentContext == null) {
         if (!mounted) return;
@@ -7788,10 +7790,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       }
 
       final RenderRepaintBoundary boundary = renderObject;
-      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final boundarySize = boundary.size;
+      const maxImageDimension = 8192.0;
+      final pixelRatio = (maxImageDimension /
+              math.max(boundarySize.width, boundarySize.height))
+          .clamp(0.5, 3.0);
+      final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
       final ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
       );
+      image.dispose();
       if (byteData == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
