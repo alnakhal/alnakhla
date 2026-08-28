@@ -117384,7 +117384,7 @@ n=o.gZ()
 if(!(n instanceof A.AN))throw A.d(A.W("\u0644\u0645 \u064a\u062a\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0635\u0648\u0631\u0629"))
 m=n.gu(0)
 s=6
-return A.f(n.adb(B.d.cG(8192/Math.max(m.a,m.b),0.5,3)),$async$no)
+return A.f(n.adb(B.d.cG(4096/Math.max(m.a,m.b),0.25,3)),$async$no)
 case 6:l=b
 s=7
 return A.f(l.m_(B.iR),$async$no)
