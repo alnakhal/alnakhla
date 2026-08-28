@@ -7810,10 +7810,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     }
 
     final boundarySize = renderObject.size;
-    const maxImageDimension = 8192.0;
+    const maxImageDimension = 4096.0;
     final pixelRatio = (maxImageDimension /
             math.max(boundarySize.width, boundarySize.height))
-        .clamp(0.5, 3.0);
+        .clamp(0.25, 3.0);
     final image = await renderObject.toImage(pixelRatio: pixelRatio);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
