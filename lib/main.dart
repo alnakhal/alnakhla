@@ -7805,7 +7805,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         pngBytes,
         filename:
             'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png',
-        text: 'فاتورة محاسبية - العميل: ${widget.invoice.customerName}',
+        text: 'صورة الفاتورة المحاسبية كاملة - العميل: ${widget.invoice.customerName}',
       );
 
       if (!mounted) return;
@@ -8307,12 +8307,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.verified,
+                                    Icons.check_circle_outline,
                                     color: Colors.green.shade700,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'ختم إلكتروني معتمد • ${widget.invoice.invoiceNumber ?? ''}',
+                                    'مستلزمات النخلة تم التجهيز',
                                     style: TextStyle(
                                       color: Colors.green.shade800,
                                       fontWeight: FontWeight.bold,
