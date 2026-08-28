@@ -7862,14 +7862,18 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            RepaintBoundary(
-              key: _invoiceKey,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 900),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Card(
+            InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              boundaryMargin: const EdgeInsets.all(24),
+              child: RepaintBoundary(
+                key: _invoiceKey,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -8347,6 +8351,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                             ),
                           ],
                         ),
+                      ),
                       ),
                     ),
                   ),
