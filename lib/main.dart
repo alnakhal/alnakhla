@@ -24,6 +24,7 @@ import 'models/customer_order_model.dart';
 import 'db/customer_orders_db.dart';
 import 'services/product_service.dart';
 import 'services/storage_service.dart';
+import 'utils/save_image.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
 const supabaseAnonKey =
@@ -7737,6 +7738,7 @@ class InvoiceDetailPage extends StatefulWidget {
 class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final GlobalKey<State> _invoiceKey = GlobalKey<State>();
   bool _isSharing = false;
+  bool _isSavingImage = false;
 
   @override
   void initState() {
@@ -7768,46 +7770,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     setState(() => _isSharing = true);
 
     try {
-      await _precacheInvoiceImages();
-      await WidgetsBinding.instance.endOfFrame;
-      await WidgetsBinding.instance.endOfFrame;
-      final currentContext = _invoiceKey.currentContext;
-      if (currentContext == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('خطأ: لم يتم تحميل الفاتورة بشكل صحيح')),
-        );
-        return;
-      }
-
-      final RenderObject? renderObject = currentContext.findRenderObject();
-      if (renderObject == null || renderObject is! RenderRepaintBoundary) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('خطأ: لم يتم إنشاء الصورة')),
-        );
-        return;
-      }
-
-      final RenderRepaintBoundary boundary = renderObject;
-      final boundarySize = boundary.size;
-      const maxImageDimension = 8192.0;
-      final pixelRatio = (maxImageDimension /
-              math.max(boundarySize.width, boundarySize.height))
-          .clamp(0.5, 3.0);
-      final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-      final ByteData? byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      image.dispose();
-      if (byteData == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('خطأ: فشل في تحويل الصورة')),
-        );
-        return;
-      }
-      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final pngBytes = await _captureInvoicePng();
 
       await shareImageBytes(
         pngBytes,
@@ -7829,6 +7792,58 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       if (mounted) {
         setState(() => _isSharing = false);
       }
+    }
+  }
+
+  Future<Uint8List> _captureInvoicePng() async {
+    await _precacheInvoiceImages();
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+    final currentContext = _invoiceKey.currentContext;
+    if (currentContext == null) {
+      throw StateError('لم يتم تحميل الفاتورة بشكل صحيح');
+    }
+
+    final renderObject = currentContext.findRenderObject();
+    if (renderObject is! RenderRepaintBoundary) {
+      throw StateError('لم يتم إنشاء الصورة');
+    }
+
+    final boundarySize = renderObject.size;
+    const maxImageDimension = 8192.0;
+    final pixelRatio = (maxImageDimension /
+            math.max(boundarySize.width, boundarySize.height))
+        .clamp(0.5, 3.0);
+    final image = await renderObject.toImage(pixelRatio: pixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    if (byteData == null) {
+      throw StateError('فشل في تحويل الصورة');
+    }
+    return byteData.buffer.asUint8List();
+  }
+
+  Future<void> _saveInvoiceImage() async {
+    if (_isSavingImage || _isSharing) return;
+    setState(() => _isSavingImage = true);
+    try {
+      final pngBytes = await _captureInvoicePng();
+      await saveImageBytes(
+        pngBytes,
+        filename:
+            'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ صورة الفاتورة كاملة')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('خطأ في حفظ الصورة: $e')));
+    } finally {
+      if (mounted) setState(() => _isSavingImage = false);
     }
   }
 
@@ -8357,6 +8372,27 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                       _isSharing ? 'جاري المشاركة...' : 'مشاركة كصورة',
                     ),
                     onPressed: _isSharing ? null : _shareInvoiceAsImage,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: _isSavingImage
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.download),
+                    label: Text(
+                      _isSavingImage ? 'جاري الحفظ...' : 'حفظ الصورة',
+                    ),
+                    onPressed: (_isSharing || _isSavingImage)
+                        ? null
+                        : _saveInvoiceImage,
                   ),
                 ),
                 const SizedBox(width: 12),
