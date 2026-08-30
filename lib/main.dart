@@ -16,7 +16,7 @@ import 'package:intl/intl.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
 import 'pages/public_order_tracking_page.dart';
-3.import 'pages/invoices_page.dart';
+import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
 import 'models/product.dart';

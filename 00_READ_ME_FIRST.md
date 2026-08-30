@@ -64,7 +64,7 @@
 
 1. **`pubspec.yaml`**
    - ✅ `speech_to_text: ^7.0.0`
-   - ✅ `flutter_tts: ^8.2.2`
+   - ✅ `flutter_tts: ^4.2.5`
 
 2. **`android/app/src/main/AndroidManifest.xml`**
    - ✅ أذن RECORD_AUDIO

@@ -68,7 +68,7 @@
 ```
 ✅ pubspec.yaml
    → ✓ إضافة speech_to_text: ^7.0.0
-   → ✓ إضافة flutter_tts: ^8.2.2
+   → ✓ إضافة flutter_tts: ^4.2.5
    → ✓ تم التحديث بنجاح
 
 ✅ android/app/src/main/AndroidManifest.xml

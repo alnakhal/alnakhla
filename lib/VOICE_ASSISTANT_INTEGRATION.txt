@@ -362,7 +362,7 @@ class _ProductsTabState extends State<ProductsTab> {
 /*
 1. أضف السطور التالية في pubspec.yaml (تم بالفعل):
    - speech_to_text: ^7.0.0
-   - flutter_tts: ^8.2.2
+  - flutter_tts: ^4.2.5
 
 2. قم بتشغيل: flutter pub get
 
