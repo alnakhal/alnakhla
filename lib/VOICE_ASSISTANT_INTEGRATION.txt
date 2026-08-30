@@ -1,0 +1,383 @@
+// ملف توضيحي: كيفية تكامل المساعد الصوتي مع التطبيق
+
+// ================================================================
+// 1️⃣ إضافة أزرار المساعد الصوتي في AppBar
+// ================================================================
+
+// في ملف main.dart، داخل class _HomeScreenState، عدّل AppBar:
+
+/*
+AppBar(
+  title: const Text('مستلزمات حجامة النخلة'),
+  centerTitle: true,
+  elevation: 0,
+  actions: [
+    // 🎤 زر المساعد الصوتي الجديد
+    IconButton(
+      icon: const Icon(Icons.mic),
+      tooltip: 'مساعد صوتي',
+      onPressed: () {
+        showVoiceAssistantBottomSheet(context, 
+          onCommandReceived: (command) {
+            _handleVoiceCommand(command);
+          },
+        );
+      },
+    ),
+    
+    IconButton(
+      icon: const Icon(Icons.link),
+      tooltip: 'رابط متجرك',
+      onPressed: _showStoreLinkDialog,
+    ),
+    PopupMenuButton<SettingsAction>(
+      // ... بقية الإعدادات
+    ),
+  ],
+),
+*/
+
+// ================================================================
+// 2️⃣ إضافة دالة معالجة الأوامر الصوتية
+// ================================================================
+
+/*
+Future<void> _handleVoiceCommand(String command) async {
+  // معالجة الأوامر الصوتية وتنفيذ الإجراءات المناسبة
+  
+  switch (command) {
+    case 'cupping_cups':
+      // الانتقال إلى صفحة كاسات الحجامة
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CuppingCupsPage()),
+      );
+      break;
+      
+    case 'show_menu':
+      // عرض القائمة
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('📋 تم فتح القائمة')),
+      );
+      break;
+      
+    case 'help':
+      // عرض المساعدة
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('المساعدة'),
+          content: const Text(
+            'قل أحد هذه الأوامر:\n'
+            '- أريد كاسات حجامة\n'
+            '- أريد المنتجات\n'
+            '- ساعدني',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('حسناً'),
+            ),
+          ],
+        ),
+      );
+      break;
+  }
+}
+*/
+
+// ================================================================
+// 3️⃣ إضافة المساعد الصوتي في الصفحة الرئيسية
+// ================================================================
+
+/*
+import 'pages/voice_assistant_page.dart';
+import 'pages/cupping_cups_page.dart';
+
+// في HomeTab أو أي صفحة أخرى:
+
+class HomeTab extends StatefulWidget {
+  const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // زر المساعد الصوتي (وسيط)
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: InkWell(
+              onTap: () {
+                showVoiceAssistantBottomSheet(context,
+                  onCommandReceived: (command) {
+                    _handleVoiceCommand(command);
+                  },
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF4B39EF),
+                            const Color(0xFF7C4DFF),
+                          ],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.mic,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'مساعد صوتي ذكي',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'اضغط لتقول أريد كاسات حجامة',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          // بقية محتوى الصفحة
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _handleVoiceCommand(String command) async {
+    if (command == 'cupping_cups') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CuppingCupsPage()),
+      );
+    }
+  }
+}
+*/
+
+// ================================================================
+// 4️⃣ استخدام المساعد الصوتي مع دعم عرض ديناميكي
+// ================================================================
+
+/*
+// إذا أردت عرض المساعد الصوتي في Dialog:
+
+Future<void> _showVoiceAssistantDialog() async {
+  showVoiceAssistantDialog(
+    context,
+    onCommandReceived: (command) {
+      print('تم استقبال الأمر: $command');
+      _handleVoiceCommand(command);
+    },
+  );
+}
+
+// إذا أردت عرض كاسات الحجامة مباشرة عند قول "أريد كاسات حجامة":
+// الكود في voice_assistant_service.dart يتعامل مع هذا تلقائياً
+
+*/
+
+// ================================================================
+// 5️⃣ إضافة دعم أوامر مخصصة جديدة
+// ================================================================
+
+/*
+// في أي مكان بالتطبيق، يمكنك إضافة أوامر مخصصة:
+
+final voiceService = VoiceAssistantService();
+
+// إضافة أمر جديد
+voiceService.addCustomCommand('أريد كريم أساسي', 'cream_products');
+voiceService.addCustomCommand('أريد زيوت عطرية', 'oils');
+voiceService.addCustomCommand('عرض السلة', 'show_cart');
+
+// الآن عند قول المستخدم هذه الأوامر، سيتم إرسالها في commandStream
+voiceService.commandStream.listen((command) {
+  if (command == 'cream_products') {
+    // عرض منتجات الكريمات
+  } else if (command == 'oils') {
+    // عرض الزيوت العطرية
+  } else if (command == 'show_cart') {
+    // عرض السلة
+  }
+});
+*/
+
+// ================================================================
+// 6️⃣ عرض قائمة الأوامر المتاحة
+// ================================================================
+
+/*
+final voiceService = VoiceAssistantService();
+final commands = voiceService.getAvailableCommands();
+
+// عرض الأوامر في واجهة المستخدم
+showDialog(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    title: const Text('الأوامر الصوتية المتاحة'),
+    content: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: commands.entries.map((entry) {
+          return Text('${entry.key} → ${entry.value}');
+        }).toList(),
+      ),
+    ),
+    actions: [
+      FilledButton(
+        onPressed: () => Navigator.pop(ctx),
+        child: const Text('حسناً'),
+      ),
+    ],
+  ),
+);
+*/
+
+// ================================================================
+// 7️⃣ أمثلة متقدمة: عرض منتجات حسب الأوامر الصوتية
+// ================================================================
+
+/*
+class ProductsTab extends StatefulWidget {
+  const ProductsTab({super.key});
+
+  @override
+  State<ProductsTab> createState() => _ProductsTabState();
+}
+
+class _ProductsTabState extends State<ProductsTab> {
+  final VoiceAssistantService _voiceService = VoiceAssistantService();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupVoiceCommands();
+  }
+
+  void _setupVoiceCommands() {
+    _voiceService.commandStream.listen((command) {
+      switch (command) {
+        case 'cupping_cups':
+          // فلترة المنتجات لعرض كاسات الحجامة فقط
+          _filterProducts('حجامة');
+          break;
+        
+        case 'oils':
+          _filterProducts('زيت');
+          break;
+          
+        case 'creams':
+          _filterProducts('كريم');
+          break;
+      }
+    });
+  }
+
+  void _filterProducts(String keyword) {
+    // تطبيق المنطق لفلترة المنتجات
+    setState(() {
+      // تحديث قائمة المنتجات المعروضة
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // زر المساعد الصوتي
+          FilledButton.icon(
+            icon: const Icon(Icons.mic),
+            label: const Text('🎤 قل اسم المنتج'),
+            onPressed: () {
+              showVoiceAssistantDialog(context,
+                onCommandReceived: (command) {
+                  // معالجة الأمر
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          // قائمة المنتجات
+        ],
+      ),
+    );
+  }
+}
+*/
+
+// ================================================================
+// 8️⃣ متطلبات الإذن على Android و iOS
+// ================================================================
+
+/*
+// في android/app/src/main/AndroidManifest.xml ، أضف الأذن:
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+// في ios/Runner/Info.plist ، أضف:
+<key>NSMicrophoneUsageDescription</key>
+<string>تطبيق مستلزمات النخلة يحتاج إلى الوصول إلى الميكروفون للمساعد الصوتي</string>
+
+<key>NSSpeechRecognitionUsageDescription</key>
+<string>تطبيق مستلزمات النخلة يحتاج إلى خدمة التعرف على الكلام</string>
+*/
+
+// ================================================================
+// ✅ خطوات التنفيذ النهائية:
+// ================================================================
+
+/*
+1. أضف السطور التالية في pubspec.yaml (تم بالفعل):
+   - speech_to_text: ^7.0.0
+   - flutter_tts: ^8.2.2
+
+2. قم بتشغيل: flutter pub get
+
+3. استيراد الملفات الجديدة في main.dart:
+   import 'pages/voice_assistant_page.dart';
+   import 'pages/cupping_cups_page.dart';
+   import 'services/voice_assistant_service.dart';
+
+4. أضف زر المساعد الصوتي في AppBar أو أي صفحة
+
+5. الأذونات:
+   - Android: تمت إضافتها في AndroidManifest.xml
+   - iOS: أضف في Info.plist
+
+6. اختبر التطبيق بقول "أريد كاسات حجامة"
+
+✨ الآن سيظهر المساعد الصوتي ويستجيب لأوامرك!
+*/

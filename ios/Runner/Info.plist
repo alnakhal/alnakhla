@@ -30,6 +30,10 @@
 	<string>يحتاج التطبيق إلى حفظ صور الفواتير في معرض الصور</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>يحتاج التطبيق إلى حفظ صور الفواتير في معرض الصور</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>تطبيق مستلزمات النخلة يحتاج إلى الوصول إلى الميكروفون لاستخدام المساعد الصوتي</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>تطبيق مستلزمات النخلة يحتاج إلى خدمة التعرف على الكلام للمساعد الصوتي</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

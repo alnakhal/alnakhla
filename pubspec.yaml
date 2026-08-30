@@ -49,6 +49,8 @@ dependencies:
   path: ^1.9.1
   intl: ^0.20.3
   saver_gallery: ^5.1.0
+  speech_to_text: ^7.0.0
+  flutter_tts: ^8.2.2
 
 dev_dependencies:
   flutter_test:

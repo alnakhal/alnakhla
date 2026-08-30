@@ -16,7 +16,7 @@ import 'package:intl/intl.dart';
 import 'pages/customer_orders_page.dart';
 import 'pages/customer_orders_tracking_page.dart' as customer_orders_tracking;
 import 'pages/public_order_tracking_page.dart';
-import 'pages/invoices_page.dart';
+3.import 'pages/invoices_page.dart';
 import 'pages/photo_viewer_page.dart';
 import 'pages/slider_images_settings_page.dart';
 import 'models/product.dart';
@@ -3746,108 +3746,124 @@ class _CreateInvoicePageState extends State<CreateInvoicePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 5,
-                                      child: TextFormField(
-                                        initialValue: item.name,
-                                        decoration: InputDecoration(
-                                          hintText: 'اسم المنتج ${index + 1}',
-                                          isDense: true,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 8,
-                                              ),
-                                        ),
-                                        onChanged: (v) {
-                                          setState(() {
-                                            _invoiceItems[index] = OrderItem(
-                                              name: v,
-                                              price: item.price,
-                                              quantity: item.quantity,
-                                              note: item.note,
-                                            );
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    SizedBox(
-                                      width: 100,
-                                      child: TextFormField(
-                                        initialValue: item.price
-                                            .toStringAsFixed(0),
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isNarrow = constraints.maxWidth < 520;
+                                    return Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        SizedBox(
+                                          width: isNarrow
+                                              ? constraints.maxWidth
+                                              : constraints.maxWidth - 320,
+                                          child: TextFormField(
+                                            initialValue: item.name,
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  'اسم المنتج ${index + 1}',
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
                                             ),
-                                        decoration: const InputDecoration(
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
+                                            onChanged: (v) {
+                                              setState(() {
+                                                _invoiceItems[index] =
+                                                    OrderItem(
+                                                      name: v,
+                                                      price: item.price,
+                                                      quantity: item.quantity,
+                                                      note: item.note,
+                                                    );
+                                              });
+                                            },
                                           ),
                                         ),
-                                        onChanged: (v) {
-                                          final p =
-                                              _parseDouble(v) ?? item.price;
-                                          setState(() {
-                                            _invoiceItems[index] = OrderItem(
-                                              name: item.name,
-                                              price: p,
-                                              quantity: item.quantity,
-                                              note: item.note,
-                                            );
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    SizedBox(
-                                      width: 80,
-                                      child: TextFormField(
-                                        initialValue: item.quantity.toString(),
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 100,
+                                          child: TextFormField(
+                                            initialValue: item.price
+                                                .toStringAsFixed(0),
+                                            keyboardType:
+                                                const TextInputType.numberWithOptions(
+                                                  decimal: true,
+                                                ),
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onChanged: (v) {
+                                              final p =
+                                                  _parseDouble(v) ?? item.price;
+                                              setState(() {
+                                                _invoiceItems[index] =
+                                                    OrderItem(
+                                                      name: item.name,
+                                                      price: p,
+                                                      quantity: item.quantity,
+                                                      note: item.note,
+                                                    );
+                                              });
+                                            },
                                           ),
                                         ),
-                                        onChanged: (v) {
-                                          final q =
-                                              _parseInt(v) ?? item.quantity;
-                                          setState(() {
-                                            _invoiceItems[index] = OrderItem(
-                                              name: item.name,
-                                              price: item.price,
-                                              quantity: q,
-                                              note: item.note,
-                                            );
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    SizedBox(
-                                      width: 60,
-                                      child: Text(
-                                        item.total.toStringAsFixed(0),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () =>
-                                          _removeInvoiceItem(index),
-                                    ),
-                                  ],
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextFormField(
+                                            initialValue: item.quantity
+                                                .toString(),
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onChanged: (v) {
+                                              final q =
+                                                  _parseInt(v) ?? item.quantity;
+                                              setState(() {
+                                                _invoiceItems[index] =
+                                                    OrderItem(
+                                                      name: item.name,
+                                                      price: item.price,
+                                                      quantity: q,
+                                                      note: item.note,
+                                                    );
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 60,
+                                          child: Text(
+                                            item.total.toStringAsFixed(0),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              _removeInvoiceItem(index),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -7776,7 +7792,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         pngBytes,
         filename:
             'فاتورة_${widget.invoice.createdAt.millisecondsSinceEpoch}.png',
-        text: 'صورة الفاتورة المحاسبية كاملة - العميل: ${widget.invoice.customerName}',
+        text:
+            'صورة الفاتورة المحاسبية كاملة - العميل: ${widget.invoice.customerName}',
       );
 
       if (!mounted) return;
@@ -7811,9 +7828,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
     final boundarySize = renderObject.size;
     const maxImageDimension = 4096.0;
-    final pixelRatio = (maxImageDimension /
-            math.max(boundarySize.width, boundarySize.height))
-        .clamp(0.25, 3.0);
+    final pixelRatio =
+        (maxImageDimension / math.max(boundarySize.width, boundarySize.height))
+            .clamp(0.25, 3.0);
     final image = await renderObject.toImage(pixelRatio: pixelRatio);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
@@ -7857,508 +7874,621 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('تفاصيل الفاتورة')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            InteractiveViewer(
-              minScale: 1.0,
-              maxScale: 4.0,
-              boundaryMargin: const EdgeInsets.all(24),
-              child: RepaintBoundary(
-                key: _invoiceKey,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (widget.invoice.logoBytes != null) ...[
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.memory(
-                                  widget.invoice.logoBytes!,
-                                  height: 100,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            const Text(
-                              'فاتورة محاسبية',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'رقم المتجر: ${widget.invoice.storePhone}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'الدفع: ${_paymentMethodArabic(widget.invoice.paymentMethod)} • الحالة: ${_paymentStatusArabic(widget.invoice.paymentStatus)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (widget.invoice.invoiceNumber != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                'رقم الفاتورة: ${widget.invoice.invoiceNumber}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const Text(
-                                    'بيانات الزبون',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return ClipRect(
+                    child: InteractiveViewer(
+                      minScale: 1.0,
+                      maxScale: 4.0,
+                      boundaryMargin: const EdgeInsets.all(24),
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        alignment: Alignment.topCenter,
+                        child: RepaintBoundary(
+                          key: _invoiceKey,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 900),
+                              child: SizedBox(
+                                width: constraints.maxWidth,
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Text(
-                                        'الاسم: ',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          widget.invoice.customerName,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Text(
-                                        'الجوال: ',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          widget.invoice.customerPhone,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (widget
-                                      .invoice
-                                      .customerAddress
-                                      .isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Row(
+                                  elevation: 2,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
                                       crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                          CrossAxisAlignment.center,
                                       children: [
+                                        if (widget.invoice.logoBytes !=
+                                            null) ...[
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: Image.memory(
+                                              widget.invoice.logoBytes!,
+                                              height: 100,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                        ],
                                         const Text(
-                                          'العنوان: ',
+                                          'فاتورة محاسبية',
                                           style: TextStyle(
+                                            fontSize: 24,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Expanded(
-                                          child: Text(
-                                            widget.invoice.customerAddress,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'رقم المتجر: ${widget.invoice.storePhone}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                  if (widget.invoice.notes != null &&
-                                      widget.invoice.notes!.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    const Text(
-                                      'ملاحظات الفاتورة:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                    Text(
-                                      widget.invoice.notes!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Text(
-                                        'التاريخ: ',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          '${widget.invoice.createdAt.day.toString().padLeft(2, '0')}/${widget.invoice.createdAt.month.toString().padLeft(2, '0')}/${widget.invoice.createdAt.year}',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'المنتجات',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Table(
-                                border: TableBorder.all(
-                                  color: Colors.grey.shade300,
-                                ),
-                                defaultColumnWidth:
-                                    const IntrinsicColumnWidth(),
-                                children: [
-                                  TableRow(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                    ),
-                                    children: const [
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(
-                                          '#',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'الدفع: ${_paymentMethodArabic(widget.invoice.paymentMethod)} • الحالة: ${_paymentStatusArabic(widget.invoice.paymentStatus)}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(
-                                          'المنتج',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
+                                        if (widget.invoice.invoiceNumber !=
+                                            null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'رقم الفاتورة: ${widget.invoice.invoiceNumber}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(
-                                          'السعر',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
+                                        ],
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(
-                                          'الكمية',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(
-                                          'المجموع',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  ...List<
-                                    TableRow
-                                  >.generate(widget.invoice.items.length, (
-                                    index,
-                                  ) {
-                                    final item = widget.invoice.items[index];
-                                    return TableRow(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Text((index + 1).toString()),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
                                           child: Column(
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                                CrossAxisAlignment.stretch,
                                             children: [
-                                              if (item.imageUrl != null ||
-                                                  item.imageUrls.isNotEmpty)
-                                                Wrap(
-                                                  spacing: 6,
-                                                  runSpacing: 6,
+                                              const Text(
+                                                'بيانات الزبون',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    'الاسم: ',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      widget
+                                                          .invoice
+                                                          .customerName,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    'الجوال: ',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      widget
+                                                          .invoice
+                                                          .customerPhone,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              if (widget
+                                                  .invoice
+                                                  .customerAddress
+                                                  .isNotEmpty) ...[
+                                                const SizedBox(height: 6),
+                                                Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
-                                                    ...{
-                                                      if (item.imageUrl != null)
-                                                        item.imageUrl!,
-                                                      ...item.imageUrls,
-                                                    }.map(
-                                                      (url) => ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                        child: Image.network(
-                                                          url,
-                                                          width: 48,
-                                                          height: 48,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder:
-                                                              (
-                                                                context,
-                                                                error,
-                                                                stackTrace,
-                                                              ) => const Icon(
-                                                                Icons
-                                                                    .broken_image,
-                                                                size: 32,
-                                                              ),
-                                                        ),
+                                                    const Text(
+                                                      'العنوان: ',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Text(
+                                                        widget
+                                                            .invoice
+                                                            .customerAddress,
                                                       ),
                                                     ),
                                                   ],
                                                 ),
-                                              Text(item.name),
-                                              if (item.note != null &&
-                                                  item.note!.isNotEmpty) ...[
-                                                const SizedBox(height: 4),
+                                              ],
+                                              if (widget.invoice.notes !=
+                                                      null &&
+                                                  widget
+                                                      .invoice
+                                                      .notes!
+                                                      .isNotEmpty) ...[
+                                                const SizedBox(height: 6),
+                                                const Text(
+                                                  'ملاحظات الفاتورة:',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
                                                 Text(
-                                                  item.note!,
+                                                  widget.invoice.notes!,
                                                   style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.grey,
+                                                    color: Colors.red,
                                                   ),
                                                 ),
                                               ],
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    'التاريخ: ',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      '${widget.invoice.createdAt.day.toString().padLeft(2, '0')}/${widget.invoice.createdAt.month.toString().padLeft(2, '0')}/${widget.invoice.createdAt.year}',
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ],
                                           ),
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Text(
-                                            item.price.toStringAsFixed(0),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Text(item.quantity.toString()),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Text(
-                                            item.total.toStringAsFixed(0),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'الإجمالي قبل الخصم',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        widget.invoice.total.toStringAsFixed(0),
-                                      ),
-                                    ],
-                                  ),
-                                  if (widget.invoice.deliveryFee > 0) ...[
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('رسوم التوصيل'),
-                                        Text(
-                                          widget.invoice.deliveryFee
-                                              .toStringAsFixed(0),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                  const SizedBox(height: 6),
-                                  if (widget.invoice.discount > 0) ...[
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
+                                        const SizedBox(height: 20),
                                         const Text(
-                                          'الخصم',
+                                          'المنتجات',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.red,
+                                            fontSize: 16,
                                           ),
                                         ),
-                                        Text(
-                                          '- ${widget.invoice.discount.toStringAsFixed(0)}',
-                                          style: const TextStyle(
-                                            color: Colors.red,
+                                        const SizedBox(height: 12),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Table(
+                                            border: TableBorder.all(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                            defaultColumnWidth:
+                                                const IntrinsicColumnWidth(),
+                                            children: [
+                                              TableRow(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.shade200,
+                                                ),
+                                                children: const [
+                                                  Padding(
+                                                    padding: EdgeInsets.all(8),
+                                                    child: Text(
+                                                      '#',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(8),
+                                                    child: Text(
+                                                      'المنتج',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(8),
+                                                    child: Text(
+                                                      'السعر',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(8),
+                                                    child: Text(
+                                                      'الكمية',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(8),
+                                                    child: Text(
+                                                      'المجموع',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              ...List<
+                                                TableRow
+                                              >.generate(widget.invoice.items.length, (
+                                                index,
+                                              ) {
+                                                final item =
+                                                    widget.invoice.items[index];
+                                                return TableRow(
+                                                  children: [
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Text(
+                                                        (index + 1).toString(),
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          if (item.imageUrl !=
+                                                                  null ||
+                                                              item
+                                                                  .imageUrls
+                                                                  .isNotEmpty)
+                                                            Wrap(
+                                                              spacing: 6,
+                                                              runSpacing: 6,
+                                                              children: [
+                                                                ...{
+                                                                  if (item.imageUrl !=
+                                                                      null)
+                                                                    item.imageUrl!,
+                                                                  ...item
+                                                                      .imageUrls,
+                                                                }.map(
+                                                                  (
+                                                                    url,
+                                                                  ) => ClipRRect(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          6,
+                                                                        ),
+                                                                    child: Image.network(
+                                                                      url,
+                                                                      width: 48,
+                                                                      height:
+                                                                          48,
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      errorBuilder:
+                                                                          (
+                                                                            context,
+                                                                            error,
+                                                                            stackTrace,
+                                                                          ) => const Icon(
+                                                                            Icons.broken_image,
+                                                                            size:
+                                                                                32,
+                                                                          ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          Text(item.name),
+                                                          if (item.note !=
+                                                                  null &&
+                                                              item
+                                                                  .note!
+                                                                  .isNotEmpty) ...[
+                                                            const SizedBox(
+                                                              height: 4,
+                                                            ),
+                                                            Text(
+                                                              item.note!,
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .grey,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Text(
+                                                        item.price
+                                                            .toStringAsFixed(0),
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Text(
+                                                        item.quantity
+                                                            .toString(),
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8,
+                                                          ),
+                                                      child: Text(
+                                                        item.total
+                                                            .toStringAsFixed(0),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              }),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const Text(
+                                                    'الإجمالي قبل الخصم',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    widget.invoice.total
+                                                        .toStringAsFixed(0),
+                                                  ),
+                                                ],
+                                              ),
+                                              if (widget.invoice.deliveryFee >
+                                                  0) ...[
+                                                const SizedBox(height: 6),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    const Text('رسوم التوصيل'),
+                                                    Text(
+                                                      widget.invoice.deliveryFee
+                                                          .toStringAsFixed(0),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                              const SizedBox(height: 6),
+                                              if (widget.invoice.discount >
+                                                  0) ...[
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    const Text(
+                                                      'الخصم',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '- ${widget.invoice.discount.toStringAsFixed(0)}',
+                                                      style: const TextStyle(
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 8),
+                                              ],
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const Text(
+                                                    'الإجمالي بعد الخصم',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    (widget.invoice.total -
+                                                            widget
+                                                                .invoice
+                                                                .discount)
+                                                        .clamp(
+                                                          0,
+                                                          double.infinity,
+                                                        )
+                                                        .toStringAsFixed(0),
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 18,
+                                                      color: Colors.blue,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const Text('المبلغ المدفوع'),
+                                                  Text(
+                                                    widget.invoice.paidAmount
+                                                        .toStringAsFixed(0),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  const Text(
+                                                    'المبلغ المتبقي',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    (widget.invoice.total -
+                                                            widget
+                                                                .invoice
+                                                                .discount -
+                                                            widget
+                                                                .invoice
+                                                                .paidAmount)
+                                                        .clamp(
+                                                          0,
+                                                          double.infinity,
+                                                        )
+                                                        .toStringAsFixed(0),
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 18),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors.green.shade700,
+                                              width: 2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            color: Colors.green.shade50,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle_outline,
+                                                color: Colors.green.shade700,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'مستلزمات النخلة تم التجهيز',
+                                                style: TextStyle(
+                                                  color: Colors.green.shade800,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'الإجمالي بعد الخصم',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        (widget.invoice.total -
-                                                widget.invoice.discount)
-                                            .clamp(0, double.infinity)
-                                            .toStringAsFixed(0),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('المبلغ المدفوع'),
-                                      Text(
-                                        widget.invoice.paidAmount
-                                            .toStringAsFixed(0),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'المبلغ المتبقي',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        (widget.invoice.total -
-                                                widget.invoice.discount -
-                                                widget.invoice.paidAmount)
-                                            .clamp(0, double.infinity)
-                                            .toStringAsFixed(0),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.green.shade700,
-                                  width: 2,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                color: Colors.green.shade50,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_outline,
-                                    color: Colors.green.shade700,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'مستلزمات النخلة تم التجهيز',
-                                    style: TextStyle(
-                                      color: Colors.green.shade800,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
