@@ -24,6 +24,7 @@ import 'models/customer_order_model.dart';
 import 'db/customer_orders_db.dart';
 import 'services/product_service.dart';
 import 'services/storage_service.dart';
+import 'pages/voice_assistant_page.dart';
 import 'utils/save_image.dart';
 
 const supabaseUrl = 'https://bhyqgohtwtvblmlbwcbb.supabase.co';
@@ -1103,6 +1104,35 @@ class _HomeTabState extends State<HomeTab> {
                     },
                   ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'المساعد الصوتي',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: VoiceAssistantWidget(
+                onCommandReceived: (command) {
+                  final message = switch (command) {
+                    'cupping_cups' => 'تم استقبال طلب كاسات الحجامة',
+                    'show_menu' => 'تم فتح القائمة',
+                    'app_info' => 'معلومات التطبيق',
+                    'help' => 'تم عرض المساعدة',
+                    _ => 'تم استقبال الأمر: $command',
+                  };
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(message)),
+                  );
+                },
               ),
             ),
           ),
